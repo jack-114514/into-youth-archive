@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Demo memory placeholder</title>
+  <desc id="desc">Abstract green and blue light used instead of private photographs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a2730"/>
+      <stop offset="0.55" stop-color="#2b756b"/>
+      <stop offset="1" stop-color="#c8f36a"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#fff" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <circle cx="850" cy="260" r="330" fill="url(#glow)" opacity=".45"/>
+  <path d="M0 720C270 570 400 810 690 620s390-50 510-140v420H0z" fill="#04191e" opacity=".76"/>
+  <g fill="#fff" font-family="sans-serif" text-anchor="middle">
+    <text x="600" y="420" font-size="64" font-weight="700">YOUR MEMORY</text>
+    <text x="600" y="475" font-size="28" opacity=".75">Replace this demo image in the admin panel</text>
+  </g>
+</svg>

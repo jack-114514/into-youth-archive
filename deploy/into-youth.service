@@ -1,0 +1,20 @@
+[Unit]
+Description=INTO Youth Archive API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/into-youth.env
+ExecStart=/usr/bin/python3 /opt/into-youth/server/app.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/into-youth/data /opt/into-youth/uploads
+
+[Install]
+WantedBy=multi-user.target
