@@ -14,6 +14,7 @@
 - 评论、回复、点赞、图片评论和投稿
 - 管理后台：内容、排序、拍摄时间、首页/3D 可见性、评论和投稿管理
 - 管理员密码找回：Cloudflare Turnstile、邮件验证码、PBKDF2 密码哈希
+- Flutter 原生 Android 管理 App：Token 轮换、Secure Storage、媒体压缩上传、更新校验
 - Python 标准库 API、SQLite、Nginx 和 systemd 的轻量 VPS 部署方案
 
 ## 技术栈
@@ -21,6 +22,7 @@
 - React 19、TypeScript、Vite / vinext
 - Three.js、React Three Fiber、Drei、Framer Motion
 - Python 3 标准库 HTTP 服务、SQLite
+- Flutter 3.47、Dart 3.13、Gradle 9.3.1、Android Gradle Plugin 9.1
 - Nginx、systemd、Cloudflare Turnstile
 
 ## 本地运行
@@ -56,6 +58,25 @@ python3 server/app.py
 1. 在 `components/AdminDashboard.tsx` 中替换公开的站点密钥。
 2. 把私密的 `TURNSTILE_SECRET_KEY` 仅写入服务器环境文件。
 3. 永远不要把 Turnstile 密钥、SMTP 应用密码或验证码 pepper 提交到 Git。
+4. 将允许的公开域名写入 `TURNSTILE_ALLOWED_HOSTNAMES`，多个域名用逗号分隔。
+
+## Android 管理 App
+
+原生管理端源码位于 `mobile-admin-app/`。它只通过版本化的
+`/api/v1/admin-app` HTTPS API 工作，不是 WebView。构建环境和完整命令见：
+
+- `mobile-admin-app/build_environment.md`
+- `mobile-admin-app/README.md`
+- `mobile-admin-app/docs/api-v1.md`
+
+生产 URL 必须使用 `--dart-define` 注入。签名文件、`key.properties`、真实域名、
+Token 和任何服务器 Secret 都不得提交。Release 构建默认启用 R8 与资源压缩。
+
+## Release 与回滚
+
+每个 Android Release 的 APK、Git Tag、Git Commit 与 SHA-256 必须一一对应。
+`mapping.txt` 只私密归档，不上传公开 Release。部署或升级前先备份数据库、上传目录、
+服务端源码和环境文件；回滚说明见 `docs/release-and-rollback.md`。
 
 ## VPS 部署
 
@@ -74,6 +95,7 @@ python3 server/app.py
 - 生产环境 `.env`、SMTP 密码、Turnstile 密钥、管理员账号和密码
 - VPS 地址、SSH 凭据、部署脚本、服务器备份和运行日志
 - 正在运营的网站截图和 Open Graph 图片
+- Android Release keystore、签名密码、`key.properties` 与 R8 mapping 文件
 
 ## 第三方代码与许可
 

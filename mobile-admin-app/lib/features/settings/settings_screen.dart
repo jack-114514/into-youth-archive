@@ -1,0 +1,359 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/config/app_config.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/providers.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/update/update_service.dart';
+
+final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+  ref,
+) async {
+  final data = await ref.watch(apiClientProvider).getJson('/settings');
+  return (data['settings'] as Map?)?.cast<String, dynamic>() ?? const {};
+});
+
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({super.key, this.onVersionTap});
+
+  final VoidCallback? onVersionTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
+    return settings.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(child: Text(error.toString())),
+      data: (data) => _SettingsForm(initial: data, onVersionTap: onVersionTap),
+    );
+  }
+}
+
+class _SettingsForm extends ConsumerStatefulWidget {
+  const _SettingsForm({required this.initial, this.onVersionTap});
+
+  final Map<String, dynamic> initial;
+  final VoidCallback? onVersionTap;
+
+  @override
+  ConsumerState<_SettingsForm> createState() => _SettingsFormState();
+}
+
+class _SettingsFormState extends ConsumerState<_SettingsForm> {
+  late final TextEditingController _siteTitle;
+  late final TextEditingController _heroTitle;
+  late final TextEditingController _profile;
+  late final TextEditingController _timeline;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _siteTitle = TextEditingController(
+      text: widget.initial['site_title']?.toString() ?? '',
+    );
+    _heroTitle = TextEditingController(
+      text: widget.initial['hero_title']?.toString() ?? '',
+    );
+    _profile = TextEditingController(
+      text: widget.initial['profile_text']?.toString() ?? '',
+    );
+    _timeline = TextEditingController(
+      text: widget.initial['timeline_items']?.toString() ?? '[]',
+    );
+  }
+
+  @override
+  void dispose() {
+    _siteTitle.dispose();
+    _heroTitle.dispose();
+    _profile.dispose();
+    _timeline.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(apiClientProvider).patchJson('/settings', {
+        'site_title': _siteTitle.text,
+        'hero_title': _heroTitle.text,
+        'profile_text': _profile.text,
+        'timeline_items': _timeline.text,
+      });
+      ref.invalidate(settingsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('网站设置已保存')));
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _openAccountSecurity() async {
+    final uri = Uri.tryParse(AppConfig.adminWebUrl);
+    if (uri == null || uri.scheme != 'https') return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+      children: [
+        Text('系统设置', style: Theme.of(context).textTheme.headlineLarge),
+        const SizedBox(height: 8),
+        Text(
+          '这里只允许修改服务端白名单中的展示内容。',
+          style: TextStyle(color: AppTheme.ink.withValues(alpha: .58)),
+        ),
+        const SizedBox(height: 22),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('网站文字', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _siteTitle,
+                  decoration: const InputDecoration(labelText: '网站名称'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _heroTitle,
+                  decoration: const InputDecoration(labelText: '首页标题'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _profile,
+                  minLines: 4,
+                  maxLines: 8,
+                  decoration: const InputDecoration(labelText: '个人简介'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _timeline,
+                  minLines: 5,
+                  maxLines: 10,
+                  decoration: const InputDecoration(
+                    labelText: '青春时间线 JSON',
+                    helperText: '保留现有字段结构；后续补丁将升级为逐条编辑器',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _saving ? null : _save,
+                  icon: _saving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(_saving ? '正在保存…' : '保存网站设置'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(18),
+            leading: const Icon(Icons.verified_user_outlined),
+            title: const Text(
+              '账号安全',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: const Text('通过 Cloudflare 人机验证与邮箱验证码修改密码'),
+            trailing: const Icon(Icons.open_in_new_rounded),
+            onTap: _openAccountSecurity,
+          ),
+        ),
+        const SizedBox(height: 14),
+        const _UpdateCard(),
+        const SizedBox(height: 14),
+        _AboutCard(onVersionTap: widget.onVersionTap),
+      ],
+    );
+  }
+}
+
+class _AboutCard extends StatefulWidget {
+  const _AboutCard({this.onVersionTap});
+
+  final VoidCallback? onVersionTap;
+
+  @override
+  State<_AboutCard> createState() => _AboutCardState();
+}
+
+class _AboutCardState extends State<_AboutCard> {
+  late final Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: FutureBuilder<PackageInfo>(
+          future: _packageInfo,
+          builder: (context, snapshot) {
+            final package = snapshot.data;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('关于 App', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Semantics(
+                  button: true,
+                  label: 'App 版本，连续点击七次开启开发者模式',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: widget.onVersionTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded),
+                          const SizedBox(width: 12),
+                          const Expanded(child: Text('版本')),
+                          Text(
+                            package == null
+                                ? '…'
+                                : '${package.version}+${package.buildNumber}',
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _UpdateCard extends StatefulWidget {
+  const _UpdateCard();
+
+  @override
+  State<_UpdateCard> createState() => _UpdateCardState();
+}
+
+class _UpdateCardState extends State<_UpdateCard> {
+  bool _busy = false;
+  double? _progress;
+  String _message = '检查服务器 version.json，并校验 APK SHA-256';
+
+  Future<void> _check() async {
+    setState(() {
+      _busy = true;
+      _progress = null;
+      _message = '正在检查更新…';
+    });
+    try {
+      final service = UpdateService();
+      final result = await service.check();
+      if (!result.hasUpdate || result.manifest == null) {
+        setState(
+          () => _message =
+              '当前已是最新版本 ${result.currentVersion}+${result.currentBuild}',
+        );
+        return;
+      }
+      if (!mounted) return;
+      final manifest = result.manifest!;
+      final download = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !manifest.mandatory,
+        builder: (context) => AlertDialog(
+          title: Text('发现新版本 ${manifest.versionName}'),
+          content: Text(
+            manifest.notes.isEmpty ? '是否下载并校验安装包？' : manifest.notes,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context, false);
+                await service.openGithubFallback(manifest);
+              },
+              child: const Text('GitHub Release'),
+            ),
+            if (!manifest.mandatory)
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('稍后'),
+              ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('下载更新'),
+            ),
+          ],
+        ),
+      );
+      if (download != true) return;
+      final file = await service.downloadAndVerify(
+        manifest,
+        onProgress: (received, total) {
+          if (mounted && total > 0) {
+            setState(() => _progress = received / total);
+          }
+        },
+      );
+      await service.openInstaller(file);
+      setState(() => _message = 'APK 校验通过，已打开系统安装界面');
+    } catch (error) {
+      setState(() => _message = '更新失败：$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.system_update_alt_rounded),
+                const SizedBox(width: 12),
+                Text('App 更新', style: Theme.of(context).textTheme.titleLarge),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(_message),
+            if (_progress != null) ...[
+              const SizedBox(height: 10),
+              LinearProgressIndicator(value: _progress),
+            ],
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _check,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(_busy ? '正在处理…' : '检查更新'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
