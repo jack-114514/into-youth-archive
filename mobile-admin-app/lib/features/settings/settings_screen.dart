@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
@@ -8,6 +7,8 @@ import '../../core/network/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/update/update_service.dart';
+import 'about_app_card.dart';
+import 'permissions_screen.dart';
 
 final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
@@ -105,6 +106,12 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  void _openPermissions() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const PermissionsScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -181,69 +188,24 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
           ),
         ),
         const SizedBox(height: 14),
+        Card(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(18),
+            leading: const Icon(Icons.admin_panel_settings_outlined),
+            title: const Text(
+              '权限管理',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: const Text('查看网络、图片、视频和文件存储用途'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: _openPermissions,
+          ),
+        ),
+        const SizedBox(height: 14),
         const _UpdateCard(),
         const SizedBox(height: 14),
-        _AboutCard(onVersionTap: widget.onVersionTap),
+        AboutAppCard(onVersionTap: widget.onVersionTap),
       ],
-    );
-  }
-}
-
-class _AboutCard extends StatefulWidget {
-  const _AboutCard({this.onVersionTap});
-
-  final VoidCallback? onVersionTap;
-
-  @override
-  State<_AboutCard> createState() => _AboutCardState();
-}
-
-class _AboutCardState extends State<_AboutCard> {
-  late final Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: FutureBuilder<PackageInfo>(
-          future: _packageInfo,
-          builder: (context, snapshot) {
-            final package = snapshot.data;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('关于 App', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                Semantics(
-                  button: true,
-                  label: 'App 版本，连续点击七次开启开发者模式',
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: widget.onVersionTap,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.info_outline_rounded),
-                          const SizedBox(width: 12),
-                          const Expanded(child: Text('版本')),
-                          Text(
-                            package == null
-                                ? '…'
-                                : '${package.version}+${package.buildNumber}',
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
     );
   }
 }

@@ -46,7 +46,7 @@ and are intentionally not recorded here.
 - Release runtime values are injected with `--dart-define`.
 - Required definitions: `API_BASE_URL`, `UPDATE_MANIFEST_URL`,
   `GITHUB_RELEASES_URL`, `ADMIN_WEB_URL`, `PUBLIC_BASE_URL`, `GIT_COMMIT`,
-  `BUILD_TIME`, and `BUILD_TYPE`.
+  `BUILD_TIME`, `BUILD_TYPE`, and `API_ENVIRONMENT`.
 - Release signing is loaded from ignored `android/key.properties`.
 - The keystore is stored outside the Git working tree.
 - R8 minification and Android resource shrinking are enabled for release builds.
@@ -75,7 +75,8 @@ flutter build apk --release `
   --dart-define=PUBLIC_BASE_URL=https://example.invalid `
   --dart-define=GIT_COMMIT=<full-commit-sha> `
   --dart-define=BUILD_TIME=<UTC-ISO-8601> `
-  --dart-define=BUILD_TYPE=release
+  --dart-define=BUILD_TYPE=release `
+  --dart-define=API_ENVIRONMENT=production
 ```
 
 The example domains above are placeholders. Production values are supplied by

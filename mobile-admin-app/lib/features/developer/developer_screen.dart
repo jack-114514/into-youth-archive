@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../core/config/app_config.dart';
+import '../../core/config/app_diagnostics.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -10,6 +10,7 @@ final developerInfoProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
   final package = await PackageInfo.fromPlatform();
+  final diagnostics = AppDiagnostics.fromPackage(package);
   final session = await ref.watch(apiClientProvider).getJson('/session');
   final stopwatch = Stopwatch()..start();
   final dashboard = await ref.watch(apiClientProvider).getJson('/dashboard');
@@ -18,12 +19,14 @@ final developerInfoProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
       .watch(apiClientProvider)
       .getJson('/operation-logs', query: const {'limit': 40});
   return {
-    'version': package.version,
-    'version_code': package.buildNumber,
-    'package': package.packageName,
-    'commit': AppConfig.buildCommit,
-    'build_time': AppConfig.buildTime,
-    'build_type': AppConfig.buildType,
+    'app_name': diagnostics.appName,
+    'version': diagnostics.version,
+    'version_code': diagnostics.versionCode,
+    'package': diagnostics.packageName,
+    'commit': diagnostics.gitCommit,
+    'build_time': diagnostics.buildTime,
+    'build_type': diagnostics.buildType,
+    'api_environment': diagnostics.apiEnvironment,
     'api_latency_ms': stopwatch.elapsedMilliseconds,
     'session': session,
     'dashboard': dashboard,
@@ -60,6 +63,7 @@ class DeveloperScreen extends ConsumerWidget {
                 style: TextStyle(color: AppTheme.ink.withValues(alpha: .58)),
               ),
               const SizedBox(height: 20),
+              _InfoTile(label: 'App 名称', value: data['app_name'].toString()),
               _InfoTile(label: 'App 版本', value: data['version'].toString()),
               _InfoTile(
                 label: 'Version Code',
@@ -74,6 +78,10 @@ class DeveloperScreen extends ConsumerWidget {
               _InfoTile(
                 label: 'Build 类型',
                 value: data['build_type'].toString(),
+              ),
+              _InfoTile(
+                label: 'API Environment',
+                value: data['api_environment'].toString(),
               ),
               _InfoTile(label: 'API', value: '在线'),
               _InfoTile(label: 'API 延迟', value: '${data['api_latency_ms']} ms'),

@@ -22,6 +22,22 @@ class AppConfig {
     'BUILD_TYPE',
     defaultValue: 'debug',
   );
+  static const apiEnvironment = String.fromEnvironment(
+    'API_ENVIRONMENT',
+    defaultValue: 'development',
+  );
+
+  static Uri? get officialWebsiteUri => _httpsUri(publicBaseUrl);
+
+  static Uri? get githubProjectUri {
+    final releases = _httpsUri(githubReleasesUrl);
+    if (releases == null) return null;
+    final segments = [...releases.pathSegments];
+    if (segments.isNotEmpty && segments.last == 'releases') {
+      segments.removeLast();
+    }
+    return releases.replace(pathSegments: segments);
+  }
 
   static bool get isConfigured =>
       Uri.tryParse(apiBaseUrl)?.scheme == 'https' &&
@@ -35,5 +51,11 @@ class AppConfig {
       return null;
     }
     return base.resolve(value);
+  }
+
+  static Uri? _httpsUri(String value) {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return null;
+    return uri;
   }
 }
