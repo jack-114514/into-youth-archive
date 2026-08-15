@@ -1,5 +1,21 @@
 # INTO Youth Archive / 青春纪事
 
+<div align="center">
+
+## 📱 Android 管理 App
+
+### [⬇️ 点击这里直接下载最新版 APK（v1.0.0 Stable）](https://github.com/jack-114514/into-youth-archive/releases/download/v1.0.0/into-youth-admin-v1.0.0.apk)
+
+**不熟悉 GitHub 也没关系：点击上面的下载链接，下载完成后打开 APK 即可安装。**
+
+[查看版本说明与 SHA256 校验文件](https://github.com/jack-114514/into-youth-archive/releases/tag/v1.0.0)
+
+</div>
+
+> 安装提示：如果 Android 提示“禁止安装未知应用”，请按系统提示允许当前浏览器安装应用，然后再次打开下载好的 APK。当前稳定版已在 Android 11 真机验收通过。
+
+---
+
 一个面向校园青春记录的全栈开源网站。它包含玻璃拟态首页、3D 粒子记忆树、图片与短视频展厅、游客身份、评论与投稿，以及单管理员后台。
 
 此仓库是从正在运行的网站整理出的“公开源码版”。真实数据库、评论、投稿、头像、管理员账号、上传的照片/视频、备份和生产密钥均未包含；仓库中的图片是抽象占位图。
