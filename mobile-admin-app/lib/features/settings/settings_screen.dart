@@ -1,105 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
-import '../../core/network/api_exception.dart';
 import '../../core/platform/system_settings.dart';
-import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/update/update_service.dart';
 import 'about_app_card.dart';
 import 'permissions_screen.dart';
 
-final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
-  ref,
-) async {
-  final data = await ref.watch(apiClientProvider).getJson('/settings');
-  return (data['settings'] as Map?)?.cast<String, dynamic>() ?? const {};
-});
-
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.onVersionTap});
 
   final VoidCallback? onVersionTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    return settings.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text(error.toString())),
-      data: (data) => _SettingsForm(initial: data, onVersionTap: onVersionTap),
-    );
-  }
-}
-
-class _SettingsForm extends ConsumerStatefulWidget {
-  const _SettingsForm({required this.initial, this.onVersionTap});
-
-  final Map<String, dynamic> initial;
-  final VoidCallback? onVersionTap;
-
-  @override
-  ConsumerState<_SettingsForm> createState() => _SettingsFormState();
-}
-
-class _SettingsFormState extends ConsumerState<_SettingsForm> {
-  late final TextEditingController _siteTitle;
-  late final TextEditingController _heroTitle;
-  late final TextEditingController _profile;
-  late final TextEditingController _timeline;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _siteTitle = TextEditingController(
-      text: widget.initial['site_title']?.toString() ?? '',
-    );
-    _heroTitle = TextEditingController(
-      text: widget.initial['hero_title']?.toString() ?? '',
-    );
-    _profile = TextEditingController(
-      text: widget.initial['profile_text']?.toString() ?? '',
-    );
-    _timeline = TextEditingController(
-      text: widget.initial['timeline_items']?.toString() ?? '[]',
-    );
-  }
-
-  @override
-  void dispose() {
-    _siteTitle.dispose();
-    _heroTitle.dispose();
-    _profile.dispose();
-    _timeline.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      await ref.read(apiClientProvider).patchJson('/settings', {
-        'site_title': _siteTitle.text,
-        'hero_title': _heroTitle.text,
-        'profile_text': _profile.text,
-        'timeline_items': _timeline.text,
-      });
-      ref.invalidate(settingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('网站设置已保存')));
-      }
-    } on ApiException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
 
   Future<void> _openAccountSecurity() async {
     final uri = Uri.tryParse(AppConfig.adminWebUrl);
@@ -107,7 +19,7 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  void _openPermissions() {
+  void _openPermissions(BuildContext context) {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const PermissionsScreen()));
@@ -121,60 +33,10 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
         Text('系统设置', style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 8),
         Text(
-          '这里只允许修改服务端白名单中的展示内容。',
+          '账号、权限、更新和版本信息集中在这里。网站展示文字请使用独立的“网站文字”菜单。',
           style: TextStyle(color: AppTheme.ink.withValues(alpha: .58)),
         ),
         const SizedBox(height: 22),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('网站文字', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _siteTitle,
-                  decoration: const InputDecoration(labelText: '网站名称'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _heroTitle,
-                  decoration: const InputDecoration(labelText: '首页标题'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _profile,
-                  minLines: 4,
-                  maxLines: 8,
-                  decoration: const InputDecoration(labelText: '个人简介'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _timeline,
-                  minLines: 5,
-                  maxLines: 10,
-                  decoration: const InputDecoration(
-                    labelText: '青春时间线 JSON',
-                    helperText: '保留现有字段结构；后续补丁将升级为逐条编辑器',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save_outlined),
-                  label: Text(_saving ? '正在保存…' : '保存网站设置'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
         Card(
           child: ListTile(
             contentPadding: const EdgeInsets.all(18),
@@ -199,13 +61,13 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             ),
             subtitle: const Text('查看网络、图片、视频和文件存储用途'),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: _openPermissions,
+            onTap: () => _openPermissions(context),
           ),
         ),
         const SizedBox(height: 14),
         const _UpdateCard(),
         const SizedBox(height: 14),
-        AboutAppCard(onVersionTap: widget.onVersionTap),
+        AboutAppCard(onVersionTap: onVersionTap),
       ],
     );
   }

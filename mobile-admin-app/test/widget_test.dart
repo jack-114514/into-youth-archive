@@ -5,6 +5,7 @@ import 'package:into_youth_admin/app.dart';
 import 'package:into_youth_admin/core/config/app_diagnostics.dart';
 import 'package:into_youth_admin/features/settings/about_app_card.dart';
 import 'package:into_youth_admin/features/settings/permissions_screen.dart';
+import 'package:into_youth_admin/features/settings/website_text_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
@@ -90,5 +91,41 @@ void main() {
     expect(text.toLowerCase(), isNot(contains('token')));
     expect(text.toLowerCase(), isNot(contains('password')));
     expect(text.toLowerCase(), isNot(contains('secret')));
+  });
+
+  testWidgets('website text uses timeline cards and can clear safely', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          websiteSettingsProvider.overrideWith((ref) async {
+            return {
+              'site_title': 'INTO / 青春纪事',
+              'hero_title': '把青春留在风经过的地方',
+              'profile_text': '简介',
+              'timeline_items':
+                  '[{"date":"2025.06","title":"教室最后一排","text":"故事正文"}]',
+            };
+          }),
+        ],
+        child: const MaterialApp(home: Scaffold(body: WebsiteTextScreen())),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('网站文字'), findsOneWidget);
+    expect(find.text('第 1 段'), findsOneWidget);
+    expect(find.text('青春时间线 JSON'), findsNothing);
+
+    await tester.ensureVisible(find.byKey(const Key('clear-timeline')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('clear-timeline')));
+    await tester.pumpAndSettle();
+    expect(find.text('清空整条时间线？'), findsOneWidget);
+
+    await tester.tap(find.text('确认清空'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前没有时间线内容。你可以添加新条目，或直接保存为空时间线。'), findsOneWidget);
   });
 }

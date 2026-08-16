@@ -8,6 +8,7 @@ import '../dashboard/dashboard_screen.dart';
 import '../developer/developer_screen.dart';
 import '../media/media_screen.dart';
 import '../settings/settings_screen.dart';
+import '../settings/website_text_screen.dart';
 import '../submissions/submissions_screen.dart';
 
 class AdminShell extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     (label: '内容', icon: Icons.photo_library_outlined),
     (label: '评论', icon: Icons.forum_outlined),
     (label: '投稿', icon: Icons.inbox_outlined),
+    (label: '网站文字', icon: Icons.text_fields_rounded),
     (label: '设置', icon: Icons.tune_rounded),
   ];
 
@@ -35,6 +37,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     const MediaScreen(),
     const CommentsScreen(),
     const SubmissionsScreen(),
+    const WebsiteTextScreen(),
     SettingsScreen(onVersionTap: _handleVersionTap),
     if (_developerMode) const DeveloperScreen(),
   ];
@@ -94,7 +97,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             const Divider(),
             ListTile(
               onTap: () {
-                setState(() => _index = 4);
+                setState(() => _index = 5);
                 Navigator.pop(context);
               },
               leading: const Icon(Icons.info_outline_rounded),
@@ -131,7 +134,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 children: [
                   IconButton(
                     tooltip: '关于与版本',
-                    onPressed: () => setState(() => _index = 4),
+                    onPressed: () => setState(() => _index = 5),
                     icon: const Icon(Icons.info_outline_rounded),
                   ),
                   IconButton(
