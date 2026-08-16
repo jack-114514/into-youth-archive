@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/platform/system_settings.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/update/update_service.dart';
@@ -222,6 +223,40 @@ class _UpdateCardState extends State<_UpdateCard> {
   double? _progress;
   String _message = '检查服务器 version.json，并校验 APK SHA-256';
 
+  Future<bool> _ensureInstallPermission() async {
+    final allowed = await SystemSettings.canRequestPackageInstalls();
+    if (allowed) return true;
+    if (!mounted) return false;
+
+    final openSettings = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('允许安装更新包'),
+        content: const Text(
+          'Android 需要先允许本应用安装已校验的 APK 更新包。打开系统设置后，请开启“允许来自此来源的应用”。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('稍后'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('打开设置'),
+          ),
+        ],
+      ),
+    );
+
+    if (openSettings == true) {
+      await SystemSettings.openInstallPermissionSettings();
+      if (mounted) {
+        setState(() => _message = '请在系统设置中允许安装更新包，返回后再次点击即可继续安装。');
+      }
+    }
+    return false;
+  }
+
   Future<void> _check() async {
     setState(() {
       _busy = true;
@@ -240,35 +275,9 @@ class _UpdateCardState extends State<_UpdateCard> {
       }
       if (!mounted) return;
       final manifest = result.manifest!;
-      final download = await showDialog<bool>(
-        context: context,
-        barrierDismissible: !manifest.mandatory,
-        builder: (context) => AlertDialog(
-          title: Text('发现新版本 ${manifest.versionName}'),
-          content: Text(
-            manifest.notes.isEmpty ? '是否下载并校验安装包？' : manifest.notes,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, false);
-                await service.openGithubFallback(manifest);
-              },
-              child: const Text('GitHub Release'),
-            ),
-            if (!manifest.mandatory)
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('稍后'),
-              ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('下载更新'),
-            ),
-          ],
-        ),
-      );
-      if (download != true) return;
+      setState(() => _message = '发现新版本 ${manifest.versionName}，准备安装更新…');
+      if (!await _ensureInstallPermission()) return;
+      setState(() => _message = '正在下载并校验更新包…');
       final file = await service.downloadAndVerify(
         manifest,
         onProgress: (received, total) {
@@ -311,7 +320,7 @@ class _UpdateCardState extends State<_UpdateCard> {
             OutlinedButton.icon(
               onPressed: _busy ? null : _check,
               icon: const Icon(Icons.refresh_rounded),
-              label: Text(_busy ? '正在处理…' : '检查更新'),
+              label: Text(_busy ? '正在处理…' : '检查并安装更新'),
             ),
           ],
         ),

@@ -32,6 +32,12 @@ class PermissionsScreen extends StatelessWidget {
       purpose: '用于在 App 私有目录暂存压缩文件和已校验的更新包。',
       detail: '不需要共享存储权限，也不会访问其他 App 的文件。',
     ),
+    PermissionDescription(
+      name: '安装更新包',
+      icon: Icons.install_mobile_rounded,
+      purpose: '用于在下载并校验新版 APK 后打开系统安装界面。',
+      detail: 'Android 会要求您手动确认安装；App 不能静默安装或绕过系统确认。',
+    ),
   ];
 
   Future<void> _openSettings(BuildContext context) async {
