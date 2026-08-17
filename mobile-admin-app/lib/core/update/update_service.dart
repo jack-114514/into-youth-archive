@@ -17,6 +17,17 @@ String _stringValue(Map<String, dynamic> json, String modern, String legacy) =>
 int _intValue(Map<String, dynamic> json, String modern, String legacy) =>
     int.tryParse((json[modern] ?? json[legacy])?.toString() ?? '') ?? 0;
 
+Map<String, dynamic> decodeUpdateManifestPayload(Object? payload) {
+  Object? decoded = payload;
+  if (payload is String) {
+    decoded = jsonDecode(payload);
+  }
+  if (decoded is! Map) {
+    throw const FormatException('更新清单不是有效的 JSON 对象');
+  }
+  return decoded.map((key, value) => MapEntry(key.toString(), value));
+}
+
 class DeltaPatchManifest {
   const DeltaPatchManifest({
     required this.fromVersionCode,
@@ -157,10 +168,13 @@ class UpdateService {
         't': DateTime.now().millisecondsSinceEpoch.toString(),
       },
     );
-    final response = await _dio.get<Map<String, dynamic>>(
+    final response = await _dio.get<String>(
       cacheBusted.toString(),
+      options: Options(responseType: ResponseType.plain),
     );
-    final manifest = UpdateManifest.fromJson(response.data ?? const {});
+    final manifest = UpdateManifest.fromJson(
+      decodeUpdateManifestPayload(response.data),
+    );
     return UpdateCheckResult(
       currentVersion: package.version,
       currentBuild: currentBuild,

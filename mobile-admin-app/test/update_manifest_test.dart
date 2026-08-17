@@ -2,6 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:into_youth_admin/core/update/update_service.dart';
 
 void main() {
+  test('decodes a GitHub release manifest returned as plain text', () {
+    final payload = decodeUpdateManifestPayload(
+      '{"version":"1.0.6","versionCode":7,"patches":[]}',
+    );
+
+    expect(payload['version'], '1.0.6');
+    expect(payload['versionCode'], 7);
+  });
+
+  test('decodes an already parsed manifest map', () {
+    final payload = decodeUpdateManifestPayload({
+      'version': '1.0.6',
+      'versionCode': 7,
+    });
+
+    expect(payload['version'], '1.0.6');
+    expect(payload['versionCode'], 7);
+  });
+
+  test('rejects a non-object manifest payload', () {
+    expect(
+      () => decodeUpdateManifestPayload('[1,2,3]'),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('selects only the patch matching the installed version code', () {
     final hashA = List.filled(64, 'a').join();
     final hashB = List.filled(64, 'b').join();

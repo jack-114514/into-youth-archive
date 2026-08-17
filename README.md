@@ -4,7 +4,7 @@
 
 ## 📱 Android 管理 App
 
-### [⬇️ 点击这里直接下载最新版 APK（v1.0.5）](https://github.com/jack-114514/into-youth-archive/releases/latest/download/into-youth-admin-v1.0.5.apk)
+### [⬇️ 点击这里直接下载最新版 APK（v1.0.6）](https://github.com/jack-114514/into-youth-archive/releases/latest/download/into-youth-admin-v1.0.6.apk)
 
 **不熟悉 GitHub 也没关系：点击上面的下载链接，下载完成后打开 APK 即可安装。**
 
