@@ -38,5 +38,10 @@ class TokenStore {
     ]);
   }
 
-  Future<void> clear() => _storage.deleteAll();
+  Future<void> clear() async {
+    await Future.wait([
+      _storage.delete(key: _accessKey),
+      _storage.delete(key: _refreshKey),
+    ]);
+  }
 }

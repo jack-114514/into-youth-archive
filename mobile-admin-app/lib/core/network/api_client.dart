@@ -31,8 +31,15 @@ class ApiClient {
       await getJson('/session', retry: false);
       return true;
     } on ApiException catch (error) {
-      if (error.statusCode != 401) rethrow;
-      return _refresh();
+      // A temporary network/server problem must not turn a normal app restart
+      // into a logout. Keep the securely stored session and let the individual
+      // screens retry their requests after the app has opened.
+      if (error.statusCode != 401) return true;
+
+      await _refresh();
+      // Invalid/expired refresh credentials are cleared by _performRefresh.
+      // Transient refresh failures keep the local credentials for a later try.
+      return _tokens != null;
     }
   }
 
@@ -165,9 +172,14 @@ class ApiClient {
       );
       await _acceptTokens(response.data ?? const {});
       return true;
-    } on DioException {
-      _tokens = null;
-      await _tokenStore.clear();
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      final credentialsRejected =
+          statusCode == 400 || statusCode == 401 || statusCode == 403;
+      if (credentialsRejected) {
+        _tokens = null;
+        await _tokenStore.clear();
+      }
       return false;
     }
   }

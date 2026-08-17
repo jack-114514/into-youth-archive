@@ -53,6 +53,32 @@ class _AdminShellState extends ConsumerState<AdminShell> {
         .showSnackBar(const SnackBar(content: Text('开发者模式已启用')));
   }
 
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('退出登录？'),
+        content: const Text(
+          '退出登录会清除本机保存的登录状态，下次打开需要重新登录。'
+          '如果只是想关闭 App，请直接返回桌面。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('保持登录'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确认退出'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(authControllerProvider.notifier).logout();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 820;
@@ -69,8 +95,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
           actions: [
             IconButton(
               tooltip: '退出登录',
-              onPressed: () =>
-                  ref.read(authControllerProvider.notifier).logout(),
+              onPressed: _confirmLogout,
               icon: const Icon(Icons.logout_rounded),
             ),
           ],
@@ -139,8 +164,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                   ),
                   IconButton(
                     tooltip: '退出登录',
-                    onPressed: () =>
-                        ref.read(authControllerProvider.notifier).logout(),
+                    onPressed: _confirmLogout,
                     icon: const Icon(Icons.logout_rounded),
                   ),
                   const SizedBox(height: 16),
