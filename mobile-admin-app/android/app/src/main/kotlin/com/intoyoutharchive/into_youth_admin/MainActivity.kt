@@ -1,6 +1,8 @@
 package com.intoyoutharchive.into_youth_admin
 
 import android.content.Intent
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -24,6 +26,8 @@ class MainActivity : FlutterActivity() {
                     )
                 }
                 "openInstallPermissionSettings" -> openInstallPermissionSettings(result)
+                "installedApkPath" -> result.success(applicationInfo.sourceDir)
+                "verifyApkForUpdate" -> verifyApkForUpdate(call.arguments, result)
                 else -> result.notImplemented()
             }
         }
@@ -68,5 +72,50 @@ class MainActivity : FlutterActivity() {
                 result.error("settings_unavailable", fallbackError.message ?: error.message, null)
             }
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun verifyApkForUpdate(arguments: Any?, result: MethodChannel.Result) {
+        try {
+            val values = arguments as? Map<*, *> ?: error("Missing arguments")
+            val apkPath = values["apkPath"] as? String ?: error("Missing apkPath")
+            val expectedVersionCode = (values["versionCode"] as? Number)?.toLong()
+                ?: error("Missing versionCode")
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                PackageManager.GET_SIGNING_CERTIFICATES
+            } else {
+                PackageManager.GET_SIGNATURES
+            }
+            val archive = packageManager.getPackageArchiveInfo(apkPath, flags)
+                ?: error("APK package information is unavailable")
+            val installed = packageManager.getPackageInfo(packageName, flags)
+            val archiveVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                archive.longVersionCode
+            } else {
+                archive.versionCode.toLong()
+            }
+            val valid = archive.packageName == packageName &&
+                archiveVersion == expectedVersionCode &&
+                signingFingerprints(archive) == signingFingerprints(installed)
+            result.success(valid)
+        } catch (error: Exception) {
+            result.error("apk_verification_failed", error.message, null)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun signingFingerprints(info: PackageInfo): Set<String> {
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.signingInfo?.apkContentsSigners ?: emptyArray()
+        } else {
+            info.signatures ?: emptyArray()
+        }
+        return signatures.map { signature ->
+            java.security.MessageDigest.getInstance("SHA-256")
+                .digest(signature.toByteArray())
+                .joinToString("") { byte ->
+                    (byte.toInt() and 0xff).toString(16).padStart(2, '0')
+                }
+        }.toSet()
     }
 }

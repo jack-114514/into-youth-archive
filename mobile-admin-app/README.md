@@ -28,3 +28,19 @@ Release 签名文件只保存在构建机，通过 `android/key.properties` 引�
 ## 回滚边界
 
 本目录是新增且独立的 App 工程。删除本目录即可撤销 App 本地源码；服务端 API 使用独立 `/api/v1/admin-app` 命名空间，不替换现有网站接口。
+
+## 差分更新
+
+从 `v1.0.3` 起，App 支持读取 `version.json` 中可选的 `patches` 数组。命中当前
+Version Code 时优先下载差分包，在设备本地重建完整签名 APK。安装前依次校验旧
+APK、差分包、目标 APK 的 SHA-256，以及目标包名、Version Code 和签名证书；任何
+一步失败都会自动回退到完整 APK。
+
+使用仓库内仅依赖 Python 标准库的工具生成差分包：
+
+```powershell
+python tool/generate_delta_patch.py old.apk new.apk update.iydpatch
+```
+
+差分更新只减少网络下载量。Android 最终仍通过系统安装器安装重建后的完整 APK，
+不会绕过系统安全机制。

@@ -140,16 +140,24 @@ class _UpdateCardState extends State<_UpdateCard> {
       setState(() => _message = '发现新版本 ${manifest.versionName}，准备安装更新…');
       if (!await _ensureInstallPermission()) return;
       setState(() => _message = '正在下载并校验更新包…');
-      final file = await service.downloadAndVerify(
+      final prepared = await service.downloadAndVerify(
         manifest,
+        currentVersionCode: result.currentBuild,
         onProgress: (received, total) {
           if (mounted && total > 0) {
             setState(() => _progress = received / total);
           }
         },
+        onMessage: (message) {
+          if (mounted) setState(() => _message = message);
+        },
       );
-      await service.openInstaller(file);
-      setState(() => _message = 'APK 校验通过，已打开系统安装界面');
+      await service.openInstaller(prepared.apk);
+      setState(
+        () => _message = prepared.usedDelta
+            ? '差分包校验和重建成功，已打开系统安装界面'
+            : '完整 APK 校验成功，已打开系统安装界面',
+      );
     } catch (error) {
       setState(() => _message = '更新失败：$error');
     } finally {

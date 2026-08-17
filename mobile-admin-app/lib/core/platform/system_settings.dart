@@ -17,4 +17,20 @@ class SystemSettings {
   static Future<void> openInstallPermissionSettings() async {
     await _channel.invokeMethod<void>('openInstallPermissionSettings');
   }
+
+  static Future<String?> installedApkPath() async {
+    final path = await _channel.invokeMethod<String>('installedApkPath');
+    return path == null || path.isEmpty ? null : path;
+  }
+
+  static Future<bool> verifyApkForUpdate(
+    String apkPath,
+    int expectedVersionCode,
+  ) async {
+    return await _channel.invokeMethod<bool>('verifyApkForUpdate', {
+          'apkPath': apkPath,
+          'versionCode': expectedVersionCode,
+        }) ??
+        false;
+  }
 }
