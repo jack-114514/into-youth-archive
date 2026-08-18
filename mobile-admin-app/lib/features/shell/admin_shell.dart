@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/config/app_config.dart';
 import '../auth/auth_controller.dart';
 import '../comments/comments_screen.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -9,6 +10,7 @@ import '../developer/developer_screen.dart';
 import '../media/media_screen.dart';
 import '../settings/settings_screen.dart';
 import '../settings/website_text_screen.dart';
+import '../settings/website_customization_screen.dart';
 import '../submissions/submissions_screen.dart';
 
 class AdminShell extends ConsumerStatefulWidget {
@@ -29,6 +31,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     (label: '评论', icon: Icons.forum_outlined),
     (label: '投稿', icon: Icons.inbox_outlined),
     (label: '网站文字', icon: Icons.text_fields_rounded),
+    (label: '个性化', icon: Icons.palette_outlined),
     (label: '设置', icon: Icons.tune_rounded),
   ];
 
@@ -38,6 +41,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     const CommentsScreen(),
     const SubmissionsScreen(),
     const WebsiteTextScreen(),
+    const WebsiteCustomizationScreen(),
     SettingsScreen(onVersionTap: _handleVersionTap),
     if (_developerMode) const DeveloperScreen(),
   ];
@@ -81,6 +85,37 @@ class _AdminShellState extends ConsumerState<AdminShell> {
 
   @override
   Widget build(BuildContext context) {
+    final brandSettings =
+        ref.watch(websiteSettingsProvider).asData?.value ??
+        const <String, dynamic>{};
+    final appName =
+        brandSettings['app_display_name']?.toString().trim().isNotEmpty == true
+        ? brandSettings['app_display_name'].toString().trim()
+        : 'INTO 青春管理';
+    final rawLogo = brandSettings['app_logo_url']?.toString().trim() ?? '';
+    final logoUrl = rawLogo.isEmpty
+        ? ''
+        : rawLogo.startsWith('http')
+        ? rawLogo
+        : '${AppConfig.publicBaseUrl}${rawLogo.startsWith('/') ? '' : '/'}$rawLogo';
+    Widget brandAvatar() => CircleAvatar(
+      backgroundColor: AppTheme.ink,
+      foregroundColor: AppTheme.acid,
+      child: logoUrl.isEmpty
+          ? const Text('IN', style: TextStyle(fontWeight: FontWeight.w900))
+          : ClipOval(
+              child: Image.network(
+                logoUrl,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Text(
+                  'IN',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+    );
     final wide = MediaQuery.sizeOf(context).width >= 820;
     final destinations = [
       ..._destinations,
@@ -107,11 +142,22 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             Navigator.pop(context);
           },
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(28, 24, 20, 12),
-              child: Text(
-                'INTO / 青春管理',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(28, 24, 20, 12),
+              child: Row(
+                children: [
+                  brandAvatar(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      appName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             for (final destination in destinations)
@@ -122,7 +168,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             const Divider(),
             ListTile(
               onTap: () {
-                setState(() => _index = 5);
+                setState(() => _index = 6);
                 Navigator.pop(context);
               },
               leading: const Icon(Icons.info_outline_rounded),
@@ -142,16 +188,9 @@ class _AdminShellState extends ConsumerState<AdminShell> {
             onDestinationSelected: (value) => setState(() => _index = value),
             extended: MediaQuery.sizeOf(context).width >= 1080,
             backgroundColor: const Color(0xFFF5F8F1),
-            leading: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 18),
-              child: CircleAvatar(
-                backgroundColor: AppTheme.ink,
-                foregroundColor: AppTheme.acid,
-                child: Text(
-                  'IN',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-              ),
+            leading: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              child: Tooltip(message: appName, child: brandAvatar()),
             ),
             trailing: Expanded(
               child: Column(
@@ -159,7 +198,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                 children: [
                   IconButton(
                     tooltip: '关于与版本',
-                    onPressed: () => setState(() => _index = 5),
+                    onPressed: () => setState(() => _index = 6),
                     icon: const Icon(Icons.info_outline_rounded),
                   ),
                   IconButton(

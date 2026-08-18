@@ -10,6 +10,18 @@ const OpenSourceVisitorLogin = lazy(() => import("./OpenSourceVisitorLogin"));
 type Visitor = { name: string; avatar: string };
 type Memory = { id?: number; url: string; video_url?: string; title: string; meta: string; body?: string; taken_at?: string; sort_order?: number; show_on_home?: number; show_in_3d?: number };
 type TimelineItem = { date: string; title: string; text: string };
+type EffectLevel = "off" | "low" | "normal" | "high";
+type SiteSettings = {
+  site_title: string; browser_title: string; site_icon_url: string; nav_logo_url: string;
+  hero_title: string; profile_text: string; hero_primary_button: string; hero_secondary_button: string;
+  primary_color: string; accent_color: string; background_color: string; color_mode: string;
+  home_background_url: string; home_item_limit: string; show_stories: string; show_timeline: string;
+  show_about: string; show_comments: string; corner_radius: string; glass_opacity: string;
+  motion_intensity: string; particle_level: string; star_level: string; snow_level: string;
+  quality_3d: string; auto_rotate_speed: string; music_default_on: string; card_style: string;
+  font_preset: string; github_url: string; contact_email: string; mobile_effect_level: string;
+  timeline_items: string;
+};
 type CommentItem = {
   id: number;
   parent_id?: number | null;
@@ -29,6 +41,36 @@ const defaultTimelineItems: TimelineItem[] = [
   { date: "2025.06", title: "教室最后一排", text: "黑板上的倒计时越来越小，想说的话却越来越多。" },
   { date: "NOW", title: "故事仍在继续", text: "今天也值得记录。等未来回头看，它一定很亮。" },
 ];
+
+const defaultSettings: SiteSettings = {
+  site_title: "INTO / 青春纪事", browser_title: "INTO / 青春纪事", site_icon_url: "/favicon.svg", nav_logo_url: "",
+  hero_title: "把青春留在风经过的地方", profile_text: "一个正在校园里认真生活的普通人。喜欢傍晚六点的风、窗边的位置，还有把一闪而过的瞬间变成很久很久的记忆。",
+  hero_primary_button: "开始翻阅", hero_secondary_button: "进入 3D 记忆河", primary_color: "#102d2d", accent_color: "#d9ff80",
+  background_color: "#eff6ed", color_mode: "light", home_background_url: "", home_item_limit: "4", show_stories: "1", show_timeline: "1",
+  show_about: "1", show_comments: "1", corner_radius: "18", glass_opacity: "0.68", motion_intensity: "normal", particle_level: "normal",
+  star_level: "normal", snow_level: "normal", quality_3d: "balanced", auto_rotate_speed: "0.22", music_default_on: "0", card_style: "glass",
+  font_preset: "modern", github_url: "https://github.com/jack-114514/into-youth-archive", contact_email: "hello@intovalabs.com",
+  mobile_effect_level: "normal", timeline_items: JSON.stringify(defaultTimelineItems),
+};
+
+function settingBoolean(value: unknown, fallback = true) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return value === true || value === 1 || value === "1" || value === "true";
+}
+
+function settingNumber(value: unknown, fallback: number, min: number, max: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+}
+
+function effectLevel(value: unknown): EffectLevel {
+  return value === "off" || value === "low" || value === "high" ? value : "normal";
+}
+
+function safeColor(value: unknown, fallback: string) {
+  const candidate = String(value || "");
+  return /^#[0-9a-f]{6}$/i.test(candidate) ? candidate : fallback;
+}
 
 function parseTimelineItems(value: unknown): TimelineItem[] {
   try {
@@ -97,7 +139,7 @@ function MemoryVisual({ memory, alt }: { memory: Memory; alt: string }) {
     : <img src={memory.url} alt={alt} />;
 }
 
-function ParticleField() {
+function ParticleField({ level, mobileLevel }: { level: EffectLevel; mobileLevel: EffectLevel }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -106,7 +148,8 @@ function ParticleField() {
     let frame = 0;
     let width = 0;
     let height = 0;
-    const dots = Array.from({ length: 58 }, (_, index) => ({ x: (index * 83) % 1200, y: (index * 139) % 800, r: 1 + index % 3, speed: .09 + (index % 5) * .025 }));
+    const density = { off: 0, low: .48, normal: 1, high: 1.35 }[level] * { off: .35, low: .7, normal: 1, high: 1.15 }[mobileLevel];
+    const dots = Array.from({ length: Math.round(58 * density) }, (_, index) => ({ x: (index * 83) % 1200, y: (index * 139) % 800, r: 1 + index % 3, speed: .09 + (index % 5) * .025 }));
     const resize = () => {
       const ratio = Math.min(devicePixelRatio || 1, 1.7);
       width = canvas.clientWidth; height = canvas.clientHeight;
@@ -129,7 +172,7 @@ function ParticleField() {
     };
     resize(); draw(); window.addEventListener("resize", resize);
     return () => { cancelAnimationFrame(frame); window.removeEventListener("resize", resize); };
-  }, []);
+  }, [level, mobileLevel]);
   return <canvas ref={canvasRef} className="ix-particle-field" aria-hidden="true" />;
 }
 
@@ -201,7 +244,7 @@ function LegacyMemoryRiver({ memories, onClose }: { memories: Memory[]; onClose:
   );
 }
 
-function MemoryRiver({ memories, onClose, origin }: { memories: Memory[]; onClose: () => void; origin: { x: number; y: number } }) {
+function MemoryRiver({ memories, onClose, origin, preferences }: { memories: Memory[]; onClose: () => void; origin: { x: number; y: number }; preferences: { quality3d: string; starLevel: EffectLevel; snowLevel: EffectLevel; autoRotateSpeed: number; mobileEffects: EffectLevel } }) {
   const [phase, setPhase] = useState<"expanding" | "loading" | "leaving" | "blackout" | "done">("expanding");
   const [sceneReady, setSceneReady] = useState(false);
   const [revealStarted, setRevealStarted] = useState(false);
@@ -239,7 +282,7 @@ function MemoryRiver({ memories, onClose, origin }: { memories: Memory[]; onClos
     return () => window.clearTimeout(revealTimer);
   }, [phase]);
   const entryStyle = { "--entry-x": `${origin.x}px`, "--entry-y": `${origin.y}px` } as CSSProperties;
-  return <>{phase !== "expanding" && <Suspense fallback={null}><MemoryGalaxy memories={memories} onClose={onClose} revealStarted={revealStarted} onSceneReady={() => setSceneReady(true)} /></Suspense>}{phase !== "done" && <div className={`ix-galaxy-entry is-${phase}`} style={entryStyle}><div className="ix-galaxy-entry-copy"><span>MEMORY ARCHIVE / AWAKENING</span><strong>我们把散落的光，重新连成一棵树</strong><small>请稍候，记忆正在苏醒</small></div></div>}</>;
+  return <>{phase !== "expanding" && <Suspense fallback={null}><MemoryGalaxy memories={memories} onClose={onClose} revealStarted={revealStarted} onSceneReady={() => setSceneReady(true)} preferences={preferences} /></Suspense>}{phase !== "done" && <div className={`ix-galaxy-entry is-${phase}`} style={entryStyle}><div className="ix-galaxy-entry-copy"><span>MEMORY ARCHIVE / AWAKENING</span><strong>我们把散落的光，重新连成一棵树</strong><small>请稍候，记忆正在苏醒</small></div></div>}</>;
 }
 
 export default function ImmersiveHome() {
@@ -253,7 +296,7 @@ export default function ImmersiveHome() {
   const [memories, setMemories] = useState(defaultMemories);
   const [comments, setComments] = useState(fallbackComments);
   const [serverOnline, setServerOnline] = useState(false);
-  const [settings, setSettings] = useState({ site_title: "INTO / 青春纪事", hero_title: "把青春留在风经过的地方", profile_text: "一个正在校园里认真生活的普通人。喜欢傍晚六点的风、窗边的位置，还有把一闪而过的瞬间变成很久很久的记忆。", timeline_items: JSON.stringify(defaultTimelineItems) });
+  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [riverOpen, setRiverOpen] = useState(false);
   const [riverOrigin, setRiverOrigin] = useState({ x: 0, y: 0 });
   const [soundOn, setSoundOn] = useState(false);
@@ -289,8 +332,40 @@ export default function ImmersiveHome() {
   const homepageMemories = useMemo(() => displayMemories.filter((memory) => Number(memory.show_on_home ?? 1) === 1), [displayMemories]);
   const threeDimensionalMemories = useMemo(() => displayMemories.filter((memory) => Number(memory.show_in_3d ?? 1) === 1), [displayMemories]);
   const heroMemories = homepageMemories.length ? homepageMemories : defaultMemories.slice(0, 1);
-  const visibleStories = homepageMemories.slice(0, showAllStories ? homepageMemories.length : 4);
+  const homeItemLimit = Math.round(settingNumber(settings.home_item_limit, 4, 1, 24));
+  const visibleStories = homepageMemories.slice(0, showAllStories ? homepageMemories.length : homeItemLimit);
   const timelineItems = useMemo(() => parseTimelineItems(settings.timeline_items), [settings.timeline_items]);
+  const primaryColor = safeColor(settings.primary_color, defaultSettings.primary_color);
+  const accentColor = safeColor(settings.accent_color, defaultSettings.accent_color);
+  const backgroundColor = safeColor(settings.background_color, defaultSettings.background_color);
+  const siteStyle = {
+    "--ink": primaryColor,
+    "--deep": primaryColor,
+    "--lime": accentColor,
+    "--paper": backgroundColor,
+    "--site-radius": `${settingNumber(settings.corner_radius, 18, 4, 36)}px`,
+    "--glass-alpha": settingNumber(settings.glass_opacity, .68, .2, .95),
+    "--home-background": settings.home_background_url ? `url(${JSON.stringify(settings.home_background_url)})` : "none",
+  } as CSSProperties;
+  const galaxyPreferences = {
+    quality3d: settings.quality_3d,
+    starLevel: effectLevel(settings.star_level),
+    snowLevel: effectLevel(settings.snow_level),
+    autoRotateSpeed: settingNumber(settings.auto_rotate_speed, .22, 0, 1.2),
+    mobileEffects: effectLevel(settings.mobile_effect_level),
+  };
+  const heroTitleParts = settings.hero_title.includes("风经过")
+    ? settings.hero_title.split("风经过")
+    : [settings.hero_title, ""];
+  const primaryTarget = settingBoolean(settings.show_stories)
+    ? "#stories"
+    : settingBoolean(settings.show_timeline)
+    ? "#timeline"
+    : settingBoolean(settings.show_about)
+    ? "#about"
+    : settingBoolean(settings.show_comments)
+    ? "#comments"
+    : "#home";
 
   useEffect(() => {
     const preloadTimer = window.setTimeout(() => { void loadMemoryGalaxy(); }, 900);
@@ -330,6 +405,17 @@ export default function ImmersiveHome() {
   }, [toast]);
 
   useEffect(() => {
+    document.title = settings.browser_title || settings.site_title || defaultSettings.browser_title;
+    let icon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.href = settings.site_icon_url || defaultSettings.site_icon_url;
+  }, [settings.browser_title, settings.site_icon_url, settings.site_title]);
+
+  useEffect(() => {
     if (!introLoading) return;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const duration = reducedMotion ? 900 : 3100;
@@ -361,6 +447,7 @@ export default function ImmersiveHome() {
 
   const beginIntroJourney = () => {
     if (introLoading) return;
+    if (settingBoolean(settings.music_default_on, false) && !soundOn) toggleSound();
     setIntroProgress(0);
     setIntroLoading(true);
   };
@@ -429,32 +516,32 @@ export default function ImmersiveHome() {
   };
 
   return (
-    <main className="ix-site">
-      <ParticleField />
+    <main className="ix-site" style={siteStyle} data-theme={settings.color_mode} data-card={settings.card_style} data-font={settings.font_preset} data-motion={settings.motion_intensity}>
+      <ParticleField level={effectLevel(settings.particle_level)} mobileLevel={effectLevel(settings.mobile_effect_level)} />
       <div className="ix-noise" aria-hidden="true" />
       <header className="ix-header">
-        <a href="#home" className="ix-brand"><span>IN</span><strong>{settings.site_title}</strong></a>
-        <nav className={menu ? "open" : ""}><a href="#stories">校园片段</a><a href="#timeline">青春时间线</a><a href="#about">关于我</a><a href="#comments">留言操场</a></nav>
+        <a href="#home" className="ix-brand"><span>{settings.nav_logo_url ? <img src={settings.nav_logo_url} alt="" /> : "IN"}</span><strong>{settings.site_title}</strong></a>
+        <nav className={menu ? "open" : ""}>{settingBoolean(settings.show_stories) && <a href="#stories">校园片段</a>}{settingBoolean(settings.show_timeline) && <a href="#timeline">青春时间线</a>}{settingBoolean(settings.show_about) && <a href="#about">关于我</a>}{settingBoolean(settings.show_comments) && <a href="#comments">留言操场</a>}</nav>
         <div className="ix-header-actions"><button onClick={toggleSound} aria-label="开关环境音乐">{soundOn ? "♫" : "♩"}</button><button className="ix-identity" onClick={() => setGate(true)}>{visitor ? <><span>{visitor.avatar.startsWith("/") ? <img src={visitor.avatar} alt="头像" /> : visitor.avatar}</span>{visitor.name}</> : "游客证"}</button><button className="ix-menu" onClick={() => setMenu(!menu)}>✦</button></div>
       </header>
 
       <section className="ix-hero" id="home">
-        <div className="ix-hero-copy"><p className="ix-kicker"><span /> INTO THE DAYS WE SHINE</p><h1>{settings.hero_title.split("风经过")[0]}<em>风经过{settings.hero_title.split("风经过")[1] || "的地方"}</em></h1><p>这里收藏校园里的日常、朋友、黄昏与心事。<br />愿每一次打开，都像重新走进那年夏天。</p><div className="ix-hero-buttons"><a href="#stories">开始翻阅 <span>↘</span></a><button onClick={openMemoryRiver}>进入 3D 记忆河 <span>✦</span></button></div><div className="ix-counter"><div><strong>27</strong><span>青春片段</span></div><div><strong>{comments.length + 1204}</strong><span>次温柔路过</span></div><div><strong>NOW</strong><span>故事仍在继续</span></div></div></div>
+        <div className="ix-hero-copy"><p className="ix-kicker"><span /> INTO THE DAYS WE SHINE</p><h1>{heroTitleParts[0]}{heroTitleParts[1] !== "" && <em>风经过{heroTitleParts[1]}</em>}</h1><p>这里收藏校园里的日常、朋友、黄昏与心事。<br />愿每一次打开，都像重新走进那年夏天。</p><div className="ix-hero-buttons"><a href={primaryTarget}>{settings.hero_primary_button} <span>↘</span></a><button onClick={openMemoryRiver}>{settings.hero_secondary_button} <span>✦</span></button></div><div className="ix-counter"><div><strong>{memories.length}</strong><span>青春片段</span></div><div><strong>{comments.length}</strong><span>次温柔路过</span></div><div><strong>NOW</strong><span>故事仍在继续</span></div></div></div>
         <div className="ix-campus-orbit"><div className="ix-orbit-ring ring-a" /><div className="ix-orbit-ring ring-b" /><div className="ix-orbit-core"><MemoryVisual memory={heroMemories[0]} alt="校园青春照片" /><span>SUMMER<br />MEMORY</span></div>{heroMemories.slice(1, 4).map((memory, index) => <div className={`ix-orbit-photo orbit-${index + 1}`} key={memory.url}><MemoryVisual memory={memory} alt={memory.title} /></div>)}<div className="ix-orbit-note">请把今天<br /><em>也记下来</em></div></div>
         <a className="ix-scroll" href="#stories">SCROLL <i /></a>
       </section>
 
-      <section className="ix-stories" id="stories"><div className="ix-section-head"><div><span className="ix-number">01</span><p className="ix-kicker"><span /> MEMORY ARCHIVE</p></div><h2>记忆有自己的<br /><em>显影方式</em></h2><p>没有宏大的故事，只有被认真收藏的普通日子。每一张照片，都是时间偷偷留下的证词。</p></div><div className="ix-story-grid">{visibleStories.map((memory, index) => <article key={`${memory.url}-${index}`} className={`ix-story-card tone-${index % 4 + 1}`}><div><MemoryVisual memory={memory} alt={memory.title} /><span>{String(index + 1).padStart(2, "0")}</span></div><footer><section><h3>{memory.title}</h3><p>{memoryMeta(memory)}</p></section><button onClick={openMemoryRiver}>↗</button></footer></article>)}</div>{homepageMemories.length > 4 && <button className="ix-story-more" type="button" onClick={() => setShowAllStories((current) => !current)}>{showAllStories ? "收起部分内容" : `展开更多 · ${homepageMemories.length - 4}`}</button>}</section>
+      {settingBoolean(settings.show_stories) && <section className="ix-stories" id="stories"><div className="ix-section-head"><div><span className="ix-number">01</span><p className="ix-kicker"><span /> MEMORY ARCHIVE</p></div><h2>记忆有自己的<br /><em>显影方式</em></h2><p>没有宏大的故事，只有被认真收藏的普通日子。每一张照片，都是时间偷偷留下的证词。</p></div><div className="ix-story-grid">{visibleStories.map((memory, index) => <article key={`${memory.url}-${index}`} className={`ix-story-card tone-${index % 4 + 1}`}><div><MemoryVisual memory={memory} alt={memory.title} /><span>{String(index + 1).padStart(2, "0")}</span></div><footer><section><h3>{memory.title}</h3><p>{memoryMeta(memory)}</p></section><button onClick={openMemoryRiver}>↗</button></footer></article>)}</div>{homepageMemories.length > homeItemLimit && <button className="ix-story-more" type="button" onClick={() => setShowAllStories((current) => !current)}>{showAllStories ? "收起部分内容" : `展开更多 · ${homepageMemories.length - homeItemLimit}`}</button>}</section>}
 
       <section className="ix-portal" onPointerMove={movePortalSpotlight} onPointerLeave={(event) => { event.currentTarget.style.setProperty("--spot-x", "50%"); event.currentTarget.style.setProperty("--spot-y", "52%"); event.currentTarget.style.setProperty("--terrain-rx", "0deg"); event.currentTarget.style.setProperty("--terrain-ry", "0deg"); }}><div className="ix-portal-terrain" aria-hidden="true" /><div className="ix-portal-reveal" aria-hidden="true" /><div className="ix-portal-glow" /><p className="ix-kicker"><span /> IMMERSIVE ARCHIVE</p><h2>照片不会停在相框里，<br /><em>它们会沿着时间继续发光。</em></h2><p>移动鼠标探索另一层光景，再走进原创的 3D 青春时间河。</p><button onClick={openMemoryRiver}>进入记忆河 <span>↗</span></button><div className="ix-portal-track"><i /><i /><i /><i /><i /></div></section>
 
-      <section className="ix-timeline" id="timeline"><div className="ix-section-head compact"><div><span className="ix-number">02</span><p className="ix-kicker"><span /> MOMENTS</p></div><h2>一些不舍得<br /><em>忘记的片段</em></h2></div><div className="ix-time-list">{timelineItems.map((item, index) => <article key={`${item.date}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><time>{item.date}</time><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></section>
+      {settingBoolean(settings.show_timeline) && <section className="ix-timeline" id="timeline"><div className="ix-section-head compact"><div><span className="ix-number">02</span><p className="ix-kicker"><span /> MOMENTS</p></div><h2>一些不舍得<br /><em>忘记的片段</em></h2></div><div className="ix-time-list">{timelineItems.map((item, index) => <article key={`${item.date}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span><time>{item.date}</time><h3>{item.title}</h3><p>{item.text}</p></article>)}</div></section>}
 
-      <section className="ix-about" id="about"><div className="ix-about-image"><MemoryVisual memory={displayMemories[4] || defaultMemories[4]} alt="校园里的青春片段" /><span>KEEP<br />YOUNG ✦</span></div><div><p className="ix-kicker"><span /> ABOUT THE AUTHOR</p><h2>你好，<br />我是这个故事的<br /><em>记录者。</em></h2><p>{settings.profile_text}</p><div className="ix-tags"><span>摄影</span><span>校园日常</span><span>音乐</span><span>胡思乱想</span></div><button onClick={() => setSubmissionOpen(true)}>和我交换一个故事 <span>→</span></button></div></section>
+      {settingBoolean(settings.show_about) && <section className="ix-about" id="about"><div className="ix-about-image"><MemoryVisual memory={displayMemories[4] || defaultMemories[0]} alt="校园里的青春片段" /><span>KEEP<br />YOUNG ✦</span></div><div><p className="ix-kicker"><span /> ABOUT THE AUTHOR</p><h2>你好，<br />我是这个故事的<br /><em>记录者。</em></h2><p>{settings.profile_text}</p><div className="ix-tags"><span>摄影</span><span>校园日常</span><span>音乐</span><span>胡思乱想</span></div><button onClick={() => setSubmissionOpen(true)}>和我交换一个故事 <span>→</span></button><div className="ix-about-links">{settings.github_url && <a href={settings.github_url} target="_blank" rel="noreferrer"><small>OPEN SOURCE</small><strong>GitHub 开源代码</strong><span>↗</span></a>}{settings.contact_email && <a href={`mailto:${settings.contact_email}`}><small>CONTACT</small><strong>邮箱联系</strong><span>↗</span></a>}</div></div></section>}
 
-      <section className="ix-comments" id="comments"><div className="ix-comment-head"><div><p className="ix-kicker"><span /> LEAVE A TRACE</p><h2>来过的话，<br /><em>留下一点声音吧</em></h2></div><p>陌生人的一句话，也可能成为某一天的好心情。<br />这里没有标准答案，真诚就好。</p></div><form className="ix-composer" onSubmit={submitComment}><div className="ix-avatar">{visitor?.avatar.startsWith("/") ? <img src={visitor.avatar} alt="头像" /> : visitor?.avatar || "○"}</div><div>{reply && <p className="ix-replying">正在回复 @{reply.nickname} <button type="button" onClick={() => setReply(null)}>×</button></p>}<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} onFocus={() => !visitor && setGate(true)} placeholder={visitor ? "写下此刻想说的话……" : "领取游客证后，可以在这里留言……"} maxLength={500} />{commentImage && <img className="ix-upload-preview" src={commentImage} alt="待上传图片" />}<footer><label>▧ 添加图片<input type="file" accept="image/*" onChange={async (event) => event.target.files?.[0] && setCommentImage(await fileToData(event.target.files[0]))} /></label><span>{commentText.length}/500</span><button type="submit">发送留言 ↗</button></footer></div></form><div className="ix-comment-list">{comments.map((comment) => <article key={comment.id}><div className="ix-avatar">{comment.avatar.startsWith("/") ? <img src={comment.avatar} alt="游客头像" /> : comment.avatar}</div><div><header><strong>{comment.nickname}</strong><time>{formatTime(comment.created_at)}</time></header>{comment.reply_to && <small>回复 @{comment.reply_to}</small>}<p>{comment.text}</p>{comment.image && <img className="ix-comment-image" src={comment.image} alt="留言附图" />}<footer><button className={comment.liked ? "liked" : ""} onClick={() => like(comment)}>♡ {comment.likes}</button><button onClick={() => visitor ? setReply(comment) : setGate(true)}>回复</button></footer></div></article>)}</div></section>
+      {settingBoolean(settings.show_comments) && <section className="ix-comments" id="comments"><div className="ix-comment-head"><div><p className="ix-kicker"><span /> LEAVE A TRACE</p><h2>来过的话，<br /><em>留下一点声音吧</em></h2></div><p>陌生人的一句话，也可能成为某一天的好心情。<br />这里没有标准答案，真诚就好。</p></div><form className="ix-composer" onSubmit={submitComment}><div className="ix-avatar">{visitor?.avatar.startsWith("/") ? <img src={visitor.avatar} alt="头像" /> : visitor?.avatar || "○"}</div><div>{reply && <p className="ix-replying">正在回复 @{reply.nickname} <button type="button" onClick={() => setReply(null)}>×</button></p>}<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} onFocus={() => !visitor && setGate(true)} placeholder={visitor ? "写下此刻想说的话……" : "领取游客证后，可以在这里留言……"} maxLength={500} />{commentImage && <img className="ix-upload-preview" src={commentImage} alt="待上传图片" />}<footer><label>▧ 添加图片<input type="file" accept="image/*" onChange={async (event) => event.target.files?.[0] && setCommentImage(await fileToData(event.target.files[0]))} /></label><span>{commentText.length}/500</span><button type="submit">发送留言 ↗</button></footer></div></form><div className="ix-comment-list">{comments.map((comment) => <article key={comment.id}><div className="ix-avatar">{comment.avatar.startsWith("/") ? <img src={comment.avatar} alt="游客头像" /> : comment.avatar}</div><div><header><strong>{comment.nickname}</strong><time>{formatTime(comment.created_at)}</time></header>{comment.reply_to && <small>回复 @{comment.reply_to}</small>}<p>{comment.text}</p>{comment.image && <img className="ix-comment-image" src={comment.image} alt="留言附图" />}<footer><button className={comment.liked ? "liked" : ""} onClick={() => like(comment)}>♡ {comment.likes}</button><button onClick={() => visitor ? setReply(comment) : setGate(true)}>回复</button></footer></div></article>)}</div></section>}
 
-      <footer className="ix-footer"><strong>INTO <em>/</em> 青春纪事</strong><p>愿我们永远有记录生活的热情，<br />也永远有重新出发的勇气。</p><div><span>© 2026 INTO VA LABS</span><a href="#home">回到顶部 ↑</a><a href="/admin">管理入口</a></div></footer>
+      <footer className="ix-footer"><strong>{settings.site_title}</strong><p>愿我们永远有记录生活的热情，<br />也永远有重新出发的勇气。</p><div><span>© 2026 INTO VA LABS</span><a href="#home">回到顶部 ↑</a><a href="/admin">管理入口</a></div></footer>
 
       {!identityLoaded && <div className="ix-identity-boot" aria-hidden="true" />}
       {identityLoaded && intro && (
@@ -487,7 +574,7 @@ export default function ImmersiveHome() {
       {gate && <Suspense fallback={<div className="ix-identity-boot" aria-hidden="true" />}><OpenSourceVisitorLogin initialData={visitor} onLoginSuccess={enter} onBrowse={browse} /></Suspense>}
 
       {submissionOpen && <div className="ix-modal"><form className="ix-submission" onSubmit={sendSubmission}><button type="button" className="ix-close" onClick={() => setSubmissionOpen(false)}>×</button><p className="ix-kicker"><span /> STORY DROP</p><h2>把你的故事，<br /><em>也放进时间里</em></h2><input required placeholder="故事标题" value={submission.title} onChange={(event) => setSubmission({ ...submission, title: event.target.value })} /><textarea required placeholder="写下你想分享的校园片段……" value={submission.body} onChange={(event) => setSubmission({ ...submission, body: event.target.value })} /><label className="ix-drop">＋ 添加一张故事照片<input type="file" accept="image/*" onChange={async (event) => event.target.files?.[0] && setSubmission({ ...submission, image: await fileToData(event.target.files[0]) })} /></label><button type="submit">投递到站长信箱 <span>↗</span></button></form></div>}
-      {riverOpen && <MemoryRiver memories={threeDimensionalMemories} origin={riverOrigin} onClose={() => setRiverOpen(false)} />}
+      {riverOpen && <MemoryRiver memories={threeDimensionalMemories} origin={riverOrigin} preferences={galaxyPreferences} onClose={() => setRiverOpen(false)} />}
       {toast && <div className="ix-toast">✦ {toast}</div>}
     </main>
   );

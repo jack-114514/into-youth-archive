@@ -38,7 +38,17 @@ _RATE_LOCK = threading.Lock()
 _RATE_BUCKETS: dict[str, deque[float]] = defaultdict(deque)
 _RATE_PEPPER = secrets.token_bytes(32)
 
-ALLOWED_SETTINGS = {"site_title", "hero_title", "profile_text", "timeline_items"}
+ALLOWED_SETTINGS = {
+    "site_title", "browser_title", "site_icon_url", "nav_logo_url",
+    "hero_title", "profile_text", "hero_primary_button", "hero_secondary_button",
+    "primary_color", "accent_color", "background_color", "color_mode",
+    "home_background_url", "home_item_limit", "show_stories", "show_timeline",
+    "show_about", "show_comments", "corner_radius", "glass_opacity",
+    "motion_intensity", "particle_level", "star_level", "snow_level",
+    "quality_3d", "auto_rotate_speed", "music_default_on", "card_style",
+    "font_preset", "github_url", "contact_email", "mobile_effect_level",
+    "app_display_name", "app_logo_url", "timeline_items",
+}
 UPLOAD_TYPES = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -393,9 +403,11 @@ def dispatch_get(handler, path: str) -> None:
             rows = connection.execute(sql + " ORDER BY id DESC LIMIT 500", params).fetchall()
             return _send(handler, 200, {"submissions": [dict(row) for row in rows]})
         if path == "/api/v1/admin-app/settings":
+            setting_keys = tuple(sorted(ALLOWED_SETTINGS))
+            placeholders = ",".join("?" for _ in setting_keys)
             rows = connection.execute(
-                "SELECT key,value FROM settings WHERE key IN (?,?,?,?)",
-                tuple(sorted(ALLOWED_SETTINGS)),
+                f"SELECT key,value FROM settings WHERE key IN ({placeholders})",
+                setting_keys,
             ).fetchall()
             return _send(handler, 200, {"settings": {row["key"]: row["value"] for row in rows}})
         if path == "/api/v1/admin-app/operation-logs":

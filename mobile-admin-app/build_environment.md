@@ -20,7 +20,7 @@ and are intentionally not recorded here.
 
 ## Java and Gradle
 
-- JDK: Microsoft OpenJDK 17.0.20+8 LTS, x64
+- JDK: Oracle JDK 21.0.11 LTS, x64
 - Java language and bytecode target: 17
 - Gradle Wrapper: 9.3.1
 - Gradle distribution: `gradle-9.3.1-all.zip`
@@ -41,8 +41,8 @@ and are intentionally not recorded here.
 
 ## Reproducible build inputs
 
-- App version: 1.0.0
-- Version code: 1
+- App version: 1.1.0
+- Version code: 9
 - Release runtime values are injected with `--dart-define`.
 - Required definitions: `API_BASE_URL`, `UPDATE_MANIFEST_URL`,
   `GITHUB_RELEASES_URL`, `ADMIN_WEB_URL`, `PUBLIC_BASE_URL`, `GIT_COMMIT`,
@@ -66,8 +66,8 @@ and are intentionally not recorded here.
 
 ```powershell
 flutter build apk --release `
-  --build-name=1.0.0 `
-  --build-number=1 `
+  --build-name=1.1.0 `
+  --build-number=9 `
   --dart-define=API_BASE_URL=https://example.invalid/api/v1/admin-app `
   --dart-define=UPDATE_MANIFEST_URL=https://example.invalid/downloads/admin-app/version.json `
   --dart-define=GITHUB_RELEASES_URL=https://github.com/example/example/releases `

@@ -10,6 +10,10 @@ export type GalaxyMemory = { id?: number; url: string; video_url?: string; title
 
 type Quality = "mobile" | "desktop";
 type PhotoOrigin = { x: number; y: number };
+type EffectLevel = "off" | "low" | "normal" | "high";
+export type GalaxyPreferences = { quality3d: string; starLevel: EffectLevel; snowLevel: EffectLevel; autoRotateSpeed: number; mobileEffects: EffectLevel };
+
+const levelFactor = (level: EffectLevel) => ({ off: 0, low: .55, normal: 1, high: 1.25 }[level]);
 
 function isVideoUrl(url: string) {
   return /\.(mp4|webm)(?:[?#]|$)/i.test(url) || url.startsWith("data:video/");
@@ -153,10 +157,10 @@ function makeSnowflakeTexture() {
   return texture;
 }
 
-function SnowField({ quality, reveal }: { quality: Quality; reveal: boolean }) {
+function SnowField({ quality, reveal, density }: { quality: Quality; reveal: boolean; density: number }) {
   const ref = useRef<THREE.Points>(null);
   const revealTime = useRef(0);
-  const count = quality === "mobile" ? 520 : 760;
+  const count = Math.max(1, Math.round((quality === "mobile" ? 520 : 760) * density));
   const texture = useMemo(makeSnowflakeTexture, []);
   const positions = useMemo(() => {
     const values = new Float32Array(count * 3);
@@ -191,11 +195,11 @@ function SnowField({ quality, reveal }: { quality: Quality; reveal: boolean }) {
   );
 }
 
-function RadiantTree({ quality, reveal }: { quality: Quality; reveal: boolean }) {
+function RadiantTree({ quality, reveal, density }: { quality: Quality; reveal: boolean; density: number }) {
   const ref = useRef<THREE.Points>(null);
   const geometryRef = useRef<THREE.BufferGeometry>(null);
   const revealTime = useRef(0);
-  const count = quality === "mobile" ? 19000 : 27000;
+  const count = Math.max(3200, Math.round((quality === "mobile" ? 19000 : 27000) * density));
   const { positions, colors } = useMemo(() => {
     const points = new Float32Array(count * 3);
     const shades = new Float32Array(count * 3);
@@ -278,10 +282,10 @@ function RadiantTree({ quality, reveal }: { quality: Quality; reveal: boolean })
   );
 }
 
-function ParticleGround({ quality, reveal }: { quality: Quality; reveal: boolean }) {
+function ParticleGround({ quality, reveal, density }: { quality: Quality; reveal: boolean; density: number }) {
   const ref = useRef<THREE.Points>(null);
   const revealTime = useRef(0);
-  const count = quality === "mobile" ? 5000 : 7200;
+  const count = Math.max(400, Math.round((quality === "mobile" ? 5000 : 7200) * density));
   const { positions, colors } = useMemo(() => {
     const points = new Float32Array(count * 3);
     const shades = new Float32Array(count * 3);
@@ -318,10 +322,10 @@ function ParticleGround({ quality, reveal }: { quality: Quality; reveal: boolean
   );
 }
 
-function EnergyBeam({ quality, reveal }: { quality: Quality; reveal: boolean }) {
+function EnergyBeam({ quality, reveal, density }: { quality: Quality; reveal: boolean; density: number }) {
   const ref = useRef<THREE.Points>(null);
   const revealTime = useRef(0);
-  const count = quality === "mobile" ? 2600 : 3600;
+  const count = Math.max(360, Math.round((quality === "mobile" ? 2600 : 3600) * density));
   const positions = useMemo(() => {
     const values = new Float32Array(count * 3);
     for (let index = 0; index < count; index += 1) {
@@ -417,20 +421,25 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-function Scene({ memories, quality, reveal, onReady, onSelect }: { memories: GalaxyMemory[]; quality: Quality; reveal: boolean; onReady: () => void; onSelect: (memory: GalaxyMemory, origin: PhotoOrigin) => void }) {
+function Scene({ memories, quality, reveal, onReady, onSelect, preferences }: { memories: GalaxyMemory[]; quality: Quality; reveal: boolean; onReady: () => void; onSelect: (memory: GalaxyMemory, origin: PhotoOrigin) => void; preferences: GalaxyPreferences }) {
   const visible = memories;
+  const qualityFactor = preferences.quality3d === "smooth" ? .72 : preferences.quality3d === "high" ? 1.2 : 1;
+  const mobileFactor = quality === "mobile" ? levelFactor(preferences.mobileEffects) : 1;
+  const sceneDensity = Math.max(.38, qualityFactor * mobileFactor);
+  const starDensity = levelFactor(preferences.starLevel) * mobileFactor;
+  const snowDensity = levelFactor(preferences.snowLevel) * mobileFactor;
   return (
     <>
       <color attach="background" args={["#000000"]} />
       <fog attach="fog" args={["#000000", 28, 74]} />
       <CameraRig />
-      <SnowField quality={quality} reveal={reveal} />
-      <ParticleGround quality={quality} reveal={reveal} />
-      <EnergyBeam quality={quality} reveal={reveal} />
-      <RadiantTree quality={quality} reveal={reveal} />
+      {snowDensity > 0 && <SnowField quality={quality} reveal={reveal} density={snowDensity} />}
+      {starDensity > 0 && <ParticleGround quality={quality} reveal={reveal} density={starDensity} />}
+      <EnergyBeam quality={quality} reveal={reveal} density={sceneDensity} />
+      <RadiantTree quality={quality} reveal={reveal} density={sceneDensity} />
       {visible.map((memory, index) => <Suspense key={`${memory.id ?? memory.url}-${index}`} fallback={null}><PhotoCard memory={memory} index={index} total={visible.length} reveal={reveal} onSelect={onSelect} /></Suspense>)}
       <SceneReady onReady={onReady} />
-      <OrbitControls enablePan={false} enableZoom minDistance={18} maxDistance={46} zoomSpeed={0.65} enableDamping dampingFactor={0.055} rotateSpeed={0.42} autoRotate autoRotateSpeed={0.22} minPolarAngle={Math.PI * 0.32} maxPolarAngle={Math.PI * 0.69} />
+      <OrbitControls enablePan={false} enableZoom minDistance={18} maxDistance={46} zoomSpeed={0.65} enableDamping dampingFactor={0.055} rotateSpeed={0.42} autoRotate={preferences.autoRotateSpeed > 0} autoRotateSpeed={preferences.autoRotateSpeed} minPolarAngle={Math.PI * 0.32} maxPolarAngle={Math.PI * 0.69} />
     </>
   );
 }
@@ -476,7 +485,7 @@ function MemoryDetailMedia({ memory }: { memory: GalaxyMemory }) {
   </div>;
 }
 
-export default function MemoryGalaxy({ memories, onClose, revealStarted, onSceneReady }: { memories: GalaxyMemory[]; onClose: () => void; revealStarted: boolean; onSceneReady: () => void }) {
+export default function MemoryGalaxy({ memories, onClose, revealStarted, onSceneReady, preferences }: { memories: GalaxyMemory[]; onClose: () => void; revealStarted: boolean; onSceneReady: () => void; preferences: GalaxyPreferences }) {
   const [active, setActive] = useState<{ memory: GalaxyMemory; origin: PhotoOrigin } | null>(null);
   const [quality, setQuality] = useState<Quality>("desktop");
   const [immersive, setImmersive] = useState(false);
@@ -501,8 +510,8 @@ export default function MemoryGalaxy({ memories, onClose, revealStarted, onScene
         <span className="ix-live"><i /> 正在流动</span>
       </div>
       <div className="ix-galaxy-help">拖动旋转 · 双指或滚轮缩放 · 悬停放大 · 点击查看</div>
-      <Canvas className="ix-galaxy-canvas" dpr={quality === "mobile" ? [1, 1.35] : [1, 1.5]} camera={{ position: [0, 2.5, 31], fov: 52, near: 0.1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
-        <Suspense fallback={null}><Scene memories={memories} quality={quality} reveal={revealStarted} onReady={onSceneReady} onSelect={(memory, origin) => setActive({ memory, origin })} /></Suspense>
+      <Canvas className="ix-galaxy-canvas" dpr={preferences.quality3d === "smooth" ? [1, 1.2] : preferences.quality3d === "high" ? [1, 1.8] : quality === "mobile" ? [1, 1.35] : [1, 1.5]} camera={{ position: [0, 2.5, 31], fov: 52, near: 0.1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
+        <Suspense fallback={null}><Scene memories={memories} quality={quality} reveal={revealStarted} preferences={preferences} onReady={onSceneReady} onSelect={(memory, origin) => setActive({ memory, origin })} /></Suspense>
       </Canvas>
       <div className="ix-galaxy-title"><span>THE DAYS WE SHINE</span><strong>我们走过的日子</strong><small>每一片雪花，都替记忆保存了一点光</small></div>
       {active && (

@@ -237,8 +237,39 @@ def initialize():
             connection.execute("UPDATE admins SET username=? WHERE id=1", (admin_username,))
         defaults = {
             "site_title": "INTO / 青春纪事",
+            "browser_title": "INTO / 青春纪事",
+            "site_icon_url": "/favicon.svg",
+            "nav_logo_url": "",
             "hero_title": "把青春留在风经过的地方",
             "profile_text": "一个正在校园里认真生活的普通人。喜欢傍晚六点的风、窗边的位置，还有把一闪而过的瞬间变成很久很久的记忆。",
+            "hero_primary_button": "开始翻阅",
+            "hero_secondary_button": "进入 3D 记忆河",
+            "primary_color": "#102d2d",
+            "accent_color": "#d9ff80",
+            "background_color": "#eff6ed",
+            "color_mode": "light",
+            "home_background_url": "",
+            "home_item_limit": "4",
+            "show_stories": "1",
+            "show_timeline": "1",
+            "show_about": "1",
+            "show_comments": "1",
+            "corner_radius": "18",
+            "glass_opacity": "0.68",
+            "motion_intensity": "normal",
+            "particle_level": "normal",
+            "star_level": "normal",
+            "snow_level": "normal",
+            "quality_3d": "balanced",
+            "auto_rotate_speed": "0.22",
+            "music_default_on": "0",
+            "card_style": "glass",
+            "font_preset": "modern",
+            "github_url": "https://github.com/jack-114514/into-youth-archive",
+            "contact_email": "hello@intovalabs.com",
+            "mobile_effect_level": "normal",
+            "app_display_name": "INTO 青春管理",
+            "app_logo_url": "",
             "timeline_items": '[{"date":"2023.09","title":"第一次走进这里","text":"风很轻，书包很重，未来还是一张没有写字的纸。"},{"date":"2024.03","title":"春天在操场集合","text":"我们用一整个下午，把笑声留在跑道边。"},{"date":"2025.06","title":"教室最后一排","text":"黑板上的倒计时越来越小，想说的话却越来越多。"},{"date":"NOW","title":"故事仍在继续","text":"今天也值得记录。等未来回头看，它一定很亮。"}]',
         }
         for key, value in defaults.items():
@@ -550,7 +581,17 @@ class Handler(BaseHTTPRequestHandler):
                         reposition_media(connection, cursor.lastrowid, requested_order)
                         return self.send_json(201, {"id": cursor.lastrowid})
                     if path == "/api/admin/settings":
-                        allowed = {"site_title", "hero_title", "profile_text", "timeline_items"}
+                        allowed = {
+                            "site_title", "browser_title", "site_icon_url", "nav_logo_url",
+                            "hero_title", "profile_text", "hero_primary_button", "hero_secondary_button",
+                            "primary_color", "accent_color", "background_color", "color_mode",
+                            "home_background_url", "home_item_limit", "show_stories", "show_timeline",
+                            "show_about", "show_comments", "corner_radius", "glass_opacity",
+                            "motion_intensity", "particle_level", "star_level", "snow_level",
+                            "quality_3d", "auto_rotate_speed", "music_default_on", "card_style",
+                            "font_preset", "github_url", "contact_email", "mobile_effect_level",
+                            "app_display_name", "app_logo_url", "timeline_items",
+                        }
                         for key, value in data.items():
                             if key in allowed:
                                 connection.execute(
