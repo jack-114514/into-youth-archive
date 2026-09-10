@@ -13,6 +13,8 @@ __pycache__/
 *.sqlite
 *.sqlite3
 *.db
+*.db-wal
+*.db-shm
 uploads/
 data/
 backups/
@@ -21,8 +23,17 @@ backups/
 !.env.example
 *.pem
 *.key
+*.jks
+*.keystore
 *.p12
 *.pfx
+*.log
+*.tar
+*.tar.gz
+*.zip
+**/key.properties
+**/local.properties
+**/mapping.txt
 npm-debug.log*
 yarn-debug.log*
 .DS_Store

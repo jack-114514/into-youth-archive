@@ -16,6 +16,23 @@ from pathlib import Path
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
+try:
+    from admin_app_api import (
+        dispatch_delete as dispatch_admin_app_delete,
+        dispatch_get as dispatch_admin_app_get,
+        dispatch_patch as dispatch_admin_app_patch,
+        dispatch_post as dispatch_admin_app_post,
+        initialize_admin_app_api,
+    )
+except ModuleNotFoundError:
+    from server.admin_app_api import (
+        dispatch_delete as dispatch_admin_app_delete,
+        dispatch_get as dispatch_admin_app_get,
+        dispatch_patch as dispatch_admin_app_patch,
+        dispatch_post as dispatch_admin_app_post,
+        initialize_admin_app_api,
+    )
+
 DATA_DIR = Path(os.environ.get("SITE_DATA_DIR", "/opt/into-youth/data"))
 UPLOAD_DIR = Path(os.environ.get("SITE_UPLOAD_DIR", "/opt/into-youth/uploads"))
 DB_PATH = DATA_DIR / "site.db"
@@ -92,7 +109,13 @@ def verify_turnstile(token, remote_ip):
     )
     with urlopen(request, timeout=12) as response:
         result = json.loads(response.read().decode("utf-8"))
-    allowed_hostnames = {"intovalabs.com", "www.intovalabs.com"}
+    allowed_hostnames = {
+        item.strip().lower()
+        for item in os.environ.get("TURNSTILE_ALLOWED_HOSTNAMES", "").split(",")
+        if item.strip()
+    }
+    if not allowed_hostnames:
+        raise RuntimeError("TURNSTILE_ALLOWED_HOSTNAMES is required")
     return (
         bool(result.get("success"))
         and result.get("action") == "admin_password_recovery"
@@ -127,11 +150,16 @@ def initialize():
             CREATE TABLE IF NOT EXISTS submissions (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               nickname TEXT NOT NULL,
+              email TEXT NOT NULL DEFAULT '',
               title TEXT NOT NULL,
               body TEXT NOT NULL,
               image TEXT,
               status TEXT NOT NULL DEFAULT 'pending',
               created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS site_stats (
+              key TEXT PRIMARY KEY,
+              value INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS media (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,6 +192,10 @@ def initialize():
         admin_columns = {row["name"] for row in connection.execute("PRAGMA table_info(admins)")}
         if "username" not in admin_columns:
             connection.execute("ALTER TABLE admins ADD COLUMN username TEXT NOT NULL DEFAULT ''")
+        submission_columns = {row["name"] for row in connection.execute("PRAGMA table_info(submissions)")}
+        if "email" not in submission_columns:
+            connection.execute("ALTER TABLE submissions ADD COLUMN email TEXT NOT NULL DEFAULT ''")
+        connection.execute("INSERT OR IGNORE INTO site_stats(key,value) VALUES('page_views',0)")
         media_columns = {row["name"] for row in connection.execute("PRAGMA table_info(media)")}
         if "video_url" not in media_columns:
             connection.execute("ALTER TABLE media ADD COLUMN video_url TEXT NOT NULL DEFAULT ''")
@@ -212,6 +244,7 @@ def initialize():
         for key, value in defaults.items():
             connection.execute("INSERT OR IGNORE INTO settings(key, value) VALUES(?, ?)", (key, value))
         connection.execute("PRAGMA optimize")
+    initialize_admin_app_api()
 
 
 def media_time_key(row):
@@ -290,8 +323,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.route()
+        if path.startswith("/api/v1/admin-app/"):
+            return dispatch_admin_app_get(self, path)
         if path == "/api/health":
             return self.send_json(200, {"ok": True, "time": now_iso()})
+        if path == "/api/stats":
+            with db() as connection:
+                page_views = connection.execute("SELECT value FROM site_stats WHERE key='page_views'").fetchone()
+                media_count = connection.execute("SELECT COUNT(*) AS total FROM media").fetchone()
+            return self.send_json(200, {
+                "page_views": page_views["value"] if page_views else 0,
+                "media_count": media_count["total"] if media_count else 0,
+                "online": True,
+                "updated_at": now_iso(),
+            })
         if path == "/api/content":
             with db() as connection:
                 settings = {row["key"]: row["value"] for row in connection.execute("SELECT key,value FROM settings")}
@@ -324,6 +369,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.route()
+        if path.startswith("/api/v1/admin-app/"):
+            return dispatch_admin_app_post(self, path)
         try:
             data = self.read_json()
             if path == "/api/admin/login":
@@ -429,6 +476,11 @@ class Handler(BaseHTTPRequestHandler):
                 name = f"{int(time.time())}-{secrets.token_hex(8)}.{extension}"
                 (UPLOAD_DIR / name).write_bytes(raw)
                 return self.send_json(201, {"url": f"/uploads/{name}"})
+            if path == "/api/stats/view":
+                with db() as connection:
+                    connection.execute("UPDATE site_stats SET value=value+1 WHERE key='page_views'")
+                    row = connection.execute("SELECT value FROM site_stats WHERE key='page_views'").fetchone()
+                return self.send_json(200, {"page_views": row["value"] if row else 1})
             if path == "/api/comments":
                 nickname = str(data.get("nickname", "")).strip()[:24]
                 avatar = str(data.get("avatar", "🌤️"))[:300]
@@ -452,15 +504,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(200, {"likes": row["likes"] if row else 0})
             if path == "/api/submissions":
                 nickname = str(data.get("nickname", "匿名访客")).strip()[:24]
+                email = str(data.get("email", "")).strip().lower()[:254]
                 title = str(data.get("title", "")).strip()[:100]
                 body = str(data.get("body", "")).strip()[:3000]
                 image = str(data.get("image", "")).strip()[:500] or None
                 if not title or not body:
                     return self.send_json(400, {"error": "标题和故事内容不能为空"})
+                if email and not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                    return self.send_json(400, {"error": "请输入有效的联系邮箱"})
                 with db() as connection:
                     connection.execute(
-                        "INSERT INTO submissions(nickname,title,body,image,created_at) VALUES(?,?,?,?,?)",
-                        (nickname, title, body, image, now_iso()),
+                        "INSERT INTO submissions(nickname,email,title,body,image,created_at) VALUES(?,?,?,?,?,?)",
+                        (nickname, email, title, body, image, now_iso()),
                     )
                 return self.send_json(201, {"ok": True})
             if path.startswith("/api/admin/"):
@@ -512,6 +567,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PATCH(self):
         path = self.route()
+        if path.startswith("/api/v1/admin-app/"):
+            return dispatch_admin_app_patch(self, path)
         if not self.require_admin():
             return self.send_json(401, {"error": "请重新登录"})
         match = re.fullmatch(r"/api/admin/media/(\d+)", path)
@@ -550,6 +607,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = self.route()
+        if path.startswith("/api/v1/admin-app/"):
+            return dispatch_admin_app_delete(self, path)
         if not self.require_admin():
             return self.send_json(401, {"error": "请重新登录"})
         match = re.fullmatch(r"/api/admin/(comments|submissions|media)/(\d+)", path)
