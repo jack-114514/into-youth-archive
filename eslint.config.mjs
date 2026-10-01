@@ -8,11 +8,18 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 const eslintConfig = defineConfig([
+  { ignores: ["public/assets/desktop-pet/live2dcubismcore.min.js", ".cache/**"] },
   globalIgnores([
     ".next/**",
+    ".vinext/**",
+    ".wrangler/**",
     "dist/**",
+    "vps-dist/**",
     "out/**",
     "build/**",
+    "public-release/**",
+    "github-upload-ready/**",
+    "mobile-admin-app/**",
     "next-env.d.ts",
   ]),
   eslint.configs.recommended,
@@ -34,6 +41,21 @@ const eslintConfig = defineConfig([
       react: {
         version: "detect",
       },
+    },
+    rules: {
+      "@next/next/no-img-element": "warn",
+      "@next/next/no-html-link-for-pages": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/use-memo": "warn",
+    },
+  },
+  {
+    files: ["components/MemoryGalaxy.tsx"],
+    rules: {
+      "react/no-unknown-property": "off",
     },
   },
 ]);

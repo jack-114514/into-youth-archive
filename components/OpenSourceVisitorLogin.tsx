@@ -10,10 +10,14 @@ export default function OpenSourceVisitorLogin({
   initialData,
   onLoginSuccess,
   onBrowse,
+  onClose,
+  onLogout,
 }: {
   initialData?: VisitorIdentity | null;
   onLoginSuccess: (identity: VisitorIdentity) => void | Promise<void>;
   onBrowse: () => void;
+  onClose: () => void;
+  onLogout: () => void;
 }) {
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -44,6 +48,7 @@ export default function OpenSourceVisitorLogin({
         </div>
         <div className="ix-os-login-form">
           <LoginForm
+            key={initialData ? "signed-in" : "guest"}
             initialData={initialData}
             onPasswordFocusChange={() => undefined}
             onShowPasswordChange={() => undefined}
@@ -53,6 +58,8 @@ export default function OpenSourceVisitorLogin({
             onLoginStateChange={setLoginState}
             onLoginSuccess={(identity: VisitorIdentity) => leaveSmoothly(() => { void onLoginSuccess(identity); })}
             onBrowse={() => leaveSmoothly(onBrowse)}
+            onClose={() => leaveSmoothly(onClose)}
+            onLogout={onLogout}
           />
         </div>
       </div>

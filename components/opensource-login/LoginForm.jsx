@@ -8,9 +8,12 @@ const COPY = {
   'login.btn_confirm': '确认',
   'login.welcome': '欢迎来访！',
   'login.welcome_sub': '选择您的形象并输入姓名',
+  'login.welcome_back': '欢迎回来！',
+  'login.welcome_back_sub': '可以退出当前身份，或修改资料后再次登录',
   'login.label_username': '用户姓名',
   'login.placeholder_username': '请输入您的姓名',
   'login.btn_login': '同步身份并登录',
+  'login.btn_login_again': '保存并再次登录',
   'login.exclusive': '专属数字身份',
 };
 
@@ -31,13 +34,16 @@ export default function LoginForm({
   onNoddingChange,
   onLoginStateChange,
   onLoginSuccess,
-  onBrowse
+  onBrowse,
+  onClose,
+  onLogout
 }) {
   const t = (key) => COPY[key] || key;
   const [username, setUsername] = useState(initialData?.name || '');
   const [avatars, setAvatars] = useState(DEFAULT_AVATARS);
   const [previewImage, setPreviewImage] = useState(null);
   const fileInputRef = useRef(null);
+  const hasSavedIdentity = Boolean(initialData?.name && initialData?.avatar);
 
   // Initialize selectedAvatar after avatars is set
   const [selectedAvatar, setSelectedAvatar] = useState(() => {
@@ -171,8 +177,8 @@ export default function LoginForm({
       </div>
 
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-black text-slate-900 mb-2">{t('login.welcome')}</h1>
-        <p className="text-slate-500 text-sm">{t('login.welcome_sub')}</p>
+        <h1 className="text-3xl font-black text-slate-900 mb-2">{t(hasSavedIdentity ? 'login.welcome_back' : 'login.welcome')}</h1>
+        <p className="text-slate-500 text-sm">{t(hasSavedIdentity ? 'login.welcome_back_sub' : 'login.welcome_sub')}</p>
       </div>
 
       {/* Avatar Picker Array (4+1 Mode) */}
@@ -253,7 +259,7 @@ export default function LoginForm({
               : 'bg-slate-100 text-slate-300 cursor-not-allowed'
           }`}
         >
-          <span>{t('login.btn_login')}</span>
+          <span>{t(hasSavedIdentity ? 'login.btn_login_again' : 'login.btn_login')}</span>
           <motion.div
             animate={{ x: username ? [0, 5, 0] : 0 }}
             transition={{ repeat: Infinity, duration: 1.5 }}
@@ -265,12 +271,16 @@ export default function LoginForm({
         </button>
       </form>
 
+      {hasSavedIdentity && (
+        <div className="ix-visitor-account-actions">
+          <button type="button" className="is-logout" onClick={onLogout}>退出当前身份</button>
+        </div>
+      )}
+
       <div className="text-center mt-12 text-xs text-slate-400 font-bold uppercase tracking-[2px]">
         {t('login.exclusive')}
       </div>
-      <button type="button" onClick={onBrowse} className="ix-guest-browse mt-5 mx-auto text-xs text-slate-400 hover:text-slate-700 border-b border-slate-200 pb-1 transition-colors">
-        暂时只看看，不参与评论
-      </button>
+      {!hasSavedIdentity && <button type="button" onClick={onBrowse} className="ix-guest-browse mt-5 mx-auto text-xs text-slate-400 hover:text-slate-700 border-b border-slate-200 pb-1 transition-colors">暂时只看看，不参与评论</button>}
     </div>
   );
 }

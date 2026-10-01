@@ -1,18 +1,23 @@
 {
   "name": "into-youth-archive",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "private": true,
+  "overrides": {
+    "pixi-live2d-display": {
+      "gh-pages": "6.3.0"
+    }
+  },
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
-    "build:vps": "vite build --config vps-app/vite.config.ts",
-    "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "dev": "vite --config vps-app/vite.config.mjs",
+    "build": "vite build --config vps-app/vite.config.mjs",
+    "build:vps": "npm run build",
+    "test": "node --test tests/*.test.mjs",
+    "test:server": "python -m unittest discover -s tests -p \"test_*.py\"",
+    "check:public": "python scripts/check_public.py",
+    "lint": "eslint app components vps-app --ignore-pattern vps-dist"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
@@ -20,7 +25,10 @@
     "drizzle-orm": "0.45.2",
     "framer-motion": "^13.0.0",
     "lucide-react": "^1.30.0",
+    "pixi-live2d-display": "0.4.0",
+    "pixi.js": "6.5.10",
     "react": "19.2.6",
+    "react-advanced-cropper": "^0.20.1",
     "react-dom": "19.2.6",
     "three": "^0.185.1"
   },

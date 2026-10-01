@@ -1,98 +1,84 @@
-# INTO Youth Archive / 青春纪事
+# Memory Archive / 我的记忆档案
 
-<div align="center">
+可独立部署的记忆网站与原生安卓管理 App。保留首页、欢迎页、3D 粒子树、漂浮相框、雪花、图片/视频放大、音乐、桌宠、故事集、时间线、评论、投稿和管理后台。新装站点使用生成的演示插画和独立数据库，所有文案、图片、颜色、动画参数、Logo、联系方式均可在后台修改。
 
-## 📱 Android 管理 App
+**运行中的网站与原作者没有账号、数据、域名或云服务绑定。** 源码没有原作者的数据库、真实照片、上传内容、管理员密码、服务器地址、Cloudflare 凭据、邮件凭据或安卓签名私钥。安装和更新只访问你选择的 GitHub 源码仓库及依赖/镜像的官方下载服务；运行时不会访问原作者的网站。源码许可和第三方素材署名仍须保留。
 
-### [⬇️ 点击这里直接下载最新版 APK（v1.0.0 Stable）](https://github.com/jack-114514/into-youth-archive/releases/download/v1.0.0/into-youth-admin-v1.0.0.apk)
+## 在自己的 VPS 安装
 
-**不熟悉 GitHub 也没关系：点击上面的下载链接，下载完成后打开 APK 即可安装。**
+自动安装支持 Ubuntu 22.04/24.04、Debian 12/13。建议 2 核 / 2 GB 内存，首次从源码构建资源较多。需要你自己的域名、邮箱，以及能访问 GitHub、Docker Hub、npm 的网络。VPS 的 80、443 端口应空闲并在防火墙中开放。
 
-[查看版本说明与 SHA256 校验文件](https://github.com/jack-114514/into-youth-archive/releases/tag/v1.0.0)
-
-</div>
-
-> 安装提示：如果 Android 提示“禁止安装未知应用”，请按系统提示允许当前浏览器安装应用，然后再次打开下载好的 APK。当前稳定版已在 Android 11 真机验收通过。
-
----
-
-一个面向校园青春记录的全栈开源网站。它包含玻璃拟态首页、3D 粒子记忆树、图片与短视频展厅、游客身份、评论与投稿，以及单管理员后台。
-
-此仓库是从正在运行的网站整理出的“公开源码版”。真实数据库、评论、投稿、头像、管理员账号、上传的照片/视频、备份和生产密钥均未包含；仓库中的图片是抽象占位图。
-
-## 主要功能
-
-- 欢迎页、游客头像与昵称、本地浏览器身份记忆
-- 响应式首页、相片展厅、时间线、个人简介与留言区
-- Three.js / React Three Fiber 3D 粒子树，可拖动、滚轮或双指缩放
-- 3D 场景中的漂浮相框、雪花、沉浸模式和过渡动画
-- 图片与 720P 短视频组合展示，视频未就绪时优先显示封面图
-- 评论、回复、点赞、图片评论和投稿
-- 管理后台：内容、排序、拍摄时间、首页/3D 可见性、评论和投稿管理
-- 管理员密码找回：Cloudflare Turnstile、邮件验证码、PBKDF2 密码哈希
-- Python 标准库 API、SQLite、Nginx 和 systemd 的轻量 VPS 部署方案
-
-## 技术栈
-
-- React 19、TypeScript、Vite / vinext
-- Three.js、React Three Fiber、Drei、Framer Motion
-- Python 3 标准库 HTTP 服务、SQLite
-- Nginx、systemd、Cloudflare Turnstile
-
-## 本地运行
-
-要求 Node.js 22.13 或更高版本。
+1. 把自己的域名 A 记录指向自己的 VPS IPv4；没有可用 IPv6 时不要添加 AAAA。首次申请证书时使用 DNS only，HTTPS 可访问后再启用 Cloudflare 代理。
+2. 登录自己的 VPS，复制下面命令。脚本下载到临时目录后执行，会安装缺失的 Git、Python、Docker/Compose，克隆源码并交互配置你自己的站点：
 
 ```bash
-npm install
-npm run dev
+curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh
+sudo bash /tmp/memory-archive-install.sh
 ```
 
-构建 VPS 静态站点：
+也可先查看源码，再安装：
 
 ```bash
-npm run build:vps
+git clone https://github.com/jack-114514/into-youth-archive.git
+cd into-youth-archive
+sudo bash install.sh
 ```
 
-`npm run build` 会构建 vinext 版本；公开副本不包含任何绑定到原部署项目的托管平台 ID。
+安装时填写自己的域名、证书邮箱、管理员邮箱、密码。密码可留空生成随机值，它只写入本机权限为 0600 的 .env，不输出到安装日志；生成后请在服务器本地查看该文件。管理员邮箱也是密码恢复收件人。Turnstile 和 SMTP 可以先留空，稍后配置。未配置邮箱恢复时仍可正常登录和管理内容。
 
-启动 API 前，复制并填写环境变量。生产环境建议将它保存为 `/etc/into-youth.env`，权限设为仅 root 可读：
+默认下载式安装目录为 /opt/memory-archive。其他系统可自行安装 Docker Engine 与 Compose v2 后，运行 python3 scripts/configure.py，再执行 docker compose up -d --build --wait。Docker Compose 只发布网页的 80/443，API 和数据库留在容器网络内。
+
+安装完成访问 **https://你的域名**，后台为 **/admin**。初次打开先看到示例图，进入后台上传自己的图片/视频、编辑首页、时间线和简介，删除不需要的示例。数据保存在 Docker 独立卷 site_data/site_uploads，不在 Git 里。首次创建数据库才填充示例，重启、更新和修改配置不会重新填充或重置密码。
+
+## 自己的 Cloudflare、域名和邮箱
+
+Cloudflare 账号完全由站长自己管理，本项目不需要原作者或站长的 Cloudflare API Token。
+
+- DNS：在自己的 Cloudflare 区域创建上述 A 记录。启用橙云后，SSL/TLS 选 **Full (strict)**；Caddy 为自己的域名申请并续期公开证书。不要使用 Flexible。
+- Turnstile：在自己的账号创建 widget，允许的 hostname 填自己的域名。配置 TURNSTILE_SITE_KEY、TURNSTILE_SECRET_KEY、TURNSTILE_ALLOWED_HOSTNAMES。Site Key 由本站 API 动态提供，Secret 只在自己的后端。无需修改或重新编译前端。
+- SMTP：配置 SMTP_HOST、SMTP_PORT、SMTP_SECURITY、SMTP_USERNAME、SMTP_PASSWORD、SMTP_FROM。默认端口 465 对应 ssl；587 对应 starttls。验证码发给自己的 ADMIN_USERNAME 邮箱。若有独立邮件应用密码，请使用它。
+- 桌宠 AI：模型与动画可直接使用，AI 默认关闭；需要聊天时在后台桌宠设置填写自己的 DeepSeek Key。私密 Key 不在公开内容 API 返回。
+
+修改域名、Turnstile 或 SMTP：
 
 ```bash
-cp .env.example /etc/into-youth.env
-python3 server/app.py
+cd /opt/memory-archive
+sudo bash scripts/reconfigure.sh
 ```
 
-后台初始管理员来自 `ADMIN_USERNAME` 和 `ADMIN_PASSWORD`。首次启动并创建管理员后，应从环境文件移除明文初始密码。SMTP 应使用应用专用密码，禁止提交真实密码。
+该命令先独立备份，再交互修改配置，重建容器并检查健康；失败恢复原配置。新域名须先设置自己的 DNS，并在自己的 Turnstile 控制台添加允许的域名。配置文件也可用编辑器修改，但应自行备份并执行 docker compose up -d --force-recreate；不要把真实 .env 发到 GitHub。
 
-## Cloudflare Turnstile
+## 安卓管理应用
 
-公开版前端使用 Cloudflare 官方测试站点密钥，不对应任何真实站点。正式部署时：
+源代码在 [mobile-admin-app](mobile-admin-app/README.md)。首次打开填写自己的 HTTPS 域名，应用验证本站 API 后保存连接。站点设置随时可从登录页或后台工具栏打开。切换站点会清除当前会话，重新使用新站点的账号登录；令牌按域名隔离，域名不需要编进 APK。
 
-1. 在 `components/AdminDashboard.tsx` 中替换公开的站点密钥。
-2. 把私密的 `TURNSTILE_SECRET_KEY` 仅写入服务器环境文件。
-3. 永远不要把 Turnstile 密钥、SMTP 应用密码或验证码 pepper 提交到 Git。
+[查看最新版自建版与通用测试 APK](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.0.0)。若尚未生成发布包，可在 Actions 的 Self-hosted verification 下载 memory-archive-admin-preview 工件。v3 自建版 APK 与旧版固定站点 APK 是不同应用 ID，可以共存。
 
-## VPS 部署
+**预览 APK 使用测试签名，供体验和验收；长期分发请用自己的私钥构建 release。** CI 的测试签名可能随构建变化，升级测试包可能需要卸载旧测试包；卸载会清除本机站点设置，不影响 VPS 的数据。旧 v1.0.0 发布包不是通用自建版，请下载 v3 自建版。
 
-`deploy/` 提供 systemd 与 Nginx 示例。部署前请按自己的域名、目录和证书配置调整。推荐：
+## 备份、更新和恢复
 
-- API 仅监听 `127.0.0.1`
-- 只开放 22、80、443 端口
-- HTTPS、HSTS 与安全响应头
-- `/etc/into-youth.env` 使用 `chmod 600`
-- 数据库、上传目录和备份始终放在 Git 仓库之外
+```bash
+cd /opt/memory-archive
+sudo bash scripts/backup.sh
+sudo bash scripts/update.sh
+```
 
-## 不在仓库中的内容
+backup.sh 通过 SQLite 在线备份保存一致数据库快照，同时保存上传文件、配置和 Git 版本到 backups/时间戳。目录权限 0700，内含私人内容及密码，必须另存站外，不能上传 GitHub。
 
-- SQLite 数据库及其中的评论、投稿、验证码和登录会话
-- 用户上传的图片、视频和自定义头像
-- 生产环境 `.env`、SMTP 密码、Turnstile 密钥、管理员账号和密码
-- VPS 地址、SSH 凭据、部署脚本、服务器备份和运行日志
-- 正在运营的网站截图和 Open Graph 图片
+update.sh 要求源码工作树干净，先备份，再拉取当前 origin/main 的快进更新并构建；失败恢复先前代码和镜像，保留数据库及上传文件。更新不会清空卷，也不会重设后台密码。若数据库迁移不兼容旧镜像，按 [恢复说明](docs/SELF_HOSTING.md) 手动恢复独立快照；恢复操作会替换你选定的数据，须先备份当前状态。不要执行 docker compose down -v。
 
-## 第三方代码与许可
+Fork 后可用自己的仓库安装：克隆自己的仓库再运行 install.sh，更新会跟随该仓库的 origin/main。下载式安装可设置 REPOSITORY_URL=https://github.com/自己的账号/自己的仓库.git 与 INSTALL_DIR=/opt/自己的目录。页面里的 GitHub 联系链接默认留空，需要展示时在后台填自己的链接。
 
-登录界面的部分组件基于 Bob Zhang 的 MIT 许可作品修改；原版权声明保留在 `components/opensource-login/LICENSE`。预设头像 SVG 中保留了 DiceBear Adventurer 素材的作者、来源与 CC BY 4.0 元数据。其余依赖分别遵循各自的软件许可证。
+## 开发与验证
 
-本项目自身以 MIT License 发布，详见 `LICENSE`。
+Node.js >=22.13、Python >=3.10。前端开发运行 npm ci && npm run dev，API 使用自己的临时数据目录和账号启动 server/app.py；配置 Vite 代理（参见 docs/SELF_HOSTING.md）。npm run build 生成 vps-dist。发布检查：
+
+```bash
+npm run check:public
+npm test
+npm run test:server
+npm run build
+```
+
+GitHub Actions 会再验证全新 Docker Compose 部署、API 路由、备份和 Flutter analyze/test/APK 构建。主要程序 MIT；登录组件、DiceBear 头像、Live2D/Cubism demo 模型等单独许可详见 LICENSE、components/opensource-login/LICENSE、public/THIRD_PARTY_NOTICES.txt。第三方角色和 Cubism Core 不由项目的 MIT 许可覆盖，商用请替换或获得对应许可。

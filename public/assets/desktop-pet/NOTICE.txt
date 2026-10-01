@@ -1,0 +1,44 @@
+Live2D Desktop Pet for 我的记忆档案
+
+Rendering: pixi-live2d-display 0.4.0, Copyright (c) 2020 guansss, MIT.
+Source: https://github.com/guansss/pixi-live2d-display
+Full MIT text: PIXI-LIVE2D-LICENSE.txt
+PixiJS 6.5.10: MIT, https://github.com/pixijs/pixijs
+
+Haru model, motions, physics, poses and expressions: Live2D Inc.
+Source: pixi-live2d-display/test/assets/haru (upstream example assets).
+These model assets are NOT covered by the renderer's MIT license.
+Live2D Free Material License Agreement:
+https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html
+
+Live2D Cubism Core is proprietary Redistributable Code, NOT MIT.
+Source: https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js
+Original copyright and license header preserved in live2dcubismcore.min.js.
+Live2D Proprietary Software License Agreement:
+https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html
+
+Local integration modifications: removed optional sounds and absent DisplayInfo
+reference from model manifest. Motions / expressions / model textures unchanged.
+No claim of endorsement or affiliation with Live2D Inc.
+
+Hatsune Miku sample model:
+Illustration / character: Hatsune Miku, (c) Crypton Future Media, Inc. 2007.
+Modeling: Live2D Inc. This is a fan website assistant, not an official service.
+Official source: https://www.live2d.com/en/learn/sample/hatsune-miku/
+Pinned runtime mirror and SHA256: miku/SOURCE.json
+The model is NOT licensed under MIT or CC0. Use is subject to:
+- Live2D Free Material License Agreement:
+  https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html
+- Live2D sample model terms:
+  https://www.live2d.com/en/learn/sample/model-terms/
+- Crypton character usage terms (PCL / CC BY-NC 3.0):
+  https://piapro.net/intl/en_for_creators.html
+  https://piapro.jp/license/pcl/summary
+  https://creativecommons.org/licenses/by-nc/3.0/
+Crypton's CC BY-NC applies to its original illustrations, not automatically
+to third-party models. Commercial character use requires separate permission.
+Do not misrepresent this website or AI replies as endorsed by Crypton/Live2D.
+Miku runtime model, textures, physics and eight motions are unmodified.
+No independent expression files or dedicated thinking/sleep animations exist.
+Interaction aliases use supplied motions; legacy follow IDs are adapted in code.
+

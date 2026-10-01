@@ -26,3 +26,12 @@ backups/
 npm-debug.log*
 yarn-debug.log*
 .DS_Store
+
+.cache/
+.dart_tool/
+*.apk
+*.aab
+*.jks
+*.keystore
+key.properties
+local.properties

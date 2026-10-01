@@ -1,0 +1,55 @@
+name: memory-archive
+services:
+  backend:
+    image: memory-archive-backend:local
+    build:
+      context: .
+      target: backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SITE_HOST: 0.0.0.0
+      SITE_PORT: '8765'
+      SITE_DATA_DIR: /data
+      SITE_UPLOAD_DIR: /uploads
+    volumes:
+      - site_data:/data
+      - site_uploads:/uploads
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/health',timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+  web:
+    image: memory-archive-web:local
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?Set your own DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Set your own certificate email}
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      - site_uploads:/uploads:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+volumes:
+  site_data:
+  site_uploads:
+  caddy_data:
+  caddy_config:

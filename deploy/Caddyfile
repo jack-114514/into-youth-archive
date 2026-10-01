@@ -1,0 +1,38 @@
+{
+  email {$ACME_EMAIL}
+}
+(archive_routes) {
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+  handle /api/* {
+    header Cache-Control "no-store"
+    reverse_proxy backend:8765
+  }
+  handle_path /uploads/* {
+    root * /uploads
+    file_server
+  }
+  handle {
+    root * /srv
+    @assets path /assets/* /favicon.svg
+    handle @assets {
+      file_server
+    }
+    handle {
+      header Cache-Control "no-cache"
+      try_files {path} /index.html
+      file_server
+    }
+  }
+}
+{$DOMAIN} {
+  import archive_routes
+}
+# Private container health endpoint; port 8080 is never published to the VPS.
+:8080 {
+  import archive_routes
+}

@@ -1,20 +1,20 @@
 [Unit]
-Description=INTO Youth Archive API
+Description=Memory Archive Archive API
 After=network.target
 
 [Service]
 Type=simple
 User=www-data
 Group=www-data
-EnvironmentFile=/etc/into-youth.env
-ExecStart=/usr/bin/python3 /opt/into-youth/server/app.py
+EnvironmentFile=/etc/memory-archive.env
+ExecStart=/usr/bin/python3 /opt/memory-archive/server/app.py
 Restart=always
 RestartSec=3
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/into-youth/data /opt/into-youth/uploads
+ReadWritePaths=/opt/memory-archive/data /opt/memory-archive/uploads
 
 [Install]
 WantedBy=multi-user.target
