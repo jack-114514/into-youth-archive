@@ -1,12 +1,12 @@
 # 我的站点管理 · Android
 
-原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.1.0+2 / Android 7.0+**，应用 ID `org.memoryarchive.admin`。
+原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.2.1+4 / Android 7.0+**，应用 ID `org.memoryarchive.admin`。
 
 ## ⬇ 直接下载安装
 
-### [点击下载安卓 APK · 通用自建版预览包](https://github.com/jack-114514/into-youth-archive/releases/download/v3.0.0/memory-archive-admin-preview.apk)
+### [点击下载安卓 APK · 通用自建版预览包](https://github.com/jack-114514/into-youth-archive/releases/download/v3.1.1/memory-archive-admin-preview.apk)
 
-[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.0.0) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
+[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.1.1) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
 
 安装 → 填 `https://自己的域名` → 验证连接 → 输入本站管理员邮箱/密码。更新清单可先留空。登录页和后台工具栏都可打开“站点设置”，更换连接后重新登录。
 
@@ -27,7 +27,8 @@
 | 账号安全 | 打开自己站点的网页流程，通过 Turnstile 与邮件验证码修改/恢复密码 |
 | 更新与版本 | 查看版本和构建信息；手动检查自有更新清单，校验 APK 后交给系统安装 |
 | 开发诊断 | 连点版本 7 次，查看 API 状态、延迟、会话、存储与操作摘要 |
-| 精细后台设置 | 首页裁剪/排版、开场、3D 参数、音乐、桌宠等使用网页 /admin |
+| AI 助手与墨灵 | 原生编辑角色、人设、输出上限、模型、Key、帧率及互动开关 |
+| 精细后台设置 | 首页裁剪/排版、开场、3D 参数、音乐、助手台词/预设/布局等使用网页 /admin |
 
 图片采用 JPEG 压缩（quality 86、1920 尺寸参数），**保留 EXIF**；视频压缩为 720P并保留音轨，超过 18 MiB 会提示裁剪。不会修改或删除相册原文件。不要把压缩当作删除定位/拍摄信息的功能。
 
@@ -75,9 +76,9 @@
 
 ```json
 {
-  "version": "1.2.0",
-  "versionCode": 3,
-  "apkUrl": "https://photos.example.com/app/admin-1.2.0.apk",
+  "version": "1.2.1",
+  "versionCode": 4,
+  "apkUrl": "https://photos.example.com/app/admin-1.2.1.apk",
   "sha256": "填写该APK实际计算出的64位小写SHA256",
   "gitCommit": "自己的构建提交",
   "notes": "此次更新内容"
