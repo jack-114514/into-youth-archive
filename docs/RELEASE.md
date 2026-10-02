@@ -1,4 +1,4 @@
-Self-hosted v3.1.0 · Android admin 1.2.0+3
+Self-hosted v3.1.1 · Android admin 1.2.1+4
 
 - Original Moling artwork and continuous facial/part animation: 14 faces, 12 gestures, 3 drag-only reactions and a farewell wave before sleep.
 - Eye-only mouse tracking; improved input focus appearance and larger persona editor.

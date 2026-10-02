@@ -180,17 +180,20 @@ class _PetFormState extends ConsumerState<_PetForm> {
       maxLength: limit,
       decoration: InputDecoration(labelText: label, helperText: hint),
       validator: (value) {
-        if (['name', 'model'].contains(field) && (value ?? '').trim().isEmpty)
+        if (['name', 'model'].contains(field) && (value ?? '').trim().isEmpty) {
           return '请填写$label';
+        }
         if (field == 'maxTokens') {
           final tokens = int.tryParse((value ?? '').trim());
-          if (tokens == null || tokens < 500 || tokens > 10000)
+          if (tokens == null || tokens < 500 || tokens > 10000) {
             return '请输入 500–10000 的整数';
+          }
         }
         if (field == 'modelUrl' &&
             _settings['character'] == 'custom' &&
-            (value ?? '').trim().isEmpty)
+            (value ?? '').trim().isEmpty) {
           return '请填写自定义模型地址';
+        }
         return null;
       },
       keyboardType: field == 'maxTokens' ? TextInputType.number : null,
