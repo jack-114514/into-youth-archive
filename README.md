@@ -22,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 **Android 7.0 及以上。安装后填写自己的 HTTPS 域名，再用自己的后台账号登录；不用改源码或重编译 APK。**
 
-[发行版与校验文件](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.0.0) · [安卓功能 / 技术 / 构建](mobile-admin-app/README.md) · **[安卓隐私政策](mobile-admin-app/PRIVACY.md)**
+[发行版与校验文件](https://github.com/jack-114514/into-youth-archive/releases/latest) · [安卓功能 / 技术 / 构建](mobile-admin-app/README.md) · **[安卓隐私政策](mobile-admin-app/PRIVACY.md)**
 
 这是测试签名预览包；长期分发请用自己的稳定签名构建 release。不同测试构建可能需要卸载后重装，卸载只清除手机端配置，不清除 VPS 数据。旧 v1.0.0 APK 是固定站点版本，请选择此处的通用自建版。
 
@@ -125,3 +125,9 @@ sudo bash scripts/update.sh
 ## 开源许可
 
 主要程序采用 [MIT](LICENSE)。[登录组件许可](components/opensource-login/LICENSE)、[第三方素材说明](public/THIRD_PARTY_NOTICES.txt)及 [Live2D 模型说明](public/assets/desktop-pet/NOTICE.txt)分别适用；角色模型和 Cubism Core 不由项目 MIT 许可覆盖。使用自己的内容与授权模型时，请保留对应许可。
+
+## v3.1.0 更新
+
+原创墨灵：六部件透明图集、14表情、12动作、3组拖拽互动、只用眼睛跟随鼠标、挥手告别后休息。AI 默认输出上限 5000，后台最高 10000；异常 JSON 回复自动补试一次。每个签名访客会话独立限流：每分钟20次、每10分钟60次，超额休息5分钟且不调用API。共享IP不会合并访客额度。清除Cookie或跨设备属于新会话，不能识别同一个自然人。
+
+通用安卓管理 App 1.2.0+3 新增原生助手设置：名称、形象、说话风格、大尺寸人设编辑、输出上限、模型、新Key、帧率和互动开关。保存只修改这些字段，保留其他台词和布局参数。墨灵动画仍在电脑网页运行，安卓端负责管理。新安装默认墨灵；旧安装已保存的角色、人设和Key保持原值。

@@ -42,3 +42,5 @@ Miku runtime model, textures, physics and eight motions are unmodified.
 No independent expression files or dedicated thinking/sleep animations exist.
 Interaction aliases use supplied motions; legacy follow IDs are adapted in code.
 
+
+墨灵：网站所有者提供的原创 AI 辅助设计角色，与程序一同按 MIT 发布。包括主形象、头像、设定图、12姿态和六部件透明图集；素材哈希见 moling/SOURCE.json 与 RIG-SOURCE.json。当前动画由六部件与 SVG 五官连续插值实现。第三方 Live2D 素材仍沿用各自许可。

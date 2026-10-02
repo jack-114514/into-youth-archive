@@ -1,0 +1,2 @@
+from tests.desktop_pet_test import PetSecurityTests
+from tests.pet_chat_test import PetChatLogicTests, PetChatHTTPTests

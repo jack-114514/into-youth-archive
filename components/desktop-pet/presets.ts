@@ -4,7 +4,7 @@ export type PetPreset = { id: string; name: string; settings: PetSettings; creat
 
 export function presetName(settings: PetSettings) {
   const names: Record<string, string> = {
-    hanabi: "花火测试版", miku: "初音未来", haru: "Haru", "haru-soft": "Haru 柔和版",
+    moling: "墨灵", hanabi: "花火测试版", miku: "初音未来", haru: "Haru", "haru-soft": "Haru 柔和版",
   };
   return names[settings.character] || settings.name || "自定义角色";
 }

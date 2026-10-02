@@ -95,3 +95,7 @@ HTTP 状态语义：`400` 参数错误、`401` 未认证或令牌过期、`403` 
 }
 ```
 
+
+## AI 助手设置（v3.1.0）
+
+GET /pet 返回 settings、keyMask、keyConfigured；PATCH /pet 提交完整 settings 与可选 apiKey。复用可撤销 App Bearer 令牌；网页管理员 token 不能替代 App token。maxTokens 为500–10000，默认5000；maxFPS 取30/24/20/15/10/5。留空新Key保持现值。用户自定义人设与未知布局字段通过读取后合并保存。客户端应更新服务端后再启用此页，不能假设旧服务端接受这些字段。

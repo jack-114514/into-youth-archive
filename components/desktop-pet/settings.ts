@@ -1,15 +1,22 @@
-export const emotions = ["happy", "normal", "shy", "thinking", "surprised", "sad"] as const;
+import type { MolingPose } from "./moling";
+export const emotions = ["happy", "normal", "shy", "thinking", "surprised", "sad", "curious", "excited", "confused", "sleepy", "angry", "love", "proud", "wink"] as const;
+export const emotionLabels: Record<Emotion,string> = {happy:"开心",normal:"平静",shy:"害羞",thinking:"思考",surprised:"惊讶",sad:"难过",curious:"好奇",excited:"兴奋",confused:"困惑",sleepy:"困倦",angry:"生气",love:"喜欢",proud:"得意",wink:"眨单眼"};
 export const actions = ["idle", "wave", "nod", "thinking", "sleep"] as const;
 export type Emotion = typeof emotions[number];
 export type Action = typeof actions[number];
+export const petFrameRates = [30, 24, 20, 15, 10, 5] as const;
+// Legacy settings and presets have no frame cap; retain the default 30 FPS.
+export function petFrameRate(value?: number) {
+  return petFrameRates.find(rate => rate === value) ?? 30;
+}
 export type PetSettings = {
   enabled: boolean; aiEnabled: boolean; name: string; character: string; position: string;
   draggable: boolean; randomMove: boolean; mouseFollow: boolean; hoverEnabled: boolean;
   clickEnabled: boolean; idleEnabled: boolean; randomAction: boolean; bubbleEnabled: boolean;
   welcomeEnabled: boolean; autoBubbleEnabled: boolean; autoBubbleInterval: number; modelUrl: string;
   size: number; scale: number; right: number; bottom: number; moveRange: number; moveSpeed: number;
-  zIndex: number; opacity: number; followStrength: number; randomInterval: number; bubbleDuration: number;
-  lines: Record<string, string[]>; tones?: Record<string, string>; systemPrompt?: string; model?: string; apiUrl?: string;
+  zIndex: number; opacity: number; followStrength: number; randomInterval: number; bubbleDuration: number; maxFPS?: number;
+  lines: Record<string, string[]>; tones?: Record<string, string>; systemPrompt?: string; model?: string; apiUrl?: string; maxTokens?: number;
 };
 export type VisitorIdentity = { visitorMode: "named" | "guest"; visitorName: string };
 export const numericFields: Array<[keyof PetSettings, string, number, number, number]> = [
@@ -36,4 +43,4 @@ export function chooseLine(settings: PetSettings, category: string, identity: Vi
   return line.replaceAll("{name}", identity.visitorMode === "named" ? identity.visitorName : "")
     .replaceAll("{time}", hour < 12 ? "早上" : hour < 18 ? "下午" : "晚上").replaceAll("{page}", page);
 }
-export type PetCue = { emotion: Emotion; action: Action; text?: string; id: number; randomMotion?: boolean };
+export type PetCue = { emotion: Emotion; action: Action; text?: string; id: number; randomMotion?: boolean; pose?: MolingPose };

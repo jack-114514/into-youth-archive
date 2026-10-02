@@ -1,9 +1,13 @@
 "use client";
+import type { MolingDrag } from "./moling-drag";
 import { useEffect, useRef, useState } from "react";
 import type { Application } from "pixi.js";
 import type { Live2DModel, Cubism4InternalModel } from "pixi-live2d-display";
 import type { Action, PetCue, PetSettings } from "./settings";
+import { petFrameRate } from "./settings";
 import { RestPoseController } from "./restPose";
+import { petRenderResolution } from "./renderBudget";
+import { HanabiFollowController, pointerFocus } from "./follow";
 
 let corePromise: Promise<void> | undefined;
 function loadCore() {
@@ -31,7 +35,7 @@ function modelUrlFor(character: string, customUrl: string) {
   return character === "custom" ? customUrl : MODEL_URLS[character] || DEFAULT_MODEL_URL;
 }
 
-export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus }: { settings: PetSettings; cue: PetCue | null; paused: boolean; onHit: (areas: string[]) => void; onStatus?: (status: "loading" | "ready" | "error") => void }) {
+export default function Live2DRenderer({ settings, cue, paused, showLoading = false, onHit, onStatus }: { settings: PetSettings; cue: PetCue | null; paused: boolean; showLoading?: boolean; dragReaction?:{current:MolingDrag}; departing?:boolean; onHit: (areas: string[]) => void; onStatus?: (status: "loading" | "ready" | "error") => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const model = useRef<Live2DModel | null>(null);
   const app = useRef<Application | null>(null);
@@ -52,15 +56,12 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
     let detachRest = () => {};
     const load = async () => {
       try {
-        await loadCore();
-        const [PIXI, { Live2DModel, config, MotionPreloadStrategy }] = await Promise.all([import("pixi.js"), import("pixi-live2d-display/cubism4")]);
+        const [PIXI] = await Promise.all([import("pixi.js"), loadCore()]);
+        const { Live2DModel, config, MotionPreloadStrategy } = await import("pixi-live2d-display/cubism4");
         if (cancelled || !canvas.current) return;
         config.logLevel = 0;
-        const application = new PIXI.Application({ view: canvas.current, width: 320, height: 420, backgroundAlpha: 0, antialias: true, resolution: Math.min(devicePixelRatio, 1.5), autoDensity: true });
-        ownedApp = application; app.current = application;
-        application.ticker.maxFPS = 30;
         const source = modelUrlFor(settings.character, settings.modelUrl);
-        const options = { autoInteract: false, autoUpdate: false, motionPreload: MotionPreloadStrategy.IDLE } as const;
+        const options = { autoInteract: false, autoUpdate: false, motionPreload: MotionPreloadStrategy.NONE } as const;
         let character: Live2DModel;
         try {
           character = await Live2DModel.from(source, options);
@@ -72,6 +73,18 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
         // A cancelled load may share cached textures with its replacement.
         if (cancelled) { character.destroy({ children: true }); return; }
         ownedModel = character; model.current = character;
+        await new Promise<void>(resolve => {
+          if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(() => resolve(), { timeout: 1000 });
+          else window.setTimeout(resolve, 0);
+        });
+        if (cancelled || !canvas.current) return;
+        // Download/decode the model before allocating WebGL. No empty canvas
+        // renders while assets arrive; the first scene stays interactive.
+        const application = new PIXI.Application({ view: canvas.current, width: 320, height: 420, backgroundAlpha: 0, antialias: true, resolution: petRenderResolution(latest.current.settings.size, devicePixelRatio), autoDensity: true, autoStart: false });
+        ownedApp = application; app.current = application;
+        // Pixi otherwise raises the 5 FPS choice to its default 10 FPS floor.
+        application.ticker.minFPS = 0;
+        application.ticker.maxFPS = petFrameRate(latest.current.settings.maxFPS);
         // The library otherwise restarts Idle as soon as any motion finishes.
         // Let the parent schedule short motions with an actual pause between them.
         character.internalModel.motionManager.groups.idle = "__disabled";
@@ -80,7 +93,12 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
         const resting = new RestPoseController(internal.coreModel);
         restPose.current = resting;
         resting.settle(performance.now());
-        const maintainRest = () => resting.update(performance.now(), latest.current.settings.character === "hanabi" && latest.current.settings.idleEnabled, latest.current.settings.character === "hanabi");
+        const hanabiFollow = new HanabiFollowController(internal.coreModel);
+        const maintainRest = () => {
+          const hanabi = latest.current.settings.character === "hanabi";
+          resting.update(performance.now(), hanabi && latest.current.settings.idleEnabled, hanabi);
+          if (hanabi) hanabiFollow.apply(internal.focusController.x, internal.focusController.y);
+        };
         internal.on("afterMotionUpdate", maintainRest);
         detachRest = () => internal.off("afterMotionUpdate", maintainRest);
         if (settings.character === "miku") {
@@ -94,10 +112,20 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
           internal.idParamBodyAngleX = "PARAM_BODY_ANGLE_X";
         }
         character.anchor.set(.5, 1);
-        application.stage.addChild(character);
         const originalHeight = character.height;
+        const initialScale = latest.current.settings.scale;
+        character.scale.set((settings.character === "miku" ? Math.min(390 / originalHeight, 300 / character.internalModel.width) : 390 / originalHeight) * initialScale);
+        character.position.set(160, 420);
+        // Upload one atlas per frame before rendering the character, so the first
+        // visible frame doesn't synchronously upload every texture at once.
+        for (const texture of character.textures) {
+          await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
+          if (cancelled) return;
+          (application.renderer as InstanceType<typeof PIXI.Renderer>).texture.bind(texture.baseTexture);
+        }
+        application.stage.addChild(character);
         character.on("hit", (areas: string[]) => latest.current.onHit(areas));
-        let lastScale = 0;
+        let lastScale = initialScale;
         application.ticker.add(() => {
           const { settings: s, paused: p } = latest.current;
           if (p || document.hidden) return;
@@ -108,12 +136,17 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
           }
           character.update(application.ticker.elapsedMS);
         });
+        // A zero delta skips Cubism's first model/physics update in _render().
+        // Warm the real update while still invisible, before reporting ready.
+        character.update(1000 / 30);
+        application.render();
+        if (!latest.current.paused && !document.hidden) application.start();
         setStatus("ready");
       } catch { if (!cancelled) setStatus("error"); }
     };
-    const timer = window.setTimeout(() => { setStatus("loading"); void load(); }, 400);
+    const frame = window.requestAnimationFrame(() => { setStatus("loading"); void load(); });
     return () => {
-      clearTimeout(timer);
+      window.cancelAnimationFrame(frame);
       if (motionEndTimer.current !== null) window.clearTimeout(motionEndTimer.current);
       motionEndTimer.current = null;
       lastMotion.current = "";
@@ -122,24 +155,55 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
       cancelled = true;
       model.current = null; app.current = null;
       if (ownedModel) ownedApp?.stage.removeChild(ownedModel);
-      ownedModel?.destroy({ children: true, texture: true, baseTexture: true });
+      // Textures are shared by Pixi's cache (including the admin preview).
+      ownedModel?.destroy({ children: true });
       ownedApp?.destroy(false, { children: true });
     };
   }, [attempt, settings.character, settings.modelUrl]);
   useEffect(() => {
-    const visibility = () => { if (paused || document.hidden) app.current?.stop(); else app.current?.start(); };
+    if (app.current) app.current.ticker.maxFPS = petFrameRate(settings.maxFPS);
+  }, [settings.maxFPS, status]);
+  useEffect(() => {
+    const renderer = app.current?.renderer;
+    if (!renderer || status !== "ready") return;
+    const resize = () => {
+      const resolution = petRenderResolution(settings.size, devicePixelRatio);
+      if (renderer.resolution !== resolution) {
+        renderer.resolution = resolution;
+        renderer.resize(320, 420);
+      }
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, [settings.size, status]);
+  useEffect(() => {
+    if (status !== "error" || showLoading) return;
+    // Silent initial failures retry in the background, with bounded frequency.
+    const timer = window.setTimeout(() => { setStatus("loading"); setAttempt(value => value + 1); }, Math.min(5000 * 2 ** Math.min(attempt, 4), 60000));
+    return () => window.clearTimeout(timer);
+  }, [status, showLoading, attempt]);
+  useEffect(() => {
+    const visibility = () => { if (paused || document.hidden || status !== "ready") app.current?.stop(); else app.current?.start(); };
     visibility();
     document.addEventListener("visibilitychange", visibility);
+    let followFrame = 0;
+    let pointer = { x: 0, y: 0 };
     const follow = (event: MouseEvent) => {
-      const m = model.current, bounds = canvas.current?.getBoundingClientRect();
-      if (!m || !bounds || paused || !settings.mouseFollow) return;
-      const x = (event.clientX - bounds.left) / bounds.width * 320;
-      const y = (event.clientY - bounds.top) / bounds.height * 420;
-      m.focus(160 + (x - 160) * settings.followStrength, 210 + (y - 210) * settings.followStrength);
+      if (paused || !settings.mouseFollow || !model.current) return;
+      pointer = { x: event.clientX, y: event.clientY };
+      if (followFrame) return;
+      followFrame = window.requestAnimationFrame(() => {
+        followFrame = 0;
+        const m = model.current, bounds = canvas.current?.getBoundingClientRect();
+        if (!m || !bounds?.width || !bounds.height) return;
+        const focus = pointerFocus(pointer.x, pointer.y, bounds, { width: innerWidth, height: innerHeight }, settings.followStrength);
+        m.internalModel.focusController.focus(focus.x, focus.y);
+      });
     };
     window.addEventListener("mousemove", follow, { passive: true });
-    if (!settings.mouseFollow) model.current?.focus(160, 210);
-    return () => { document.removeEventListener("visibilitychange", visibility); window.removeEventListener("mousemove", follow); };
+    if (!settings.mouseFollow || settings.followStrength === 0) model.current?.internalModel.focusController.focus(0, 0);
+    return () => { window.cancelAnimationFrame(followFrame); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("mousemove", follow); };
   }, [paused, settings.mouseFollow, settings.followStrength, status]);
   useEffect(() => {
     if (!cue || !model.current || paused) return;
@@ -196,7 +260,7 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
         }, Math.max(1200, Math.min(cycle * 1000, 8000)));
       }).catch(() => undefined);
     }
-    if (settings.character === "haru" || settings.character === "haru-soft") void character.expression(expressionMap[cue.emotion]).catch(() => undefined);
+    if (settings.character === "haru" || settings.character === "haru-soft") void character.expression(expressionMap[cue.emotion as keyof typeof expressionMap] ?? expressionMap.normal).catch(() => undefined);
     else {
       const expressions = manager.expressionManager?.definitions || [];
       const index = expressions.findIndex((definition: { Name?: string }) => definition.Name?.toLowerCase() === cue.emotion);
@@ -213,13 +277,13 @@ export default function Live2DRenderer({ settings, cue, paused, onHit, onStatus 
       }
     };
   }, [cue, paused, status, settings.character, settings.idleEnabled]);
-  return <div className={`pet-renderer is-${settings.character}`}>
+  return <div className={`pet-renderer is-${settings.character}`} data-status={status}>
     {/* A destroyed WebGL context can never be reused, so every load attempt gets a brand-new canvas. */}
     <canvas key={`${settings.character}|${settings.modelUrl}|${attempt}`} ref={canvas} aria-label="Live2D 桌宠角色" onClick={(event) => {
       const bounds = event.currentTarget.getBoundingClientRect();
       if (settings.clickEnabled) model.current?.tap((event.clientX - bounds.left) / bounds.width * 320, (event.clientY - bounds.top) / bounds.height * 420);
     }} />
-    {status === "loading" && <span className="pet-load-status">角色正在到来…</span>}
-    {status === "error" && <button type="button" className="pet-load-status" onClick={() => { setStatus("loading"); setAttempt(v => v + 1); }}>角色加载失败，点击重试</button>}
+    {showLoading && status === "loading" && <span className="pet-load-status" role="status">角色正在到来…</span>}
+    {showLoading && status === "error" && <button type="button" className="pet-load-status" onClick={() => { setStatus("loading"); setAttempt(v => v + 1); }}>角色加载失败，点击重试</button>}
   </div>;
 }

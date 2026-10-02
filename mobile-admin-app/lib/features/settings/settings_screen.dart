@@ -8,6 +8,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/update/update_service.dart';
+import '../pet/pet_settings_screen.dart';
 
 final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
@@ -178,6 +179,20 @@ class _SettingsFormState extends ConsumerState<_SettingsForm> {
             subtitle: const Text('通过 Cloudflare 人机验证与邮箱验证码修改密码'),
             trailing: const Icon(Icons.open_in_new_rounded),
             onTap: _openAccountSecurity,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: const Text('AI 助手与墨灵'),
+            subtitle: const Text('角色、人设、输出上限与互动设置'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PetSettingsScreen(),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 14),

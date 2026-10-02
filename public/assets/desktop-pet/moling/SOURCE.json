@@ -1,0 +1,30 @@
+{
+  "character": "墨灵",
+  "source": "网站所有者提供的原创AI辅助设计图片",
+  "poses_grid": {
+    "columns": 4,
+    "rows": 3,
+    "width": 1448,
+    "height": 1086
+  },
+  "poses": [
+    "float",
+    "blink",
+    "look",
+    "sleep",
+    "wave",
+    "jump",
+    "turn",
+    "cast",
+    "thinking",
+    "shy",
+    "surprised",
+    "complete"
+  ],
+  "files": {
+    "avatar.png": "d88bdde46082c9d5d13f3354950a470ab19c63fd66a3b7cfa4de06a2b1584006",
+    "character-sheet.png": "8ef03197fb8b69e87cc4c5305cf5392551c78684e3555ac7e70b5c1cfcc589b9",
+    "main.png": "2eced4440825d1d2a38dd52db8d1d3651a763c4d8cf6940084a3615f1ca80aba",
+    "poses.png": "494d2e3680e43fd731a3906666454dc511d2a2ea3c6c5b1a4653dbac62cda0c6"
+  }
+}

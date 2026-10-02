@@ -5,6 +5,7 @@ import type { AnchorHTMLAttributes, CSSProperties, MouseEvent as ReactMouseEvent
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowDownRight, ArrowRight, BookOpen, Box, Check, ChevronDown, Clock3, Image as ImageIcon, Info, ListMusic, Menu as MenuIcon, MessageSquareText, Music2, Pause, Play, Repeat1, Shuffle, SkipBack, SkipForward, UserRound, Volume2, X } from "lucide-react";
 import LandingIntro, { defaultHomepageIntroNodes, defaultHomepageIntroSettings, HomepageIntroNode } from "./LandingIntro";
+import ArchiveRouteStage from "./ArchiveRouteStage";
 import { createDisplaySizingStyle, defaultDisplaySettings } from "./displaySizing";
 import { defaultGalaxySettings, GalaxySettings, normalizeGalaxySettings } from "./galaxySettings";
 import { defaultHomepageCopySettings, getHomeCopy } from "./homeCopy";
@@ -387,6 +388,16 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
     }
     setCurrentRoute(route);
     setMenu(false);
+  }, []);
+
+  const resetArchiveScroll = useCallback(() => {
+    const pane = contentScrollRef.current;
+    // Reset only after the old page fades out. Mobile uses the document scroll;
+    // desktop uses the archive pane. Instant avoids fighting CSS smooth scroll.
+    pane?.scrollTo({ top: 0, behavior: "instant" });
+    if (pane && window.getComputedStyle(pane).overflowY === "visible") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
   }, []);
 
   const followArchiveLink = useCallback((route: ArchiveRoute) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
@@ -943,15 +954,8 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
 
       <div className={`ix-scroll-pane is-route-${currentRoute.slice(1) || "home"}`} ref={contentScrollRef}>
 
-      <AnimatePresence initial={false} mode="wait" onExitComplete={() => contentScrollRef.current?.scrollTo({ top: 0, behavior: "auto" })}>
-      <motion.div
-        key={currentRoute}
-        className={`ix-route-stage${currentRoute === "/" ? " is-home" : " is-secondary"}`}
-        initial={reduceMotion ? false : { opacity: 0, y: 12, scale: .992, filter: "blur(10px)" }}
-        animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-        exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -7, scale: .996, filter: "blur(7px)", transition: { duration: .18, ease: [.4, 0, 1, 1] } }}
-        transition={{ duration: reduceMotion ? 0 : .38, ease: [.16, 1, .3, 1] }}
-      >
+      <AnimatePresence initial={false} mode="wait" onExitComplete={resetArchiveScroll}>
+      <ArchiveRouteStage key={currentRoute} route={currentRoute}>
       {currentRoute === "/" && <>
       <section className={`ix-hero is-art-${heroArtStyle} is-motion-${heroMotionLevel}${entryPhase === "site" ? " is-active" : ""}`} id="home">
         <div className="ix-hero-media" onPointerMove={moveHeroCollage} onPointerLeave={settleHeroCollage}>
@@ -993,7 +997,7 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
 
       <footer className="ix-footer"><strong>{settings.footer_title?.trim() === "我的记忆档案" || !settings.footer_title?.trim() ? <>MEMORY <em>/</em> 记忆档案</> : settings.footer_title}</strong><p>{settings.footer_subtitle?.trim() || <>愿我们永远有记录生活的热情，<br />也永远有重新出发的勇气。</>}</p><div><a className="ix-admin-link" href="/admin">管理入口</a><span>© 2026 YOUR MEMORY ARCHIVE</span></div></footer>
       </>}
-      </motion.div>
+      </ArchiveRouteStage>
       </AnimatePresence>
       </div>
       </div>
@@ -1011,8 +1015,10 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
       {contactOpen && <motion.div className="ix-modal ix-contact-modal" onClick={() => setContactOpen(false)} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : .24 }}><motion.section className="ix-contact-panel" role="dialog" aria-modal="true" aria-labelledby="contact-title" onClick={(event) => event.stopPropagation()} initial={reduceMotion ? false : { opacity: 0, y: 16, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: .99 }} transition={{ duration: reduceMotion ? 0 : .3, ease: [.22, .7, .18, 1] }}><button type="button" className="ix-close" onClick={() => setContactOpen(false)} aria-label="关闭联系方式">×</button><p className="ix-kicker"><span /> CONTACT / MEMORY</p><h2 id="contact-title">和我们保持联系</h2><p>欢迎通过下面的方式，继续了解 我的记忆档案。</p><div className="ix-contact-links">{contactEmailHref && <a href={contactEmailHref}><small>EMAIL</small><strong>{contactEmail}</strong><span className="micro-arrow">↗</span></a>}{normalizeContactLink(settings.github_url) && <a href={normalizeContactLink(settings.github_url)} target="_blank" rel="noreferrer"><small>GITHUB</small><strong>开源代码仓库</strong><span className="micro-arrow">↗</span></a>}{normalizeContactLink(settings.contact_douyin_url) && <a href={normalizeContactLink(settings.contact_douyin_url)} target="_blank" rel="noreferrer"><small>抖音</small><strong>抖音主页</strong><span className="micro-arrow">↗</span></a>}{customContactLinks.map(({ label, url }, index) => <a key={`${label}-${index}`} href={url} target="_blank" rel="noopener noreferrer"><small>LINK</small><strong>{label}</strong><span className="micro-arrow">↗</span></a>)}{!contactEmailHref && !normalizeContactLink(settings.github_url) && !normalizeContactLink(settings.contact_douyin_url) && customContactLinks.length === 0 && <p className="ix-contact-empty">站长暂未公开联系方式。</p>}</div></motion.section></motion.div>}
       {submissionOpen && <motion.div className="ix-modal" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.28 }}><motion.form className="ix-submission" onSubmit={sendSubmission} initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.99 }} transition={{ duration: reduceMotion ? 0 : 0.34, ease: [0.22, 0.7, 0.18, 1] }}><button type="button" className="ix-close" onClick={() => setSubmissionOpen(false)}>×</button><p className="ix-kicker"><span /> STORY DROP</p><h2>把你的故事，<br /><em>也放进时间里</em></h2><input required placeholder="故事标题" value={submission.title} onChange={(event) => setSubmission({ ...submission, title: event.target.value })} /><input type="email" placeholder="你的联系邮箱（选填）" value={submission.email} onChange={(event) => setSubmission({ ...submission, email: event.target.value })} autoComplete="email" /><textarea required placeholder="写下你想分享的校园片段……" value={submission.body} onChange={(event) => setSubmission({ ...submission, body: event.target.value })} /><label className="ix-drop">＋ 添加一张故事照片<input type="file" accept="image/*" onChange={async (event) => event.target.files?.[0] && setSubmission({ ...submission, image: await fileToData(event.target.files[0]) })} /></label>{contactEmailHref && <a className="ix-contact-email" href={contactEmailHref}>也可以直接发送邮件到 {contactEmail} <span className="micro-arrow">↗</span></a>}<button type="submit">投递到站长信箱 <span className="micro-arrow">↗</span></button></motion.form></motion.div>}
       </AnimatePresence>
-      {riverOpen && <MemoryRiver memories={threeDimensionalMemories} origin={riverOrigin} galaxySettings={galaxySettings} onClose={closeMemoryRiver} />}
-      {entryPhase === "site" && !gate && !contactOpen && !submissionOpen && !selectedStory && !expandedStory && <Suspense fallback={null}><DesktopPet visitor={visitor} page={currentRoute === "/" ? "首页" : archiveNavigation.find(item => item.path === currentRoute)?.label || "记忆档案"} active={!riverOpen} /></Suspense>}
+      <AnimatePresence initial={false}>
+      {riverOpen && <motion.div key="memory-river" className="ix-galaxy-layer" initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : .2 }}><MemoryRiver memories={threeDimensionalMemories} origin={riverOrigin} galaxySettings={galaxySettings} onClose={closeMemoryRiver} /></motion.div>}
+      </AnimatePresence>
+      {contentLoaded && <Suspense fallback={null}><DesktopPet visitor={visitor} page={currentRoute === "/" ? "首页" : archiveNavigation.find(item => item.path === currentRoute)?.label || "记忆档案"} active={entryPhase === "site" && !gate && !contactOpen && !submissionOpen && !selectedStory && !expandedStory && !riverOpen} /></Suspense>}
       <AnimatePresence initial={false}>{toast && <motion.div className="ix-toast" initial={reduceMotion ? false : { opacity: 0, y: 12, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: 8, x: "-50%" }} transition={{ duration: reduceMotion ? 0 : 0.24 }}>✦ {toast}</motion.div>}</AnimatePresence>
     </main>
   );

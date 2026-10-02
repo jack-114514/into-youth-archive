@@ -1,0 +1,26 @@
+{
+  "asset": "rig-v2.png",
+  "sha256": "c253f031633f6af1493a88c63e3edc720aca430f593214c7f64af0baf341e036",
+  "size": [
+    1536,
+    1024
+  ],
+  "grid": [
+    3,
+    2
+  ],
+  "parts": [
+    "body",
+    "left",
+    "right",
+    "plume",
+    "tail",
+    "jade"
+  ],
+  "source_reference": "main.png",
+  "reference_sha256": "2eced4440825d1d2a38dd52db8d1d3651a763c4d8cf6940084a3615f1ca80aba",
+  "mode": "built-in image_gen edit",
+  "transparent_background": true,
+  "prompt": "Use case: background-extraction / precise-object-edit. Edit the provided Moling ink spirit into a production-ready transparent PNG animation PARTS ATLAS. Preserve its recognizable glossy cream porcelain droplet, polished black ink, pale mint and jade aesthetic. Fix the ragged white/gray fringe, colored speckles, cutout holes and dirty edges. This is an assembly sheet for web animation, NOT a pose sheet. Landscape 3:2 image with exactly 3 equal columns and 2 equal rows, six square cells on real alpha transparency, no grid or labels or any text. Each detached part is alone and centered in its own cell with generous transparent margin, no part crosses its cell. Top row left: ONLY cream droplet head/body shell with clean smooth glossy black oval face plate, perfectly BLANK face plate with NO eyes or blush or mouth, NO arms, NO floating jade, NO top ink plume and NO bottom tail. Preserve cream teardrop pointed crown and cream silhouette. Head fills about 70% cell width, front-facing, symmetric black oval faceplate. Top row middle: ONLY detached left black ink mitten hand, glossy rounded droplet with small highlight, no cream cuff; about 40% cell width. Top row right: ONLY detached right matching black ink mitten hand mirrored, same size. Bottom row left: ONLY upper curling black-and-cream ink plume from the reference, sweeping S curl, upright, smooth continuous tip, about 65% cell width. Bottom row middle: ONLY lower sweeping S ink tail, black ink with cream/silver painterly highlights, curve to left then right, broad upper joint and tapered lower tip, about 70% cell width. Bottom row right: ONLY floating jade rounded square talisman, matching mint translucent stone with small warm luminous square core, rotated about 20 degrees, about 50% cell width. Clean antialiased alpha boundary with no white matte or baked checkerboard, no detached random flecks, no colored noise, no ground shadow. Parts retain the same art rendering and lighting as the reference and can be reassembled into the same single original character. Exactly six isolated components, no full character duplicates.",
+  "processing": "PNG copied unchanged; web CSS samples parts; SVG eyes and expression details animate at runtime."
+}

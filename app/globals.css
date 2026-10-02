@@ -40,7 +40,7 @@ img { display: block; max-width: 100%; }
 .ix-header nav { display: flex; gap: 31px; font-size: var(--display-fs-12,12px); color: rgba(16,45,45,.63); }
 .ix-header nav a { position: relative; }
 .ix-header nav a::after { content: ""; position: absolute; left: 0; right: 100%; bottom: -8px; height: 1px; background: var(--ink); transition: right .25s; }
-.ix-header nav a:hover::after { right: 0; }
+.ix-header nav a:hover::after, .ix-header nav a.is-active::after { right: 0; }
 .ix-mobile-login { display: none; }
 .ix-header-actions { display: flex; align-items: center; gap: 7px; }
 .ix-header-actions > button { height: 39px; min-width: 39px; border: 1px solid rgba(255,255,255,.68); border-radius: 12px; background: rgba(255,255,255,.5); }
@@ -102,6 +102,7 @@ img { display: block; max-width: 100%; }
 @keyframes ixScroll { 0%,100% { transform: scaleY(.25); opacity: .3; } 50% { transform: scaleY(1); opacity: 1; } }
 
 .ix-stories, .ix-timeline, .ix-comments { position: relative; z-index: 6; padding: 130px max(7vw, calc((100vw - 1180px)/2)); }
+.ix-timeline { background: #eff6ef; }
 .ix-section-head { display: grid; grid-template-columns: .65fr 1.15fr .8fr; gap: 38px; align-items: end; margin-bottom: 70px; }
 .ix-section-head.compact { grid-template-columns: .7fr 1.7fr; }
 .ix-number { display: block; margin-bottom: 18px; color: rgba(16,45,45,.11); font: 750 var(--display-fs-58,58px)/1 ui-monospace, monospace; }
@@ -1570,53 +1571,55 @@ img { display: block; max-width: 100%; }
 
 /* Secondary archive routes keep the home composition compact while reusing the
    existing story, timeline, about and message sections on their own URL. */
-.ix-route-stage { min-height: 100%; transform-origin: 50% 12%; will-change: opacity, filter, transform; }
+.ix-route-stage { min-height: 100%; }
+.ix-route-stage[inert] { pointer-events: none; }
+.ix-galaxy-layer { position: fixed; inset: 0; z-index: 150; }
 .ix-route-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 26px clamp(24px,5vw,72px) 0; color: rgba(8,38,42,.68); font: 700 10px/1 ui-monospace,monospace; letter-spacing: .14em; text-transform: uppercase; }
-.ix-scroll-pane.is-route-about .ix-route-toolbar { background: #dfeee0; }
-.ix-scroll-pane.is-route-messages .ix-route-toolbar { background: #eff6ef; }
-.ix-scroll-pane.is-route-timeline .ix-route-toolbar { background: #eff6ef; }
+.ix-route-stage.is-route-about .ix-route-toolbar { background: #dfeee0; }
+.ix-route-stage.is-route-messages .ix-route-toolbar { background: #eff6ef; }
+.ix-route-stage.is-route-timeline .ix-route-toolbar { background: #eff6ef; }
 @media (min-width: 981px) {
   .ix-archive-content:has(.ix-scroll-pane:is(.is-route-about,.is-route-messages,.is-route-timeline)) > .ix-header { background: color-mix(in srgb,var(--home-bg-base,#071f24) 96%,#071a21); }
 }
 .ix-home-footer { margin-top: 0; }
 .ix-secondary-footer { display: none; }
-.ix-scroll-pane.is-route-home .ix-stories,
-.ix-scroll-pane.is-route-home .ix-portal,
-.ix-scroll-pane.is-route-home .ix-timeline,
-.ix-scroll-pane.is-route-home .ix-about,
-.ix-scroll-pane.is-route-home .ix-comments,
-.ix-scroll-pane.is-route-home > .ix-route-stage > .ix-footer:not(.ix-home-footer) { display: none !important; }
-.ix-scroll-pane:not(.is-route-home) > .ix-route-stage > .ix-home-footer { display: none !important; }
-.ix-scroll-pane.is-route-stories .ix-portal,
-.ix-scroll-pane.is-route-stories .ix-timeline,
-.ix-scroll-pane.is-route-stories .ix-about,
-.ix-scroll-pane.is-route-stories .ix-comments,
-.ix-scroll-pane.is-route-memory .ix-stories,
-.ix-scroll-pane.is-route-memory .ix-timeline,
-.ix-scroll-pane.is-route-memory .ix-about,
-.ix-scroll-pane.is-route-memory .ix-comments,
-.ix-scroll-pane.is-route-timeline .ix-stories,
-.ix-scroll-pane.is-route-timeline .ix-portal,
-.ix-scroll-pane.is-route-timeline .ix-about,
-.ix-scroll-pane.is-route-timeline .ix-comments,
-.ix-scroll-pane.is-route-about .ix-stories,
-.ix-scroll-pane.is-route-about .ix-portal,
-.ix-scroll-pane.is-route-about .ix-timeline,
-.ix-scroll-pane.is-route-about .ix-comments,
-.ix-scroll-pane.is-route-messages .ix-stories,
-.ix-scroll-pane.is-route-messages .ix-portal,
-.ix-scroll-pane.is-route-messages .ix-timeline,
-.ix-scroll-pane.is-route-messages .ix-about,
-.ix-scroll-pane.is-route-campus .ix-stories,
-.ix-scroll-pane.is-route-campus .ix-portal,
-.ix-scroll-pane.is-route-campus .ix-timeline,
-.ix-scroll-pane.is-route-campus .ix-about,
-.ix-scroll-pane.is-route-campus .ix-comments,
-.ix-scroll-pane.is-route-notes .ix-stories,
-.ix-scroll-pane.is-route-notes .ix-portal,
-.ix-scroll-pane.is-route-notes .ix-timeline,
-.ix-scroll-pane.is-route-notes .ix-about,
-.ix-scroll-pane.is-route-notes .ix-comments { display: none !important; }
+.ix-route-stage.is-route-home .ix-stories,
+.ix-route-stage.is-route-home .ix-portal,
+.ix-route-stage.is-route-home .ix-timeline,
+.ix-route-stage.is-route-home .ix-about,
+.ix-route-stage.is-route-home .ix-comments,
+.ix-route-stage.is-route-home > .ix-footer:not(.ix-home-footer) { display: none !important; }
+.ix-route-stage:not(.is-route-home) > .ix-home-footer { display: none !important; }
+.ix-route-stage.is-route-stories .ix-portal,
+.ix-route-stage.is-route-stories .ix-timeline,
+.ix-route-stage.is-route-stories .ix-about,
+.ix-route-stage.is-route-stories .ix-comments,
+.ix-route-stage.is-route-memory .ix-stories,
+.ix-route-stage.is-route-memory .ix-timeline,
+.ix-route-stage.is-route-memory .ix-about,
+.ix-route-stage.is-route-memory .ix-comments,
+.ix-route-stage.is-route-timeline .ix-stories,
+.ix-route-stage.is-route-timeline .ix-portal,
+.ix-route-stage.is-route-timeline .ix-about,
+.ix-route-stage.is-route-timeline .ix-comments,
+.ix-route-stage.is-route-about .ix-stories,
+.ix-route-stage.is-route-about .ix-portal,
+.ix-route-stage.is-route-about .ix-timeline,
+.ix-route-stage.is-route-about .ix-comments,
+.ix-route-stage.is-route-messages .ix-stories,
+.ix-route-stage.is-route-messages .ix-portal,
+.ix-route-stage.is-route-messages .ix-timeline,
+.ix-route-stage.is-route-messages .ix-about,
+.ix-route-stage.is-route-campus .ix-stories,
+.ix-route-stage.is-route-campus .ix-portal,
+.ix-route-stage.is-route-campus .ix-timeline,
+.ix-route-stage.is-route-campus .ix-about,
+.ix-route-stage.is-route-campus .ix-comments,
+.ix-route-stage.is-route-notes .ix-stories,
+.ix-route-stage.is-route-notes .ix-portal,
+.ix-route-stage.is-route-notes .ix-timeline,
+.ix-route-stage.is-route-notes .ix-about,
+.ix-route-stage.is-route-notes .ix-comments { display: none !important; }
 .ix-campus-page,.ix-notes-page { min-height: 72vh; padding: 70px clamp(24px,5vw,72px) 100px; }
 .ix-campus-page .ix-section-head { margin-bottom: 48px; padding: clamp(24px,3vw,42px); gap: 22px 38px; color: #f7fcf8; border: 1px solid rgba(255,255,255,.25); border-radius: 26px; background: linear-gradient(125deg,rgba(5,30,39,.9),rgba(6,37,45,.77)); box-shadow: 0 28px 70px rgba(4,19,25,.28); backdrop-filter: blur(20px) saturate(1.1); }
 .ix-campus-page .ix-section-head .ix-number { color: rgba(236,251,244,.26); }
@@ -1947,15 +1950,15 @@ label input[type="file"] {
 .admin-story-intro strong { font-size: 16px; }
 .admin-story-intro span { max-width: 75ch; color: #48665e; font-size: 12px; line-height: 1.65; }
 .admin-story-intro button { flex: 0 0 auto; padding: 10px 13px; color: #fff; border: 0; border-radius: 10px; background: #173e39; cursor: pointer; }
-.ix-scroll-pane.is-route-stories .ix-stories > .ix-section-head { max-width: 1120px; margin-bottom: 44px; padding: clamp(24px,3vw,42px); grid-template-columns: minmax(0,1.25fr) minmax(210px,.75fr); gap: 20px 35px; align-items: end; color: #f7fcf8; border: 1px solid rgba(255,255,255,.25); border-radius: 26px; background: linear-gradient(125deg,rgba(5,30,39,.88),rgba(6,37,45,.72)); box-shadow: 0 28px 70px rgba(4,19,25,.28); backdrop-filter: blur(20px) saturate(1.1); }
-.ix-scroll-pane.is-route-stories .ix-section-head > div:first-child { grid-column: 1 / -1; }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-number { margin-bottom: 8px; color: rgba(236,251,244,.22); }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-kicker { color: #d5f3e6; }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-copy-title { min-width: 0; color: #fff; font-size: clamp(42px,4.25vw,68px); line-height: 1.1; letter-spacing: -.055em; text-shadow: 0 2px 16px rgba(0,0,0,.3); }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-copy-title em { color: #b5e8c8; }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-copy-description { color: #eaf7f0; font-size: 14px; line-height: 1.8; }
-.ix-scroll-pane.is-route-stories .ix-section-head .ix-copy-extra { color: #d9f6e7 !important; }
-.ix-scroll-pane.is-route-stories .ix-route-toolbar { color: #eef8f2; }
+.ix-route-stage.is-route-stories .ix-stories > .ix-section-head { max-width: 1120px; margin-bottom: 44px; padding: clamp(24px,3vw,42px); grid-template-columns: minmax(0,1.25fr) minmax(210px,.75fr); gap: 20px 35px; align-items: end; color: #f7fcf8; border: 1px solid rgba(255,255,255,.25); border-radius: 26px; background: linear-gradient(125deg,rgba(5,30,39,.88),rgba(6,37,45,.72)); box-shadow: 0 28px 70px rgba(4,19,25,.28); backdrop-filter: blur(20px) saturate(1.1); }
+.ix-route-stage.is-route-stories .ix-section-head > div:first-child { grid-column: 1 / -1; }
+.ix-route-stage.is-route-stories .ix-section-head .ix-number { margin-bottom: 8px; color: rgba(236,251,244,.22); }
+.ix-route-stage.is-route-stories .ix-section-head .ix-kicker { color: #d5f3e6; }
+.ix-route-stage.is-route-stories .ix-section-head .ix-copy-title { min-width: 0; color: #fff; font-size: clamp(42px,4.25vw,68px); line-height: 1.1; letter-spacing: -.055em; text-shadow: 0 2px 16px rgba(0,0,0,.3); }
+.ix-route-stage.is-route-stories .ix-section-head .ix-copy-title em { color: #b5e8c8; }
+.ix-route-stage.is-route-stories .ix-section-head .ix-copy-description { color: #eaf7f0; font-size: 14px; line-height: 1.8; }
+.ix-route-stage.is-route-stories .ix-section-head .ix-copy-extra { color: #d9f6e7 !important; }
+.ix-route-stage.is-route-stories .ix-route-toolbar { color: #eef8f2; }
 .ix-header-home { flex: 0 0 auto; min-height: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: #fff; border: 1px solid rgba(255,255,255,.45); border-radius: 10px; background: rgba(8,35,39,.48); box-shadow: inset 0 1px rgba(255,255,255,.25),0 5px 18px rgba(0,18,25,.14); backdrop-filter: blur(14px) saturate(1.35); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .ix-header-home svg { transform: rotate(180deg); }
 .ix-header-home:hover,.ix-header-home:focus-visible { color: #fff; border-color: #fff; background: rgba(8,35,39,.72); }
@@ -2016,8 +2019,8 @@ label input[type="file"] {
 .admin-shell[data-admin-theme="dark"] .settings-form .hero-caption-toggle { color: #f1f3f4; border-color: var(--line); background: #273236; }
 
 @media (max-width: 600px) { .admin-login-theme-toggle { top: 12px; right: 12px; } }
-.ix-scroll-pane.is-route-stories .ix-story-card { color: #102e31; background: rgba(252,255,252,.91); }
-.ix-scroll-pane.is-route-stories .ix-story-card p { color: #405d59; }
+.ix-route-stage.is-route-stories .ix-story-card { color: #102e31; background: rgba(252,255,252,.91); }
+.ix-route-stage.is-route-stories .ix-story-card p { color: #405d59; }
 .ix-story-empty { padding: 30px; color: #f7fcf8; border-radius: 16px; background: rgba(6,35,42,.76); }
 .ix-story-detail { position: relative; width: min(900px,100%); max-height: min(88dvh,900px); display: grid; grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr); overflow: auto; color: #12383b; border: 1px solid rgba(255,255,255,.76); border-radius: 26px; background: #f4faf4; box-shadow: 0 30px 100px rgba(0,15,22,.36); }
 .ix-story-detail-image { min-height: 430px; background: #dbece2; }
@@ -2047,8 +2050,8 @@ label input[type="file"] {
 .ix-time-content p { max-width: 65ch; margin: 0; color: #42625c; font-size: 14px; line-height: 1.85; white-space: pre-line; }
 @media (max-width: 980px) {
   .admin-story-intro { flex-direction: column; align-items: stretch; }
-  .ix-scroll-pane.is-route-stories .ix-stories > .ix-section-head { grid-template-columns: minmax(0,1fr); }
-  .ix-scroll-pane.is-route-stories .ix-section-head .ix-copy-title { font-size: clamp(38px,8vw,58px); }
+  .ix-route-stage.is-route-stories .ix-stories > .ix-section-head { grid-template-columns: minmax(0,1fr); }
+  .ix-route-stage.is-route-stories .ix-section-head .ix-copy-title { font-size: clamp(38px,8vw,58px); }
   .ix-time-moment { min-height: 190px; grid-template-columns: minmax(95px,24%) minmax(0,1fr); gap: 12px; }
   .ix-time-content { padding: 20px; }
   .ix-story-detail { grid-template-columns: minmax(0,1fr); }

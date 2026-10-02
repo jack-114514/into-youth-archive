@@ -117,3 +117,7 @@ flutter build apk --release
 构建会要求自己的签名配置，不自动借用原作者私钥。可通过 Gradle `applicationId` 属性更改应用 ID；修改 namespace 时要同步 Kotlin 包与 MainActivity。
 
 不要提交 keystore、key.properties、local.properties 或真实站点配置。正式签名丢失将无法覆盖更新已安装的同一应用。[Flutter 官方 Android 发布说明](https://docs.flutter.dev/deployment/android)。对外分发改版时，同步更新品牌、版本、运营者联系方式与隐私政策。
+
+## 1.2.0+3
+
+系统设置 → AI 助手与墨灵，原生编辑角色、人设、说话风格、500–10000输出上限、模型、新 API Key、动画帧率及互动开关。需要服务端 v3.1.0；旧站点先按更新流程更新。Key 仅发送到你选定的 HTTPS 站点，服务端只回传掩码；成功保存后新Key输入立即清空，不写本机存储。页面不向 AI 服务发测试聊天。其余台词、预设与布局参数保留。角色动画显示在电脑网页，不在管理App内运行。

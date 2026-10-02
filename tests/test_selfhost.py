@@ -51,10 +51,10 @@ class FreshSiteTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.server.shutdown(); cls.server.server_close(); cls.thread.join(); cls.environment.stop(); cls.temp.cleanup()
-    def request(self, path, data=None, token=None):
+    def request(self, path, data=None, token=None, method=None):
         headers={'Content-Type':'application/json'}
         if token: headers['Authorization']='Bearer '+token
-        req=Request(self.origin+path, data=None if data is None else json.dumps(data).encode(), headers=headers)
+        req=Request(self.origin+path, data=None if data is None else json.dumps(data).encode(), headers=headers, method=method)
         with urlopen(req, timeout=10) as response: return json.load(response)
     def test_01_fresh_content_contains_only_demo_media(self):
         self.assertTrue(self.request('/api/health')['ok'])
@@ -87,5 +87,23 @@ class FreshSiteTests(unittest.TestCase):
             data=self.request('/api/public-config'); self.assertTrue(data['password_recovery_enabled'])
             self.assertEqual(data['turnstile_site_key'],'own-site-key')
             self.assertNotIn('private',json.dumps(data))
+
+    def test_05_native_pet_contract_preserves_layout_and_hides_key(self):
+        mobile=self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
+        token=mobile['access_token']
+        read=self.request('/api/v1/admin-app/pet',token=token)
+        settings={**read['settings'], 'character':'moling', 'name':'墨灵', 'maxTokens':10000, 'maxFPS':15, 'size':267, 'systemPrompt':'自己的专属人设'}
+        saved=self.request('/api/v1/admin-app/pet', {'settings':settings,'apiKey':'fixture-only-key-123'}, token=token, method='PATCH')
+        for key in ('maxTokens','maxFPS','size','systemPrompt'): self.assertEqual(saved['settings'][key],settings[key])
+        self.assertTrue(saved['keyConfigured'])
+        self.assertNotIn('fixture-only-key-123',json.dumps(saved))
+        public=self.request('/api/pet/config')['settings']
+        for key in ('maxTokens','systemPrompt','tones','apiKey'): self.assertNotIn(key,public)
+        self.assertEqual(public['character'],'moling')
+        kept=self.request('/api/v1/admin-app/pet', {'settings':settings}, token=token, method='PATCH')
+        self.assertEqual(kept['keyMask'],saved['keyMask'])
+        for method in ('GET','PATCH'):
+            with self.assertRaises(HTTPError) as error: self.request('/api/v1/admin-app/pet',None if method=='GET' else {'settings':settings},method=method)
+            self.assertEqual(error.exception.code,401)
 
 if __name__=='__main__': unittest.main()
