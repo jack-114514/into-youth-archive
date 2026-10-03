@@ -29,6 +29,12 @@ except ModuleNotFoundError:
     from server import desktop_pet
 
 
+try:
+    import mobile_turnstile
+    import login_security
+except ModuleNotFoundError:
+    from server import mobile_turnstile, login_security
+
 DATA_DIR = Path(os.environ.get("SITE_DATA_DIR", "/opt/memory-archive/data"))
 UPLOAD_DIR = Path(os.environ.get("SITE_UPLOAD_DIR", "/opt/memory-archive/uploads"))
 DB_PATH = DATA_DIR / "site.db"
@@ -172,12 +178,7 @@ def _request_id() -> str:
 
 
 def _rate_key(handler, scope: str) -> str:
-    address = str(handler.headers.get("CF-Connecting-IP", "")).strip()
-    if not address:
-        forwarded = str(handler.headers.get("X-Forwarded-For", "")).split(",", 1)[0].strip()
-        address = forwarded or str(
-            handler.client_address[0] if handler.client_address else "unknown"
-        )
+    address = login_security.client_ip(handler)
     digest = hmac.new(_RATE_PEPPER, address.encode("utf-8"), hashlib.sha256).hexdigest()
     return f"{scope}:{digest}"
 
@@ -415,6 +416,11 @@ def dispatch_get(handler, path: str) -> None:
     request_id = _request_id()
     if not _require_rate(handler, request_id, "general", 240, 60):
         return
+    if path == "/api/v1/admin-app/auth/challenge":
+        try:
+            return mobile_turnstile.challenge_page(handler)
+        except RuntimeError:
+            return _error(handler, 503, "verification_unavailable", "登录人机验证尚未配置，请联系管理员", request_id)
     if not _require_session(handler, request_id):
         return
     query = parse_qs(urlparse(handler.path).query)
@@ -533,10 +539,45 @@ def dispatch_get(handler, path: str) -> None:
 def dispatch_post(handler, path: str) -> None:
     request_id = _request_id()
     try:
+        if path in {"/api/v1/admin-app/auth/challenge/start", "/api/v1/admin-app/auth/challenge/status", "/api/v1/admin-app/auth/challenge/complete"}:
+            scope = 'challenge-status' if path.endswith('/status') else 'challenge-start' if path.endswith('/start') else 'challenge-complete'
+            limit, window = (120, 60) if path.endswith('/status') else (10, 300)
+            if not _require_rate(handler, request_id, scope, limit, window):
+                return
+            data = _read_json(handler)
+            try:
+                with _db() as connection:
+                    if path.endswith('/start'):
+                        result = mobile_turnstile.create_browser_challenge(connection)
+                    elif path.endswith('/status'):
+                        state = mobile_turnstile.browser_state(connection, data.get('challenge_id'), data.get('challenge_secret'))
+                        if state is None:
+                            return _error(handler, 404, 'challenge_not_found', '验证会话不存在或已失效，请重新验证', request_id)
+                        result = {'status': state}
+                    else:
+                        if not mobile_turnstile.complete_browser_challenge(connection, data.get('challenge_id'), data.get('turnstile_token'), login_security.client_ip(handler)):
+                            return _error(handler, 403, 'verification_required', '验证未通过或已过期，请重新验证', request_id)
+                        result = {'status': 'verified'}
+                return _send(handler, 200, result)
+            except RuntimeError:
+                return _error(handler, 503, 'verification_unavailable', '登录人机验证尚未配置，请联系管理员', request_id)
+            except (OSError, ValueError):
+                return _error(handler, 502, 'verification_unavailable', '人机验证服务暂时不可用，请重新验证', request_id)
         if path == "/api/v1/admin-app/auth/login":
             if not _require_rate(handler, request_id, "login", 10, 300):
                 return
             data = _read_json(handler)
+            try:
+                with _db() as connection:
+                    verified = mobile_turnstile.consume_browser_challenge(connection, data)
+                if verified is None:
+                    verified = mobile_turnstile.verify(data.get("turnstile_token"), login_security.client_ip(handler))
+            except RuntimeError:
+                return _error(handler, 503, "verification_unavailable", "登录人机验证尚未配置，请联系管理员", request_id)
+            except (OSError, ValueError):
+                return _error(handler, 502, "verification_unavailable", "人机验证服务暂时不可用，请重新验证", request_id)
+            if not verified:
+                return _error(handler, 403, "verification_required", "请先完成 Cloudflare 人机验证后再登录", request_id)
             username = str(data.get("username", "")).strip().lower()
             password = str(data.get("password", ""))
             with _db() as connection:

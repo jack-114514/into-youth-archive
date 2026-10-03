@@ -20,6 +20,7 @@ class UpdateManifest {
     required this.sha256,
     required this.mandatory,
     required this.notes,
+    this.packageName = '',
   });
 
   factory UpdateManifest.fromJson(Map<String, dynamic> json) {
@@ -41,6 +42,7 @@ class UpdateManifest {
       sha256: json['sha256']?.toString().toLowerCase() ?? '',
       mandatory: json['forceUpdate'] == true || json['mandatory'] == true,
       notes: json['notes']?.toString() ?? '',
+      packageName: json['packageName']?.toString() ?? '',
     );
   }
 
@@ -52,6 +54,13 @@ class UpdateManifest {
   final String sha256;
   final bool mandatory;
   final String notes;
+  final String packageName;
+
+  void requirePackage(String currentPackage) {
+    if (packageName.isEmpty || packageName != currentPackage) {
+      throw const FormatException('更新清单与当前应用不匹配，请使用本应用的更新清单');
+    }
+  }
 }
 
 class UpdateCheckResult {
@@ -91,6 +100,7 @@ class UpdateService {
       manifestUri.toString(),
     );
     final manifest = UpdateManifest.fromJson(response.data ?? const {});
+    manifest.requirePackage(package.packageName);
     return UpdateCheckResult(
       currentVersion: package.version,
       currentBuild: currentBuild,
@@ -103,6 +113,7 @@ class UpdateService {
     UpdateManifest manifest, {
     void Function(int received, int total)? onProgress,
   }) async {
+    manifest.requirePackage((await PackageInfo.fromPlatform()).packageName);
     final apkUri = Uri.tryParse(manifest.apkUrl);
     if (apkUri == null || apkUri.scheme != 'https') {
       throw const FormatException('APK 下载地址无效');

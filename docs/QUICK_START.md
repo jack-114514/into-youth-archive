@@ -1,6 +1,6 @@
 # 新手安装与配置
 
-[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.0.0/memory-archive-admin-preview.apk)
+[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/into-youth-archive/releases/latest/download/memory-archive-admin.apk)
 
 目标：在自己的 VPS 安装同一套页面、动画和管理功能，再换成自己的内容。新站使用演示插画，不带原作者的私人照片和数据库。
 
@@ -83,7 +83,7 @@ sudo nano /opt/memory-archive/.env
 
 ## 6. 手机管理（可选）
 
-[**点这里直接下载安卓 APK**](https://github.com/jack-114514/into-youth-archive/releases/download/v3.0.0/memory-archive-admin-preview.apk)。
+[**点这里直接下载安卓 APK**](https://github.com/jack-114514/into-youth-archive/releases/latest/download/memory-archive-admin.apk)。
 
 安装预览包 → 填 `https://自己的域名` → 验证连接 → 用本站管理员邮箱/密码登录。“站点设置”可更换域名，保存后重新登录。
 

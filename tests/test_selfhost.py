@@ -56,6 +56,12 @@ class FreshSiteTests(unittest.TestCase):
         if token: headers['Authorization']='Bearer '+token
         req=Request(self.origin+path, data=None if data is None else json.dumps(data).encode(), headers=headers, method=method)
         with urlopen(req, timeout=10) as response: return json.load(response)
+    def verified_native_login(self):
+        with patch.dict(os.environ, {'TURNSTILE_SITE_KEY':'public-test-key', 'TURNSTILE_SECRET_KEY':'test-only-secret',
+                                    'TURNSTILE_ALLOWED_HOSTNAMES':'photos.example.org'}), \
+             patch('server.mobile_turnstile.verify', return_value=True):
+            return self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org',
+                                'password':'first-test-password-1234', 'turnstile_token':'unit-test-token'})
     def test_01_fresh_content_contains_only_demo_media(self):
         self.assertTrue(self.request('/api/health')['ok'])
         data=self.request('/api/content'); self.assertEqual(len(data['media']),16)
@@ -67,7 +73,10 @@ class FreshSiteTests(unittest.TestCase):
     def test_02_own_admin_authenticates_both_clients(self):
         token=self.request('/api/admin/login', {'username':'owner@example.org','password':'first-test-password-1234'})['token']
         self.assertIn('media',self.request('/api/admin/media',token=token))
-        mobile=self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
+        with self.assertRaises(HTTPError) as missing:
+            self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
+        self.assertEqual(missing.exception.code,503)
+        mobile=self.verified_native_login()
         self.assertIn('access_token',mobile); self.assertIn('refresh_token',mobile)
         for path in ('/api/admin/media', '/api/v1/admin-app/dashboard'):
             with self.assertRaises(HTTPError) as error: self.request(path)
@@ -89,7 +98,7 @@ class FreshSiteTests(unittest.TestCase):
             self.assertNotIn('private',json.dumps(data))
 
     def test_05_native_pet_contract_preserves_layout_and_hides_key(self):
-        mobile=self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
+        mobile=self.verified_native_login()
         token=mobile['access_token']
         read=self.request('/api/v1/admin-app/pet',token=token)
         settings={**read['settings'], 'character':'moling', 'name':'墨灵', 'maxTokens':10000, 'maxFPS':15, 'size':267, 'systemPrompt':'自己的专属人设'}

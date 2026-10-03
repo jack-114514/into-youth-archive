@@ -81,24 +81,5 @@ jobs:
       - run: flutter build apk --debug --dart-define=GIT_COMMIT=${{ github.sha }} --dart-define=BUILD_TYPE=preview
       - uses: actions/upload-artifact@v4
         with:
-          name: memory-archive-admin-preview
+          name: memory-archive-admin-ci-check
           path: mobile-admin-app/build/app/outputs/flutter-apk/app-debug.apk
-  preview-release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [website, fresh-vps, android]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: memory-archive-admin-preview
-          path: release
-      - name: Publish tested source and unsigned-for-production preview APK
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mv release/app-debug.apk release/memory-archive-admin-preview.apk
-          sha256sum release/memory-archive-admin-preview.apk > release/SHA256SUMS.txt
-          gh release create "${GITHUB_REF_NAME}" release/memory-archive-admin-preview.apk release/SHA256SUMS.txt --latest --title "Self-hosted ${GITHUB_REF_NAME}" --notes-file docs/RELEASE.md

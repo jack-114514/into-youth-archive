@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 ## 📱 安卓管理 App：点这里直接下载
 
-### [⬇ 下载安卓 APK · 通用自建版预览包](https://github.com/jack-114514/into-youth-archive/releases/download/v3.2.1/memory-archive-admin-preview.apk)
+### [⬇ 下载安卓 APK · 通用管理版](https://github.com/jack-114514/into-youth-archive/releases/latest/download/memory-archive-admin.apk)
 
 **Android 7.0 及以上。安装后填写自己的 HTTPS 域名，再用自己的后台账号登录；不用改源码或重编译 APK。**
 
@@ -42,8 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 | 项目 | 当前版本 |
 | --- | --- |
-| 网站自建发行版 | v3.2.1，前台 + 网页后台 + Python API + 安装运维脚本 |
-| 安卓通用管理 App | 1.3.1，versionCode 6；应用 ID `org.memoryarchive.admin` |
+| 网站自建发行版 | v3.3.0，前台 + 网页后台 + Python API + 安装运维脚本 |
+| 安卓通用管理 App | 1.4.0，versionCode 12；应用 ID `org.memoryarchive.admin.secure` |
 | 默认部署 | Docker Compose + Caddy HTTPS + SQLite；单站点、单管理员 |
 
 新装网站保留整套界面、动画与功能，使用中性文案和生成的演示插画。数据库、账号、照片、域名、Cloudflare、邮箱和 AI 密钥由安装者自行配置。源码不含原作者的真实照片、数据库、上传内容、服务器地址、密码、云服务凭据或安卓签名私钥；运行时不连接原作者的网站。
@@ -135,3 +135,7 @@ sudo bash scripts/update.sh
 本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
 
 管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。
+
+### 安卓登录安全更新
+
+当前只发布通用管理 App 1.4.0+12，密码框下直接显示 Cloudflare 验证，验证通过前安全登录不可点击。自己的后端须同步升级并配置自己的 Turnstile 三项参数。网页后台和原生 App 的账号相同，密码不会进入验证页面。旧专用包不再维护；历史发行保留供回滚。

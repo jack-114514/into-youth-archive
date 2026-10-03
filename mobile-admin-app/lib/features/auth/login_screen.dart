@@ -6,6 +6,7 @@ import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import 'auth_controller.dart';
 import '../connection/site_screen.dart';
+import 'inline_turnstile.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _username = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  String? _proof;
+  String? _proofOrigin;
+  int _verificationAttempt = 0;
+
+  bool get _canLogin =>
+      _proof != null &&
+      _proofOrigin == AppConfig.publicBaseUrl &&
+      !ref.read(authControllerProvider).busy;
 
   @override
   void dispose() {
@@ -28,11 +37,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    // Keyboard submission follows exactly the same verification gate.
+    if (!_canLogin) return;
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
+    final proof = _proof!;
+    setState(() => _proof = null);
     await ref
         .read(authControllerProvider.notifier)
-        .login(_username.text, _password.text);
+        .login(_username.text, _password.text, proof);
+    if (mounted) setState(() => _verificationAttempt++);
   }
 
   Future<void> _openRecovery() async {
@@ -48,10 +62,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final verificationOrigin = AppConfig.publicBaseUrl;
+    final verificationAttempt = _verificationAttempt;
     return Scaffold(
       appBar: AppBar(
         title: Text(AppConfig.publicBaseUrl),
-        actions: const [SiteSettingsButton()],
+        actions: [if (!auth.busy) const SiteSettingsButton()],
       ),
       body: SafeArea(
         child: Center(
@@ -129,6 +145,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ? '请输入管理员密码'
                               : null,
                         ),
+                        const SizedBox(height: 18),
+                        KeyedSubtree(
+                          key: ValueKey('${AppConfig.publicBaseUrl}:$_verificationAttempt'),
+                          child: ref.read(inlineVerificationBuilderProvider)(
+                            context,
+                            (proof) {
+                              if (!mounted ||
+                                  verificationOrigin != AppConfig.publicBaseUrl ||
+                                  verificationAttempt != _verificationAttempt ||
+                                  ref.read(authControllerProvider).busy) {
+                                return;
+                              }
+                              setState(() {
+                                _proof = proof;
+                                _proofOrigin = proof == null ? null : AppConfig.publicBaseUrl;
+                              });
+                            },
+                          ),
+                        ),
                         if (auth.message != null) ...[
                           const SizedBox(height: 12),
                           Text(
@@ -140,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                         const SizedBox(height: 20),
                         FilledButton.icon(
-                          onPressed: auth.busy ? null : _submit,
+                          onPressed: _canLogin ? _submit : null,
                           icon: auth.busy
                               ? const SizedBox.square(
                                   dimension: 18,

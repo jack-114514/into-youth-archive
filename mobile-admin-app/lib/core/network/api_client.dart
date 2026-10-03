@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../security/token_store.dart';
 import 'api_exception.dart';
+import 'login_verification.dart';
 
 class ApiClient {
   ApiClient(this._tokenStore, {required String baseUrl})
@@ -48,11 +49,19 @@ class ApiClient {
     }
   }
 
-  Future<void> login(String username, String password) async {
+  Future<void> login(
+    String username,
+    String password,
+    String turnstileToken,
+  ) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/login',
-        data: {'username': username.trim(), 'password': password},
+        data: {
+          'username': username.trim(),
+          'password': password,
+          ...loginVerificationFields(turnstileToken),
+        },
       );
       await _acceptTokens(response.data ?? const {});
     } on DioException catch (error) {

@@ -45,11 +45,18 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(
+    String username,
+    String password,
+    String turnstileToken,
+  ) async {
+    if (state.busy) return false;
     final generation = _generation;
     state = state.copyWith(busy: true);
     try {
-      await ref.read(apiClientProvider).login(username, password);
+      await ref
+          .read(apiClientProvider)
+          .login(username, password, turnstileToken);
       if (generation != _generation) return false;
       state = const AuthState(status: AuthStatus.signedIn);
       return true;

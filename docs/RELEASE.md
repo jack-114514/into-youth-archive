@@ -1,9 +1,9 @@
-Self-hosted v3.2.1 · Android admin 1.3.1+6
+Self-hosted v3.3.0 · Android admin 1.4.0+12
 
-- Moling is the only bundled assistant. Fresh installs use its name, original artwork, warm and playful persona, and natural Chinese speaking style.
-- Removed Miku/Haru/Hanabi stock selectors and assets; retained custom Live2D imports and added custom image avatars. Legacy stock settings and presets resolve to Moling; authored prompts, site content and API credentials remain intact.
-- Native Android settings default to Moling and allow administrator-supplied images or Live2D.
-- Previous Moling expressions, dragging, farewell, AI output limits and independent visitor quotas remain available.
-- Preview APK uses a test signing key; an older preview may need uninstalling. No production key is included.
-
-管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。
+- One maintained universal Android app: org.memoryarchive.admin.secure. The same release APK is distributed on GitHub and the website; no dedicated site flavor or public debug preview.
+- Cloudflare verification appears directly under the password field. Secure login and keyboard submission remain disabled until the selected server confirms Siteverify. Wrong passwords, expiry and site changes require renewed verification.
+- Preserve default WebView identity, DOM storage and cookies; allow Cloudflare internal about:blank/about:srcdoc frames, and show error codes with inline retry. Passwords never enter the verification page.
+- Server verification is secret-bound, expires, permits one atomic password attempt, checks Cloudflare action/hostname, and rejects pending, forged, expired or replayed proofs.
+- Update your backend and configure your own Turnstile keys and allowed hostname before native login. Existing site data and Moling/chat functions remain unchanged.
+- The stable release signature covers local secure generic versions 1.3.2/1.3.3. Old GitHub preview and dedicated packages have different identities: install the universal app and reconnect your site; do not delete server data. Old releases remain historical rollback artifacts.
+- CI debug builds are test artifacts only. Release APKs are built with the stable local key; no private key is uploaded to GitHub.
