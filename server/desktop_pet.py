@@ -505,12 +505,15 @@ def dispatch(handler, db, method, path):
                 if remaining:
                     raise PetRestError(remaining)
         try:
-            handler.send_json(200, deepseek(config, secret, messages, identity, retry_guard=retry_guard))
+            result = deepseek(config, secret, messages, identity, retry_guard=retry_guard)
         finally:
             _slots.release()
             if lease:
                 with db() as connection:
                     release_chat(connection, client, lease)
+        # A client may submit again immediately after receiving the response.
+        # Release the per-visitor lease before making that response observable.
+        handler.send_json(200, result)
     except (ValueError, TypeError):
         handler.send_json(400, {'error': '设置或请求无效，请检查游客台词、API 地址及输入格式'})
     except PetRestError as error:

@@ -215,6 +215,21 @@ class PetChatHTTPTests(unittest.TestCase):
         self.assertEqual(len(self.calls),20)
         with alice.open(self.base+'/api/pet/config') as response:self.assertGreater(json.loads(response.read())['chatRestSeconds'],290)
         self.assertEqual(self.ask(bob)[0],200);self.assertEqual(len(self.calls),21)
+    def test_completed_request_releases_lease_before_sending_response(self):
+        client = self.client()
+        original = app.Handler.send_json
+        checked = []
+        def send(handler, status, payload, headers=None):
+            if handler.path == '/api/pet/chat' and status == 200:
+                with app.db() as connection:
+                    row = connection.execute('SELECT in_flight_until,lease FROM desktop_pet_chat_limits').fetchone()
+                self.assertEqual(row['in_flight_until'], 0)
+                self.assertEqual(row['lease'], '')
+                checked.append(True)
+            return original(handler, status, payload, headers)
+        with patch.object(app.Handler, 'send_json', send):
+            self.assertEqual(self.ask(client)[0], 200)
+        self.assertEqual(checked, [True])
     def test_no_cookie_and_forged_cookie_never_use_api(self):
         client=build_opener()
         self.assertEqual(self.ask(client)[0],400)

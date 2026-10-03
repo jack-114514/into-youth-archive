@@ -1,4 +1,4 @@
-Self-hosted v3.2.0 · Android admin 1.3.0+5
+Self-hosted v3.2.1 · Android admin 1.3.1+6
 
 - Moling is the only bundled assistant. Fresh installs use its name, original artwork, warm and playful persona, and natural Chinese speaking style.
 - Removed Miku/Haru/Hanabi stock selectors and assets; retained custom Live2D imports and added custom image avatars. Legacy stock settings and presets resolve to Moling; authored prompts, site content and API credentials remain intact.
