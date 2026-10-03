@@ -69,6 +69,21 @@ class ApiClient {
     }
   }
 
+  Future<bool> loginSecurity() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/auth/login-security',
+      );
+      final required = response.data?['captcha_required'];
+      if (required is! bool) throw const ApiException('服务器没有返回有效的登录安全要求');
+      return required;
+    } on DioException catch (error) {
+      // Older servers require verification for every native login.
+      if (error.response?.statusCode == 404) return true;
+      throw _mapError(error);
+    }
+  }
+
   Future<void> logout() async {
     try {
       if (_tokens != null) {
@@ -216,6 +231,9 @@ class ApiClient {
           errorBody['message']?.toString() ?? '请求失败',
           code: errorBody['code']?.toString(),
           statusCode: error.response?.statusCode,
+          captchaRequired: data['captcha_required'] is bool
+              ? data['captcha_required'] as bool
+              : null,
         );
       }
       if (errorBody is String) {

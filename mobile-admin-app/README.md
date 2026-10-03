@@ -1,6 +1,6 @@
 # 我的站点管理 · Android
 
-原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.4.0+12 / Android 7.0+**，应用 ID `org.memoryarchive.admin.secure`。
+原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.4.1+13 / Android 7.0+**，应用 ID `org.memoryarchive.admin.secure`。
 
 ## ⬇ 直接下载安装
 
@@ -8,7 +8,7 @@
 
 [发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.2.1) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
 
-安装 → 填 `https://自己的域名` → 验证连接 → 输入本站管理员邮箱/密码 → 在密码框下完成 Cloudflare 验证 → 点击安全登录。更新清单可先留空。登录页和后台工具栏都可打开“站点设置”，更换连接后重新登录。
+安装 → 填 `https://自己的域名` → 验证连接 → 输入本站管理员邮箱/密码 → 点击安全登录；连续两次密码错误后，在密码框下完成 Cloudflare 验证再登录。更新清单可先留空。登录页和后台工具栏都可打开“站点设置”，更换连接后重新登录。
 
 只维护这一个通用客户端，不再发布固定站点专用包。发行包使用稳定签名，可覆盖之前的本地安全通用版 1.3.2/1.3.3；旧 GitHub 预览版 org.memoryarchive.admin 和旧专用版包名/签名不同，需安装新的通用版并重新连接自己的站点。无需删除服务器内容或用户资料。历史发行保留供回滚。私钥不进入源码或 GitHub。
 
@@ -76,10 +76,10 @@
 
 ```json
 {
-  "version": "1.4.0",
-  "versionCode": 12,
+  "version": "1.4.1",
+  "versionCode": 13,
   "packageName": "org.memoryarchive.admin.secure",
-  "apkUrl": "https://photos.example.com/app/admin-1.4.0.apk",
+  "apkUrl": "https://photos.example.com/app/admin-1.4.1.apk",
   "sha256": "填写该APK实际计算出的64位小写SHA256",
   "gitCommit": "自己的构建提交",
   "notes": "此次更新内容"
@@ -128,8 +128,12 @@ flutter build apk --release
 
 管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。
 
-## 登录人机验证（1.4.0）
+## 登录人机验证（1.4.1）
 
-验证框直接嵌在登录表单里，不跳转独立页面或外部浏览器。只有本站服务端 Siteverify 确认通过，App 才启用安全登录；键盘提交也遵守同一限制。许可绑定站点和本次 App 会话，仅允许一次密码尝试。输错密码、许可过期、切换站点后重新验证。WebView 保留默认 User Agent、DOM storage 和 Cookie，允许 Cloudflare 的 about:blank/about:srcdoc 内部框架；不加载任意外部顶层页面，不关闭 TLS 校验。失败显示错误码并可原地重试。
+前两次密码尝试不加载验证框。连续两次密码错误后，验证框直接嵌在登录表单里，不跳转独立页面或外部浏览器；从第三次开始，只有本站服务端 Siteverify 确认通过，App 才启用安全登录，键盘提交同样受限。许可绑定站点和本次 App 会话，仅允许一次密码尝试。输错密码、许可过期、切换站点后重新验证。WebView 保留默认 User Agent、DOM storage 和 Cookie，允许 Cloudflare 的 about:blank/about:srcdoc 内部框架；不加载任意外部顶层页面，不关闭 TLS 校验。失败显示错误码并可原地重试。
 
-自己的服务器须同步升级到 v3.3.0 并配置自己的 TURNSTILE_SITE_KEY、TURNSTILE_SECRET_KEY、TURNSTILE_ALLOWED_HOSTNAMES。缺少配置会拒绝原生密码登录，不降级跳过验证。Cloudflare 或 Android System WebView 的可用性仍取决于设备和网络。
+自己的服务器须同步升级到 v3.3.1 并配置自己的 TURNSTILE_SITE_KEY、TURNSTILE_SECRET_KEY、TURNSTILE_ALLOWED_HOSTNAMES。前两次尝试不调用验证；连续两次错误后，缺少配置会拒绝继续检查密码，不降级跳过验证。Cloudflare 或 Android System WebView 的可用性仍取决于设备和网络。
+
+### 连续错误后的验证策略（1.4.1）
+
+服务端持久保存本站原生管理员登录计数；前两次密码尝试无需验证，连续两次错误后第三次及后续尝试须通过 Cloudflare。修改用户名、切换网络、重开或重装 App 不能重置服务端计数。正确登录清除计数；连续30分钟无新的密码尝试后计数到期。并发请求原子预留前两次机会，避免并行绕过。网站后台计数独立，原有限流保持有效。验证仍在密码框下完成，每个许可只允许一次密码尝试。自己的后端需升级到 v3.3.1；连接旧后端仍按旧规则要求每次验证。

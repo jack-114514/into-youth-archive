@@ -214,11 +214,11 @@ def _send(handler, status: int, payload: dict) -> None:
     handler.send_json(status, payload)
 
 
-def _error(handler, status: int, code: str, message: str, request_id: str) -> None:
+def _error(handler, status: int, code: str, message: str, request_id: str, **fields) -> None:
     _send(
         handler,
         status,
-        {"error": {"code": code, "message": message, "request_id": request_id}},
+        {"error": {"code": code, "message": message, "request_id": request_id}, **fields},
     )
 
 
@@ -416,6 +416,8 @@ def dispatch_get(handler, path: str) -> None:
     request_id = _request_id()
     if not _require_rate(handler, request_id, "general", 240, 60):
         return
+    if path == "/api/v1/admin-app/auth/login-security":
+        return _send(handler, 200, login_security.native_policy(_db))
     if path == "/api/v1/admin-app/auth/challenge":
         try:
             return mobile_turnstile.challenge_page(handler)
@@ -568,16 +570,13 @@ def dispatch_post(handler, path: str) -> None:
                 return
             data = _read_json(handler)
             try:
-                with _db() as connection:
-                    verified = mobile_turnstile.consume_browser_challenge(connection, data)
-                if verified is None:
-                    verified = mobile_turnstile.verify(data.get("turnstile_token"), login_security.client_ip(handler))
+                verified = login_security.native_before_login(handler, data, _db)
             except RuntimeError:
-                return _error(handler, 503, "verification_unavailable", "登录人机验证尚未配置，请联系管理员", request_id)
+                return _error(handler, 503, "verification_unavailable", "登录人机验证尚未配置，请联系管理员", request_id, captcha_required=True)
             except (OSError, ValueError):
-                return _error(handler, 502, "verification_unavailable", "人机验证服务暂时不可用，请重新验证", request_id)
+                return _error(handler, 502, "verification_unavailable", "人机验证服务暂时不可用，请重新验证", request_id, captcha_required=True)
             if not verified:
-                return _error(handler, 403, "verification_required", "请先完成 Cloudflare 人机验证后再登录", request_id)
+                return _error(handler, 403, "verification_required", "密码已连续输错两次，请先完成 Cloudflare 人机验证", request_id, captcha_required=True)
             username = str(data.get("username", "")).strip().lower()
             password = str(data.get("password", ""))
             with _db() as connection:
@@ -596,7 +595,8 @@ def dispatch_post(handler, path: str) -> None:
                 if not username_ok or not (current_ok or legacy_ok):
                     time.sleep(0.35)
                     return _error(
-                        handler, 401, "invalid_credentials", "用户名或密码不正确", request_id
+                        handler, 401, "invalid_credentials", "用户名或密码不正确", request_id,
+                        **login_security.native_policy(_db)
                     )
                 if legacy_ok:
                     salt = secrets.token_bytes(24)
@@ -606,6 +606,7 @@ def dispatch_post(handler, path: str) -> None:
                     )
                 tokens = _new_session(connection)
                 _audit(connection, "login", request_id, "session")
+                login_security.native_success(connection)
             return _send(handler, 200, tokens)
 
         if path == "/api/v1/admin-app/auth/refresh":

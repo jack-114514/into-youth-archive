@@ -24,10 +24,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _proofOrigin;
   int _verificationAttempt = 0;
 
-  bool get _canLogin =>
-      _proof != null &&
-      _proofOrigin == AppConfig.publicBaseUrl &&
-      !ref.read(authControllerProvider).busy;
+  bool get _canLogin {
+    final auth = ref.read(authControllerProvider);
+    return !auth.busy &&
+        auth.captchaRequired != null &&
+        (auth.captchaRequired == false ||
+            (_proof != null && _proofOrigin == AppConfig.publicBaseUrl));
+  }
 
   @override
   void dispose() {
@@ -41,7 +44,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_canLogin) return;
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    final proof = _proof!;
+    final proof = ref.read(authControllerProvider).captchaRequired == true
+        ? _proof!
+        : '';
     setState(() => _proof = null);
     await ref
         .read(authControllerProvider.notifier)
@@ -146,24 +151,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               : null,
                         ),
                         const SizedBox(height: 18),
-                        KeyedSubtree(
-                          key: ValueKey('${AppConfig.publicBaseUrl}:$_verificationAttempt'),
-                          child: ref.read(inlineVerificationBuilderProvider)(
-                            context,
-                            (proof) {
-                              if (!mounted ||
-                                  verificationOrigin != AppConfig.publicBaseUrl ||
-                                  verificationAttempt != _verificationAttempt ||
-                                  ref.read(authControllerProvider).busy) {
-                                return;
-                              }
-                              setState(() {
-                                _proof = proof;
-                                _proofOrigin = proof == null ? null : AppConfig.publicBaseUrl;
-                              });
-                            },
+                        if (auth.captchaRequired == true)
+                          KeyedSubtree(
+                            key: ValueKey(
+                              '${AppConfig.publicBaseUrl}:$_verificationAttempt',
+                            ),
+                            child: ref.read(inlineVerificationBuilderProvider)(
+                              context,
+                              (proof) {
+                                if (!mounted ||
+                                    verificationOrigin !=
+                                        AppConfig.publicBaseUrl ||
+                                    verificationAttempt !=
+                                        _verificationAttempt ||
+                                    ref.read(authControllerProvider).busy) {
+                                  return;
+                                }
+                                setState(() {
+                                  _proof = proof;
+                                  _proofOrigin = proof == null
+                                      ? null
+                                      : AppConfig.publicBaseUrl;
+                                });
+                              },
+                            ),
                           ),
-                        ),
+                        if (auth.captchaRequired == false)
+                          const Text('连续两次密码错误后，将要求 Cloudflare 人机验证'),
+                        if (auth.captchaRequired == null)
+                          TextButton(
+                            onPressed: auth.busy
+                                ? null
+                                : () => ref
+                                      .read(authControllerProvider.notifier)
+                                      .refreshLoginSecurity(),
+                            child: Text(auth.busy ? '正在检查登录要求…' : '重新检查登录要求'),
+                          ),
                         if (auth.message != null) ...[
                           const SizedBox(height: 12),
                           Text(

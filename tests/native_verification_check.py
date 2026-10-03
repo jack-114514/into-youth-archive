@@ -72,17 +72,50 @@ class LoginSecurityTests(unittest.TestCase):
 
 
 
-    def test_mobile_always_requires_captcha_before_password_check(self):
+    def test_mobile_first_two_failures_are_free_then_captcha_is_required(self):
+        self.assertFalse(self.request('/api/v1/admin-app/auth/login-security')[1]['captcha_required'])
+        with patch.object(mobile_turnstile, 'verify', side_effect=AssertionError('free attempts do not need Cloudflare')):
+            first = self.request('/api/v1/admin-app/auth/login', self.credentials('wrong'))
+            second = self.request('/api/v1/admin-app/auth/login', self.credentials('wrong'))
+        self.assertEqual(first[0], 401)
+        self.assertFalse(first[1]['captcha_required'])
+        self.assertEqual(second[0], 401)
+        self.assertTrue(second[1]['captcha_required'])
         with patch.object(admin_app_api, '_password_hash', side_effect=AssertionError('password bypass')):
             self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials())[0], 403)
+            self.assertEqual(self.request('/api/v1/admin-app/auth/login', {'username': 'changed', 'password': 'wrong'})[0], 403)
         with patch.object(mobile_turnstile, 'verify', return_value=True):
             self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials(token='valid'))[0], 200)
+        self.assertFalse(self.request('/api/v1/admin-app/auth/login-security')[1]['captcha_required'])
+        self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials())[0], 200)
+
+    def test_mobile_first_correct_password_needs_no_cloudflare(self):
+        with patch.object(mobile_turnstile, 'verify', side_effect=AssertionError('unnecessary verification')), \
+             patch.dict(os.environ, {'TURNSTILE_SECRET_KEY': ''}):
+            self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials())[0], 200)
+        self.assertEqual(self.request('/api/v1/admin-app/auth/login-security')[1]['free_attempts_remaining'], 2)
+
+    def test_native_requirement_survives_new_connections_and_is_separate_from_web(self):
+        for _ in range(2): self.request('/api/v1/admin-app/auth/login', self.credentials('wrong'))
+        admin_app_api._RATE_BUCKETS.clear()
+        self.assertTrue(self.request('/api/v1/admin-app/auth/login-security')[1]['captcha_required'])
+        self.assertFalse(login_security.web_required(app.db))
+        self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials())[0], 403)
+        with app.db() as connection:
+            connection.execute("UPDATE admin_login_guard SET expires_at=0 WHERE scope='native'")
+        self.assertFalse(self.request('/api/v1/admin-app/auth/login-security')[1]['captcha_required'])
+
+    def test_parallel_requests_cannot_all_claim_two_free_attempts(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(lambda _: self.request('/api/v1/admin-app/auth/login', self.credentials('wrong'))[0], range(5)))
+        self.assertEqual(sorted(results), [401, 401, 403, 403, 403])
 
     def test_verification_outage_fails_closed(self):
         with patch.object(mobile_turnstile, 'verify', side_effect=OSError()):
             self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials(token='valid'))[0], 502)
         with patch.dict(os.environ, {'TURNSTILE_SECRET_KEY': ''}):
-            self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials())[0], 503)
+            self.assertEqual(self.request('/api/v1/admin-app/auth/login', self.credentials(token='valid'))[0], 503)
 
 
     def test_spoofed_forwarded_headers_cannot_reset_mobile_limit(self):

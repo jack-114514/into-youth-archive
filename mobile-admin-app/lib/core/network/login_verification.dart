@@ -1,4 +1,5 @@
 Map<String, String> loginVerificationFields(String proof) {
+  if (proof.isEmpty) return {};
   if (!proof.startsWith('browser:')) return {'turnstile_token': proof};
   final parts = proof.split(':');
   if (parts.length != 3 ||

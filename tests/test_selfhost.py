@@ -73,9 +73,8 @@ class FreshSiteTests(unittest.TestCase):
     def test_02_own_admin_authenticates_both_clients(self):
         token=self.request('/api/admin/login', {'username':'owner@example.org','password':'first-test-password-1234'})['token']
         self.assertIn('media',self.request('/api/admin/media',token=token))
-        with self.assertRaises(HTTPError) as missing:
-            self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
-        self.assertEqual(missing.exception.code,503)
+        direct=self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
+        self.assertIn('access_token',direct)
         mobile=self.verified_native_login()
         self.assertIn('access_token',mobile); self.assertIn('refresh_token',mobile)
         for path in ('/api/admin/media', '/api/v1/admin-app/dashboard'):
