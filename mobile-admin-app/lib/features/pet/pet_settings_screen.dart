@@ -77,9 +77,7 @@ class _PetFormState extends ConsumerState<_PetForm> {
   String _message = '';
   static const _characters = {
     'moling': '墨灵 · 原创图片角色',
-    'miku': '初音未来',
-    'haru': 'Haru',
-    'haru-soft': 'Haru 柔和色调',
+    'custom-image': '自定义图片形象',
     'custom': '自定义 Live2D',
   };
   static const _toggles = {
@@ -115,9 +113,7 @@ class _PetFormState extends ConsumerState<_PetForm> {
     );
   }
 
-  String get _toneCharacter => _settings['character'] == 'haru-soft'
-      ? 'haru'
-      : _settings['character'].toString();
+  String get _toneCharacter => _settings['character'].toString();
   void _storeTone() {
     _settings['tones'] = {
       ...?_settings['tones'] as Map?,
@@ -190,9 +186,10 @@ class _PetFormState extends ConsumerState<_PetForm> {
           }
         }
         if (field == 'modelUrl' &&
-            _settings['character'] == 'custom' &&
+            (_settings['character'] == 'custom' ||
+                _settings['character'] == 'custom-image') &&
             (value ?? '').trim().isEmpty) {
-          return '请填写自定义模型地址';
+          return '请填写自定义形象资源地址';
         }
         return null;
       },
@@ -236,8 +233,14 @@ class _PetFormState extends ConsumerState<_PetForm> {
                 },
         ),
         const SizedBox(height: 20),
-        if (_settings['character'] == 'custom')
-          _field('modelUrl', '模型地址', limit: 1000),
+        if ((_settings['character'] == 'custom' ||
+            _settings['character'] == 'custom-image'))
+          _field(
+            'modelUrl',
+            '形象资源地址',
+            hint: '本站路径或HTTPS；Live2D填.model3.json，图片填PNG/WebP等地址。',
+            limit: 1000,
+          ),
         _field('tone', '说话风格', lines: 3, limit: 600),
         _field('systemPrompt', 'AI 助手人设', lines: 8, limit: 6000),
         _field('maxTokens', '输出上限', hint: '默认 5000，最高 10000。'),

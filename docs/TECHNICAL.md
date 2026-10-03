@@ -33,7 +33,7 @@
 | Tailwind CSS / 自定义 CSS | 4.2.1 | 排版、配色、响应式与动画样式 |
 | react-advanced-cropper | ^0.20.1 | 网页后台图片取景与裁剪参数 |
 | Lucide React | ^1.30.0 | 界面图标 |
-| PixiJS / pixi-live2d-display | 6.5.10 / 0.4.0 | Live2D 桌宠；另加载 Cubism Core |
+| 原创墨灵 | 六部件透明图集 + SVG | 默认 AI 助手，支持自定义图片/Live2D |
 | Python | 本地 >=3.10；容器 3.12 | 标准库 HTTP 服务、认证、文件上传、SQLite、SMTP、第三方请求 |
 | SQLite | Python sqlite3 | 内容、设置、管理员、会话、留言/投稿、操作日志 |
 | Docker / Compose | Engine + Compose v2 | 分阶段构建、服务编排、独立卷、健康检查 |
@@ -151,3 +151,7 @@ npm run build
 构建输出 `vps-dist`。CI 还执行全新 Docker 构建/启动、API 路由/演示数据/备份检查，以及 Flutter analyze、test 和预览 APK 构建。源码公共检查排除凭据、数据库、私人媒体与运行目录；它不能替代对新增内容的人工审阅。
 
 备份脚本使用 SQLite 在线一致备份，同时保存上传与配置；更新脚本拒绝脏工作树、先备份、再快进更新，失败回退代码和镜像。数据时间点恢复是独立操作，见[运维说明](SELF_HOSTING.md)。
+
+本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
+
+管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。

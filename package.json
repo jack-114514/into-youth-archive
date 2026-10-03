@@ -1,12 +1,7 @@
 {
   "name": "into-youth-archive",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "private": true,
-  "overrides": {
-    "pixi-live2d-display": {
-      "gh-pages": "6.3.0"
-    }
-  },
   "engines": {
     "node": ">=22.13.0"
   },
@@ -25,12 +20,12 @@
     "drizzle-orm": "0.45.2",
     "framer-motion": "^13.0.0",
     "lucide-react": "^1.30.0",
-    "pixi-live2d-display": "0.4.0",
-    "pixi.js": "6.5.10",
     "react": "19.2.6",
     "react-advanced-cropper": "^0.20.1",
     "react-dom": "19.2.6",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "pixi.js": "6.5.10",
+    "pixi-live2d-display": "0.4.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
@@ -56,5 +51,10 @@
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
-  "type": "module"
+  "type": "module",
+  "overrides": {
+    "pixi-live2d-display": {
+      "gh-pages": "6.3.0"
+    }
+  }
 }

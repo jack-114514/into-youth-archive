@@ -1,46 +1,15 @@
-Live2D Desktop Pet for 我的记忆档案
+墨灵默认助手与自定义 Live2D
 
-Rendering: pixi-live2d-display 0.4.0, Copyright (c) 2020 guansss, MIT.
+墨灵为网站所有者提供的原创 AI 辅助设计角色，与程序一同按 MIT 发布。主形象、头像、设定图、12姿态和六部件透明图集的哈希见 moling/SOURCE.json 与 RIG-SOURCE.json。
+本版本不再分发初音未来、Haru、花火模型。历史版本的模型许可说明仍有效。
+管理员可选择自有图片或有授权的Live2D模型，内容与模型许可由管理员负责。
+
+Custom-model renderer: pixi-live2d-display 0.4.0, Copyright (c) 2020 guansss, MIT.
 Source: https://github.com/guansss/pixi-live2d-display
-Full MIT text: PIXI-LIVE2D-LICENSE.txt
+Full MIT license: PIXI-LIVE2D-LICENSE.txt
 PixiJS 6.5.10: MIT, https://github.com/pixijs/pixijs
-
-Haru model, motions, physics, poses and expressions: Live2D Inc.
-Source: pixi-live2d-display/test/assets/haru (upstream example assets).
-These model assets are NOT covered by the renderer's MIT license.
-Live2D Free Material License Agreement:
-https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html
-
 Live2D Cubism Core is proprietary Redistributable Code, NOT MIT.
 Source: https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js
-Original copyright and license header preserved in live2dcubismcore.min.js.
-Live2D Proprietary Software License Agreement:
+Original copyright/license header is preserved. Terms:
 https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html
-
-Local integration modifications: removed optional sounds and absent DisplayInfo
-reference from model manifest. Motions / expressions / model textures unchanged.
 No claim of endorsement or affiliation with Live2D Inc.
-
-Hatsune Miku sample model:
-Illustration / character: Hatsune Miku, (c) Crypton Future Media, Inc. 2007.
-Modeling: Live2D Inc. This is a fan website assistant, not an official service.
-Official source: https://www.live2d.com/en/learn/sample/hatsune-miku/
-Pinned runtime mirror and SHA256: miku/SOURCE.json
-The model is NOT licensed under MIT or CC0. Use is subject to:
-- Live2D Free Material License Agreement:
-  https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html
-- Live2D sample model terms:
-  https://www.live2d.com/en/learn/sample/model-terms/
-- Crypton character usage terms (PCL / CC BY-NC 3.0):
-  https://piapro.net/intl/en_for_creators.html
-  https://piapro.jp/license/pcl/summary
-  https://creativecommons.org/licenses/by-nc/3.0/
-Crypton's CC BY-NC applies to its original illustrations, not automatically
-to third-party models. Commercial character use requires separate permission.
-Do not misrepresent this website or AI replies as endorsed by Crypton/Live2D.
-Miku runtime model, textures, physics and eight motions are unmodified.
-No independent expression files or dedicated thinking/sleep animations exist.
-Interaction aliases use supplied motions; legacy follow IDs are adapted in code.
-
-
-墨灵：网站所有者提供的原创 AI 辅助设计角色，与程序一同按 MIT 发布。包括主形象、头像、设定图、12姿态和六部件透明图集；素材哈希见 moling/SOURCE.json 与 RIG-SOURCE.json。当前动画由六部件与 SVG 五官连续插值实现。第三方 Live2D 素材仍沿用各自许可。

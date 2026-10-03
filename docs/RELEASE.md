@@ -1,10 +1,9 @@
-Self-hosted v3.1.1 · Android admin 1.2.1+4
+Self-hosted v3.2.0 · Android admin 1.3.0+5
 
-- Original Moling artwork and continuous facial/part animation: 14 faces, 12 gestures, 3 drag-only reactions and a farewell wave before sleep.
-- Eye-only mouse tracking; improved input focus appearance and larger persona editor.
-- AI output budget defaults to 5000, adjustable to 10000. Invalid/empty JSON retries once with plain output.
-- Independent signed visitor sessions: 20 requests/minute and 60/10 minutes; five-minute rest makes zero upstream calls. Shared-IP visitors remain independent. Clearing cookies creates a new anonymous session.
-- Native Android assistant settings, input validation, unchanged-setting preservation and new-Key field clearing after successful save.
-- Existing self-hosted site configuration and private data stay in persistent volumes. New installations default to Moling.
-- Preview APK uses a test signing key; it may require uninstalling an older preview. Use your own stable release key for long-term distribution.
-- Moling assets are original AI-assisted artwork released with this project under MIT. Bundled Live2D models and Cubism Core retain their separate terms.
+- Moling is the only bundled assistant. Fresh installs use its name, original artwork, warm and playful persona, and natural Chinese speaking style.
+- Removed Miku/Haru/Hanabi stock selectors and assets; retained custom Live2D imports and added custom image avatars. Legacy stock settings and presets resolve to Moling; authored prompts, site content and API credentials remain intact.
+- Native Android settings default to Moling and allow administrator-supplied images or Live2D.
+- Previous Moling expressions, dragging, farewell, AI output limits and independent visitor quotas remain available.
+- Preview APK uses a test signing key; an older preview may need uninstalling. No production key is included.
+
+管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。

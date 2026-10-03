@@ -15,7 +15,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 
 EMOTIONS = ('happy', 'normal', 'shy', 'thinking', 'surprised', 'sad', 'curious', 'excited', 'confused', 'sleepy', 'angry', 'love', 'proud', 'wink')
-# Bundled Haru and Miku ship Idle and Tap motions; aliases use existing files.
+# Semantic actions are rendered by the original Moling animation rig.
 ACTIONS = ('idle', 'wave', 'nod', 'thinking', 'sleep')
 FRAME_RATES = (30, 24, 20, 15, 10, 5)
 NUMBERS = {
@@ -37,14 +37,8 @@ LINES = {
     'idle': ['慢慢看，我会在这里陪你。'], 'linger': ['看累了就休息一会儿吧。'],
     'opening': ['想聊校园故事，还是今天的心情？'],
 }
-TONES = {
-    'miku': '用轻快、元气的少女语气说话，句子短，偶尔带一点俏皮的语气词。',
-    'haru': '用温柔、安静的语调说话，语速平缓，措辞礼貌克制。',
-    'hanabi': '用活泼、机灵、略带着调侃的语气说话，偶尔反问一句。',
-    'moling': '你是墨灵，一只温柔、机灵的青玉墨精灵。用简短自然的中文说话，陪访客翻阅校园记忆。',
-    'custom': '',
-}
-TONE_ALIASES = {'haru-soft': 'haru'}
+MOLING_PROMPT = '你是墨灵，我的记忆档案网站的原创 AI 助手，一只温柔、机灵的青玉墨精灵。你的形象由墨色卷尾、浅色身体与青玉光点组成。性格温暖、好奇、体贴，偶尔俏皮但不嘲讽访客。用简短自然的中文交流，耐心、平等地陪访客翻阅校园记忆与分享心情；不使用生硬客服腔，不冒充真人或任何官方角色。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。不了解的真实资料不要编造。'
+TONES = {'custom': '', 'custom-image': '', 'moling': '你是墨灵，用温柔、机灵、自然的中文说话，句子简短；认真回应访客，偶尔轻轻俏皮，不讽刺、不敷衍，不强行卖萌。'}
 DEFAULTS = {
     'enabled': True, 'aiEnabled': False, 'name': '墨灵', 'character': 'moling',
     'position': 'right', 'draggable': True, 'randomMove': False, 'mouseFollow': True, 'maxFPS': 30,
@@ -53,26 +47,14 @@ DEFAULTS = {
     'welcomeEnabled': True, 'autoBubbleEnabled': True, 'modelUrl': '',
     **{k: v[0] for k, v in NUMBERS.items()}, 'lines': LINES, 'tones': TONES,
     'model': 'deepseek-flash', 'apiUrl': 'https://api.deepseek.com',
-    'systemPrompt': '你是 我的记忆档案网站的温柔活泼同人 AI 助手，使用初音未来形象。你并非 Crypton 官方服务。用简短中文回答。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。不了解的真实资料不要编造。',
+    'systemPrompt': MOLING_PROMPT,
 }
-TONES = {
-    'miku': '用轻快、元气的少女语气说话，句子短，偶尔带一点俏皮的语气词。',
-    'haru': '用温柔、安静的语调说话，语速平缓，措辞礼貌克制。',
-    'hanabi': '用活泼、机灵、略带着调侃的语气说话，偶尔反问一句。',
-    'moling': '你是墨灵，一只温柔、机灵的青玉墨精灵。用简短自然的中文说话，陪访客翻阅校园记忆。',
-    'custom': '',
-}
-TONE_ALIASES = {'haru-soft': 'haru'}
 PRIVATE = {'systemPrompt', 'model', 'apiUrl', 'tones', 'maxTokens'}
-SITE_GUIDANCE = '网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。'
-CHARACTER_PROMPTS = {
-    'miku': DEFAULTS['systemPrompt'],
-    'moling': '你是墨灵，我的记忆档案网站的原创 AI 助手，一只温柔、机灵的青玉墨精灵。你的形象由墨色卷尾、浅色身体与青玉光点组成。' + SITE_GUIDANCE,
-    'haru': '你是 我的记忆档案网站使用 Haru 形象的温柔 AI 助手。' + SITE_GUIDANCE,
-    'haru-soft': '你是 我的记忆档案网站使用 Haru 形象的温柔 AI 助手。' + SITE_GUIDANCE,
-    'hanabi': '你是 我的记忆档案网站使用花火同人形象的活泼 AI 助手，并非角色官方服务。' + SITE_GUIDANCE,
-    'custom': '你是 我的记忆档案网站的 AI 助手，使用站长选择的自定义形象。' + SITE_GUIDANCE,
-}
+CUSTOM_PROMPT = '你是站长自定义的 AI 助手。用自然中文陪访客交流，友好、认真地回应；不了解的真实资料不要编造。'
+CHARACTER_PROMPTS = {'moling': MOLING_PROMPT, 'custom': CUSTOM_PROMPT, 'custom-image': CUSTOM_PROMPT}
+# Exact former stock prompts are recognized only for migration, never offered as personas.
+LEGACY_PROMPTS = frozenset(('你是 我的记忆档案网站的温柔活泼同人 AI 助手，使用初音未来形象。你并非 Crypton 官方服务。用简短中文回答。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。不了解的真实资料不要编造。', '你是墨灵，我的记忆档案网站的原创 AI 助手，一只温柔、机灵的青玉墨精灵。你的形象由墨色卷尾、浅色身体与青玉光点组成。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。', '你是 我的记忆档案网站使用 Haru 形象的温柔 AI 助手。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。', '你是 我的记忆档案网站使用 Haru 形象的温柔 AI 助手。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。', '你是 我的记忆档案网站使用花火同人形象的活泼 AI 助手，并非角色官方服务。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。', '你是 我的记忆档案网站的 AI 助手，使用站长选择的自定义形象。网站有青春故事集、3D粒子树、青春时间线、校园碎片、随手记、关于我们、留言操场。用简短自然的中文回答，陪访客翻阅校园记忆；不了解的真实资料不要编造。'))
+LEGACY_CHARACTERS = frozenset(('miku', 'haru', 'haru-soft', 'hanabi'))
 _lock = threading.Lock()
 _slots = threading.BoundedSemaphore(3)
 _logger = logging.getLogger(__name__)
@@ -120,20 +102,22 @@ def normalize(raw):
         result['maxFPS'] = DEFAULTS['maxFPS']
     for key, limit in (('name', 40), ('systemPrompt', 6000), ('model', 80)):
         result[key] = str(raw.get(key, DEFAULTS[key])).strip()[:limit] or DEFAULTS[key]
-    result['character'] = raw.get('character') if raw.get('character') in ('miku', 'haru', 'haru-soft', 'hanabi', 'moling', 'custom') else DEFAULTS['character']
-    # Replace only the unchanged legacy Miku default; preserve authored prompts.
-    if not isinstance(raw.get('systemPrompt'), str) or not raw['systemPrompt'].strip() or raw['systemPrompt'].strip() == DEFAULTS['systemPrompt']:
+    result['character'] = raw.get('character') if raw.get('character') in ('custom', 'custom-image') else 'moling'
+    if isinstance(raw.get('character'), str) and raw['character'] in LEGACY_CHARACTERS:
+        result['name'] = DEFAULTS['name']
+    prompt = raw.get('systemPrompt')
+    if not isinstance(prompt, str) or not prompt.strip() or prompt.strip() in LEGACY_PROMPTS:
         result['systemPrompt'] = CHARACTER_PROMPTS[result['character']]
-    model_url = str(raw.get('modelUrl', '')).strip()
-    parsed = urlsplit(model_url)
-    if model_url and (len(model_url) > 1000 or parsed.username or parsed.password or
-                      not parsed.path.endswith('.model3.json') and not parsed.path.endswith('/model3.json') or
-                      not ((model_url.startswith('/') and not model_url.startswith('//') and not parsed.netloc and not parsed.scheme)
-                           or (parsed.scheme == 'https' and parsed.netloc)) or
-                      '\\' in model_url or any(ord(c) < 33 for c in model_url)):
-        raise ValueError('角色地址须为本站路径或 HTTPS 的 .model3.json 模型文件')
-    if result['character'] == 'custom' and not model_url:
-        raise ValueError('请填写自定义 Live2D 模型地址')
+    model_url = str(raw.get('modelUrl', '')).strip() if result['character'] != 'moling' else ''
+    if result['character'] != 'moling':
+        parsed = urlsplit(model_url)
+        valid_origin = ((model_url.startswith('/') and not model_url.startswith('//') and not parsed.netloc and not parsed.scheme)
+                        or (parsed.scheme == 'https' and parsed.netloc))
+        valid_extension = ((parsed.path.endswith('.model3.json') or parsed.path.endswith('/model3.json')) if result['character'] == 'custom'
+                           else bool(re.search(r'\.(png|jpe?g|webp|gif|avif|svg)$', parsed.path, re.I)))
+        if (not model_url or len(model_url)>1000 or not valid_origin or not valid_extension or
+                parsed.username or parsed.password or '\\' in model_url or any(ord(c)<33 for c in model_url)):
+            raise ValueError('自定义形象须为本站路径或 HTTPS 图片/Live2D .model3.json 地址')
     result['modelUrl'] = model_url
     result['position'] = 'left' if raw.get('position') == 'left' else 'right'
     # Restrict hosts to keep the saved key away from arbitrary URLs / SSRF targets.
@@ -208,10 +192,9 @@ def preset_add(connection, data):
 
 
 def tone_for(config):
-    """Speaking style for the active character; each character keeps its own."""
+    """Only the Moling speaking style is used; removed assistants cannot leak their tone."""
     tones = config.get('tones') or {}
-    character = TONE_ALIASES.get(config.get('character') or '', config.get('character') or '')
-    return str(tones.get(character) or '').strip()
+    return str(tones.get(config.get('character') or 'moling') or '').strip()
 
 
 class PetUpstreamError(RuntimeError):

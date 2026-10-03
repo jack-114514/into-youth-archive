@@ -33,10 +33,14 @@ docker compose run --rm --no-deps --user root -v "$PWD/SELECTED_BACKUP:/restore:
 
 后台管理首页文字、Logo、颜色、照片、视频、故事、时间线、留言和桌宠。网站默认 GitHub/邮箱联系为空。账号用户名取 ADMIN_USERNAME；修改此配置会更新登录邮箱，首次安装密码只在数据库没有管理员时使用，之后不会重设密码。示例图由 SVG 几何图形生成，无真人和原站图片；删除后重启不会恢复。
 
-头像/桌宠示例素材需遵守第三方许可，详情在 public/THIRD_PARTY_NOTICES.txt 与 public/assets/desktop-pet/NOTICE.txt。花火测试模型没有随开源版分发。可选择自定义有许可的 Live2D 模型，自有 DeepSeek Key 仅用于自己的后端。
+唯一内置助手是原创墨灵，名称、人设与语态默认使用墨灵；旧内置角色设置自动迁移。墨灵素材与程序按 MIT 发布，说明见 public/assets/desktop-pet/NOTICE.txt。自有 DeepSeek Key 仅用于自己的后端。
 
 ## 非 Docker 部署
 
 deploy/nginx-example.conf 和 deploy/memory-archive.service 是手动部署模板，需要自行填写域名、HTTPS、路径、环境文件。不要同时让 Nginx 与默认 Docker Caddy 占用 80/443。模板没有任何真实服务器账号或证书。
 
 官方文档：[Docker Compose 安装](https://docs.docker.com/compose/install/linux/)、[环境文件与插值](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)、[Cloudflare Full strict](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/)、[Turnstile 后端验证](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/)。
+
+本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
+
+管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。

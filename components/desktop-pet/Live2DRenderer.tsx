@@ -3,11 +3,11 @@ import type { MolingDrag } from "./moling-drag";
 import { useEffect, useRef, useState } from "react";
 import type { Application } from "pixi.js";
 import type { Live2DModel, Cubism4InternalModel } from "pixi-live2d-display";
-import type { Action, PetCue, PetSettings } from "./settings";
+import type { PetCue, PetSettings } from "./settings";
 import { petFrameRate } from "./settings";
 import { RestPoseController } from "./restPose";
 import { petRenderResolution } from "./renderBudget";
-import { HanabiFollowController, pointerFocus } from "./follow";
+import { pointerFocus } from "./follow";
 
 let corePromise: Promise<void> | undefined;
 function loadCore() {
@@ -19,22 +19,6 @@ function loadCore() {
     document.head.appendChild(script);
   });
 }
-// Semantic aliases point to existing files; Miku and Hanabi have no independent emotion expressions.
-const motionMap = { idle: ["Idle", 0], wave: ["Tap", 0], nod: ["Tap", 1], thinking: ["Idle", 1], sleep: ["Idle", 2] } as const;
-const mikuMotionMap = { idle: ["Idle", 0], wave: ["Tap", 0], nod: ["Tap", 1], thinking: ["Idle", 0], sleep: ["Idle", 0] } as const;
-const hanabiMotionMap = { idle: ["Idle", 1], wave: ["Tap", 0], nod: ["Tap", 1], thinking: ["Idle", 1], sleep: ["Idle", 1] } as const;
-const motionMaps: Record<string, Record<Action, readonly [string, number]>> = { miku: mikuMotionMap, hanabi: hanabiMotionMap };
-const expressionMap = { happy: "f04", normal: "f00", shy: "f06", thinking: "f03", surprised: "f05", sad: "f07" } as const;
-const MODEL_URLS: Record<string, string> = {
-  miku: "/assets/desktop-pet/miku/miku.model3.json",
-  hanabi: "/assets/desktop-pet/haru/model3.json",
-};
-// Every character must be able to fall back to this one, so the pet never disappears.
-const DEFAULT_MODEL_URL = "/assets/desktop-pet/haru/model3.json";
-function modelUrlFor(character: string, customUrl: string) {
-  return character === "custom" ? customUrl : MODEL_URLS[character] || DEFAULT_MODEL_URL;
-}
-
 export default function Live2DRenderer({ settings, cue, paused, showLoading = false, onHit, onStatus }: { settings: PetSettings; cue: PetCue | null; paused: boolean; showLoading?: boolean; dragReaction?:{current:MolingDrag}; departing?:boolean; onHit: (areas: string[]) => void; onStatus?: (status: "loading" | "ready" | "error") => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const model = useRef<Live2DModel | null>(null);
@@ -60,16 +44,8 @@ export default function Live2DRenderer({ settings, cue, paused, showLoading = fa
         const { Live2DModel, config, MotionPreloadStrategy } = await import("pixi-live2d-display/cubism4");
         if (cancelled || !canvas.current) return;
         config.logLevel = 0;
-        const source = modelUrlFor(settings.character, settings.modelUrl);
         const options = { autoInteract: false, autoUpdate: false, motionPreload: MotionPreloadStrategy.NONE } as const;
-        let character: Live2DModel;
-        try {
-          character = await Live2DModel.from(source, options);
-        } catch (error) {
-          // Requirement: a broken character model must never take the whole pet down.
-          if (source === DEFAULT_MODEL_URL) throw error;
-          character = await Live2DModel.from(DEFAULT_MODEL_URL, options);
-        }
+        const character = await Live2DModel.from(settings.modelUrl, options);
         // A cancelled load may share cached textures with its replacement.
         if (cancelled) { character.destroy({ children: true }); return; }
         ownedModel = character; model.current = character;
@@ -93,28 +69,13 @@ export default function Live2DRenderer({ settings, cue, paused, showLoading = fa
         const resting = new RestPoseController(internal.coreModel);
         restPose.current = resting;
         resting.settle(performance.now());
-        const hanabiFollow = new HanabiFollowController(internal.coreModel);
-        const maintainRest = () => {
-          const hanabi = latest.current.settings.character === "hanabi";
-          resting.update(performance.now(), hanabi && latest.current.settings.idleEnabled, hanabi);
-          if (hanabi) hanabiFollow.apply(internal.focusController.x, internal.focusController.y);
-        };
+        const maintainRest = () => resting.update(performance.now(), false, false);
         internal.on("afterMotionUpdate", maintainRest);
         detachRest = () => internal.off("afterMotionUpdate", maintainRest);
-        if (settings.character === "miku") {
-          // This official model retains Cubism 2-style parameter IDs in its moc3.
-          // The Cubism 4 renderer otherwise writes to nonexistent ParamAngleX IDs.
-          internal.idParamAngleX = "PARAM_ANGLE_X";
-          internal.idParamAngleY = "PARAM_ANGLE_Y";
-          internal.idParamAngleZ = "PARAM_ANGLE_Z";
-          internal.idParamEyeBallX = "PARAM_EYE_BALL_X";
-          internal.idParamEyeBallY = "PARAM_EYE_BALL_Y";
-          internal.idParamBodyAngleX = "PARAM_BODY_ANGLE_X";
-        }
         character.anchor.set(.5, 1);
         const originalHeight = character.height;
         const initialScale = latest.current.settings.scale;
-        character.scale.set((settings.character === "miku" ? Math.min(390 / originalHeight, 300 / character.internalModel.width) : 390 / originalHeight) * initialScale);
+        character.scale.set(Math.min(390 / originalHeight, 300 / character.internalModel.width) * initialScale);
         character.position.set(160, 420);
         // Upload one atlas per frame before rendering the character, so the first
         // visible frame doesn't synchronously upload every texture at once.
@@ -131,7 +92,7 @@ export default function Live2DRenderer({ settings, cue, paused, showLoading = fa
           if (p || document.hidden) return;
           if (lastScale !== s.scale) {
             lastScale = s.scale;
-            character.scale.set((s.character === "miku" ? Math.min(390 / originalHeight, 300 / character.internalModel.width) : 390 / originalHeight) * s.scale);
+            character.scale.set(Math.min(390 / originalHeight, 300 / character.internalModel.width) * s.scale);
             character.position.set(160, 420);
           }
           character.update(application.ticker.elapsedMS);
@@ -210,34 +171,19 @@ export default function Live2DRenderer({ settings, cue, paused, showLoading = fa
     const character = model.current;
     const manager = character.internalModel.motionManager;
     const definitions = manager.definitions;
-    if (settings.character === "hanabi" && cue.action === "idle" && !cue.randomMotion) {
-      restPose.current?.varyFace(performance.now());
-      return;
-    }
-    let [group, index]: [string, number] = [...(motionMaps[settings.character] || motionMap)[cue.action]];
+    const groups = Object.keys(definitions).filter(name => definitions[name]?.length);
+    let group = (cue.action === "wave" || cue.action === "nod" ? groups.find(name => /tap|touch/i.test(name)) : undefined)
+      || groups.find(name => /^idle$/i.test(name)) || groups[0];
+    let index = 0;
     if (cue.randomMotion) {
       const available = Object.entries(definitions).flatMap(([name, motions]) =>
-        (motions || []).map((_, motionIndex) => ({ name, motionIndex }))
-      );
-      const activeChoices = available.filter(({ name, motionIndex }) => settings.character !== "hanabi"
-        ? settings.idleEnabled || !/^idle$/i.test(name)
-        : (/^idle$/i.test(name) && motionIndex === 1) || (/^tap$/i.test(name) && motionIndex < 2));
-      const choices = activeChoices.length ? activeChoices : available;
-      const fresh = choices.filter(({ name, motionIndex }) => `${name}:${motionIndex}` !== lastMotion.current);
-      const chosen = (fresh.length ? fresh : choices)[Math.floor(Math.random() * (fresh.length || choices.length))];
+        (motions || []).map((_, motionIndex) => ({ name, motionIndex })));
+      const choices = available.filter(({name}) => settings.idleEnabled || !/^idle$/i.test(name));
+      const fresh = choices.filter(({name,motionIndex}) => `${name}:${motionIndex}` !== lastMotion.current);
+      const pool = fresh.length ? fresh : choices;
+      const chosen = pool[Math.floor(Math.random()*pool.length)];
       if (!chosen) return;
-      group = chosen.name;
-      index = chosen.motionIndex;
-    } else if (settings.character === "custom") {
-      const groups = Object.keys(definitions).filter(name => definitions[name]?.length);
-      group = (cue.action === "wave" || cue.action === "nod" ? groups.find(name => /tap|touch/i.test(name)) : undefined)
-        || groups.find(name => /^idle$/i.test(name)) || groups[0];
-      index = 0;
-    } else if ((cue.action === "wave" || cue.action === "nod") && (definitions[group]?.length || 0) > 1) {
-      // Different real model clips make repeated greetings less mechanical.
-      const choices = definitions[group]!.map((_, motionIndex) => motionIndex).filter(motionIndex =>
-        (settings.character !== "hanabi" || motionIndex < 2) && `${group}:${motionIndex}` !== lastMotion.current);
-      index = choices[Math.floor(Math.random() * choices.length)] ?? index;
+      group = chosen.name; index = chosen.motionIndex;
     }
     if (motionEndTimer.current !== null) window.clearTimeout(motionEndTimer.current);
     motionEndTimer.current = null;
@@ -260,13 +206,10 @@ export default function Live2DRenderer({ settings, cue, paused, showLoading = fa
         }, Math.max(1200, Math.min(cycle * 1000, 8000)));
       }).catch(() => undefined);
     }
-    if (settings.character === "haru" || settings.character === "haru-soft") void character.expression(expressionMap[cue.emotion as keyof typeof expressionMap] ?? expressionMap.normal).catch(() => undefined);
-    else {
-      const expressions = manager.expressionManager?.definitions || [];
-      const index = expressions.findIndex((definition: { Name?: string }) => definition.Name?.toLowerCase() === cue.emotion);
-      if (index >= 0) void character.expression(index).catch(() => undefined);
-      else manager.expressionManager?.resetExpression();
-    }
+    const expressions = manager.expressionManager?.definitions || [];
+    const expression = expressions.findIndex((definition: { Name?: string }) => definition.Name?.toLowerCase() === cue.emotion);
+    if (expression >= 0) void character.expression(expression).catch(() => undefined);
+    else manager.expressionManager?.resetExpression();
     return () => {
       cancelled = true;
       if (motionEndTimer.current !== null) window.clearTimeout(motionEndTimer.current);

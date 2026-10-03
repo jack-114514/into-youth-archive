@@ -192,21 +192,37 @@ class PetSecurityTests(unittest.TestCase):
         finally:
             self.request('/api/admin/settings', {'contact_custom_links': original}, True)
 
-    def test_custom_model_and_automatic_bubble_settings(self):
+    def test_removed_models_and_automatic_bubble_settings(self):
         self.assertEqual(pet.normalize({})['character'], 'moling')
-        for character in ('miku', 'haru', 'haru-soft'):
-            self.assertEqual(pet.normalize({'character': character})['character'], character)
-        for url in ('/assets/my-pet/avatar.model3.json', 'https://models.example.test/pet/model3.json'):
-            config = pet.normalize({'character': 'custom', 'modelUrl': url, 'autoBubbleInterval': 900, 'autoBubbleEnabled': False, 'lines': {'auto': ['hello']}})
-            self.assertEqual(config['modelUrl'], url)
+        for character in ('miku', 'haru', 'haru-soft', 'hanabi'):
+            config = pet.normalize({'character': character, 'name': '旧角色', 'modelUrl': 'https://old.example.test/avatar.model3.json', 'autoBubbleInterval': 900, 'autoBubbleEnabled': False, 'lines': {'auto': ['hello']}})
+            self.assertEqual(config['character'], 'moling')
+            self.assertEqual(config['name'], '墨灵')
+            self.assertEqual(config['modelUrl'], '')
             self.assertEqual(config['autoBubbleInterval'], 900)
             self.assertFalse(config['autoBubbleEnabled'])
             self.assertEqual(config['lines']['auto'], ['hello'])
-        for url in ('', '//example.test/pet.model3.json', 'http://example.test/pet.model3.json', 'https://user:password@example.test/pet.model3.json', 'javascript:pet.model3.json', '/avatar.png'):
-            with self.assertRaises(ValueError):
-                pet.normalize({'character': 'custom', 'modelUrl': url})
         self.assertEqual(pet.normalize({'autoBubbleInterval': 0})['autoBubbleInterval'], 10)
-        self.assertEqual(pet.normalize({})['autoBubbleInterval'], 120)
+
+    def test_administrator_custom_images_and_live2d_remain_supported(self):
+        for character, url in [('custom', 'https://models.example.test/pet/model3.json'), ('custom-image', '/uploads/own-avatar.webp')]:
+            raw = {'character': character, 'name': '自己的助手', 'modelUrl': url,
+                   'systemPrompt': '自己的性格', 'tones': {character: '自己的语态'}}
+            status, saved = self.request('/api/admin/pet', {'settings': raw}, True)
+            self.assertEqual(status, 200)
+            config = saved['settings']
+            self.assertEqual(config['character'], character)
+            self.assertEqual(config['name'], '自己的助手')
+            self.assertEqual(config['modelUrl'], url)
+            self.assertEqual(config['systemPrompt'], '自己的性格')
+            self.assertEqual(pet.tone_for(config), '自己的语态')
+            public = self.request('/api/pet/config')[1]['settings']
+            self.assertEqual(public['modelUrl'], url)
+            self.assertNotIn('tones', public)
+        for character, url in [('custom', ''), ('custom', '/wrong.png'), ('custom-image', 'javascript:avatar.png'),
+                               ('custom-image', '//other.example.test/avatar.png'), ('custom-image', 'https://user:secret@example.test/avatar.png')]:
+            with self.assertRaises(ValueError):
+                pet.normalize({'character': character, 'modelUrl': url})
 
     def test_secret_isolation_and_update(self):
         secret = 'sk-test-secret-value-123456'
@@ -276,53 +292,43 @@ class PetSecurityTests(unittest.TestCase):
                 pet.deepseek(config, secret, [], identity)
 
 
-    def test_tone_is_per_character_and_stays_private(self):
+    def test_only_moling_tone_is_used_and_stays_private(self):
         status, saved = self.request('/api/admin/pet', {'settings': {
-            'character': 'hanabi',
-            'tones': {'miku': '用元气的少女语气', 'hanabi': '用调侃的语气', 'haru': '', 'custom': '自定义语态'},
+            'character': 'moling', 'tones': {'moling': '温柔认真', 'miku': '旧语态不得使用'},
         }}, True)
         self.assertEqual(status, 200)
-        self.assertEqual(saved['settings']['tones']['hanabi'], '用调侃的语气')
-        self.assertEqual(saved['settings']['tones']['miku'], '用元气的少女语气')
-        public = self.request('/api/pet/config')[1]['settings']
-        self.assertNotIn('tones', public)
-
+        self.assertEqual(saved['settings']['tones']['moling'], '温柔认真')
+        self.assertNotIn('miku', saved['settings']['tones'])
+        self.assertNotIn('tones', self.request('/api/pet/config')[1]['settings'])
         captured = []
-
         def upstream(req, timeout):
             captured.append(json.loads(req.data))
             return io.BytesIO(json.dumps({'choices': [{'message': {'content': json.dumps({'text': '好的', 'emotion': 'normal', 'action': 'idle'})}}]}).encode())
-
-        messages = [{'role': 'user', 'content': '你好'}]
-        identity = {'visitorMode': 'guest', 'visitorName': ''}
-        for character, expected in (('hanabi', '用调侃的语气'), ('miku', '用元气的少女语气'), ('haru-soft', '用温柔')):
-            config = pet.normalize({'character': character, 'tones': {
-                'miku': '用元气的少女语气', 'hanabi': '用调侃的语气', 'haru': '用温柔的语调', 'custom': ''}})
+        for character in ('moling', 'hanabi', 'miku', 'haru-soft'):
+            config = pet.normalize({'character': character, 'tones': {'moling': '温柔认真', 'miku': '旧语态不得使用'}})
             with patch.object(pet, 'urlopen', upstream):
-                pet.deepseek(config, 'sk-test-secret-value-123456', messages, identity)
-            self.assertIn(expected, captured[-1]['messages'][0]['content'], character)
-        self.assertNotIn('用调侃的语气', captured[1]['messages'][0]['content'])
-        self.assertEqual(pet.normalize({'character': 'miku'})['tones']['miku'], pet.TONES['miku'])
-        self.assertEqual(pet.tone_for(pet.normalize({'character': 'haru-soft'})), pet.TONES['haru'])
+                pet.deepseek(config, 'sk-test-secret-value-123456', [{'role': 'user', 'content': '你好'}], {})
+            self.assertIn('温柔认真', captured[-1]['messages'][0]['content'])
+            self.assertNotIn('旧语态不得使用', captured[-1]['messages'][0]['content'])
 
     def test_tone_must_be_text(self):
         with self.assertRaises(ValueError):
             pet.normalize({'tones': ['not', 'a', 'dict']})
-        self.assertEqual(pet.normalize({'tones': {'miku': 123}})['tones']['miku'], pet.TONES['miku'])
+        self.assertEqual(pet.normalize({'tones': {'moling': 123}})['tones']['moling'], pet.TONES['moling'])
 
     def test_preset_roundtrip_preserves_all_settings_without_changing_active_config_or_key(self):
-        config = pet.normalize({'character': 'hanabi', 'name': '花火', 'size': 221, 'scale': .9,
-                                'systemPrompt': '自定义人设', 'tones': {'hanabi': '当前语态'},
+        config = pet.normalize({'character': 'moling', 'name': '墨灵', 'size': 221, 'scale': .9,
+                                'systemPrompt': '自定义人设', 'tones': {'moling': '当前语态'},
                                 'autoBubbleInterval': 917, 'lines': {'named': ['你好，{name}'], 'auto': ['自定义台词']}})
         with app.db() as connection:
             before = pet.read(connection)
             secret = pet.key(connection)
         payload = {**config, 'apiKey': 'not-a-real-key-do-not-store', 'secret': 'do-not-store'}
-        status, result = self.request('/api/admin/pet/presets', {'name': '花火测试版', 'settings': payload,
+        status, result = self.request('/api/admin/pet/presets', {'name': '墨灵测试版', 'settings': payload,
                                                                'apiKey': 'ignored-top-level-key'}, admin=True)
         self.assertEqual(status, 200)
         preset = result['presets'][0]
-        self.assertEqual(preset['name'], '花火测试版')
+        self.assertEqual(preset['name'], '墨灵测试版')
         self.assertEqual(preset['settings'], config)
         self.assertNotIn('do-not-store', json.dumps(result))
         self.assertNotIn('apiKey', json.dumps(result))

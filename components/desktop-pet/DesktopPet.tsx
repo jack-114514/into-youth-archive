@@ -7,6 +7,7 @@ import { nearestPetDock, type PetDock } from "./positioning";
 import { MolingDrag } from "./moling-drag";
 import "./pet.css";
 const Live2DRenderer = lazy(() => import("./Live2DRenderer"));
+const ImageRenderer = lazy(() => import("./ImageRenderer"));
 const MolingRenderer = lazy(() => import("./MolingRenderer"));
 type Message = ChatMessage;
 
@@ -56,7 +57,7 @@ export function PetCharacter({ settings, identity, page, active = true, preview 
   const lastClickMotion = useRef(0);
   const controller = useRef<AbortController | null>(null);
   const paused = hidden || !active;
-  const Renderer = settings.character === "moling" ? MolingRenderer : Live2DRenderer;
+  const Renderer = settings.character === "custom" ? Live2DRenderer : settings.character === "custom-image" ? ImageRenderer : MolingRenderer;
   const speak = useCallback((category: string, action: PetCue["action"] = "wave", emotion: PetCue["emotion"] = "happy", automatic = false) => {
     // The character must be on screen before any bubble is allowed to appear.
     if (!petReadyRef.current) return;
@@ -291,7 +292,7 @@ export function PetCharacter({ settings, identity, page, active = true, preview 
       </section>
       </>}
       <div className={`pet-body${petReady ? "" : " is-loading"}`} hidden={paused} inert={departing} aria-hidden={!petReady && !manualWake || undefined} role="button" tabIndex={petReady ? 0 : -1} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setChat(true); setCue({ emotion: "happy", action: "wave", id: Date.now() }); } }} aria-label={`桌宠 ${settings.name}，单击开始对话，双击让她休息`} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={endDrag} onMouseEnter={() => { if (!departingRef.current && !drag.current?.moved && settings.hoverEnabled && Date.now() - lastHover.current > 8000) { lastHover.current = Date.now(); speak("hover", settings.character === "moling" ? "idle" : "wave", settings.character === "moling" ? "curious" : "happy"); } }} onClickCapture={event => { if (drag.current?.moved) { event.preventDefault(); event.stopPropagation(); } }} onClick={singleClick} onDoubleClick={restToggle}>
-        <Suspense fallback={null}><Renderer key={settings.character} settings={settings} cue={cue} paused={paused} dragReaction={dragReaction} departing={departing} showLoading={manualWake} onStatus={status => { rendererReady.current = status === "ready"; setPetReady(rendererReady.current && !paused); if (rendererReady.current) setManualWake(false); }} onHit={areas => { if (settings.clickEnabled && !drag.current?.moved) { lastClickMotion.current = Date.now(); speak(areas.includes("Head") ? "head" : areas.includes("Body") ? "body" : "click", areas.includes("Head") ? "wave" : "nod", "shy"); } }} /></Suspense>
+        <Suspense fallback={null}><Renderer key={`${settings.character}|${settings.modelUrl}`} settings={settings} cue={cue} paused={paused} dragReaction={dragReaction} departing={departing} showLoading={manualWake} onStatus={status => { rendererReady.current = status === "ready"; setPetReady(rendererReady.current && !paused); if (rendererReady.current) setManualWake(false); }} onHit={areas => { if (settings.clickEnabled && !drag.current?.moved) { lastClickMotion.current = Date.now(); speak(areas.includes("Head") ? "head" : areas.includes("Body") ? "body" : "click", areas.includes("Head") ? "wave" : "nod", "shy"); } }} /></Suspense>
       </div>
   </div>;
 }

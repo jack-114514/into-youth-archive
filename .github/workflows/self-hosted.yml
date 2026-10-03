@@ -48,6 +48,9 @@ jobs:
           grep -q '我的记忆档案' /tmp/home.html
           curl --fail http://localhost:18080/api/content > /tmp/content.json
           python3 -c "import json; d=json.load(open('/tmp/content.json')); assert len(d['media'])==16; assert d['settings']['contact_email']==''"
+          curl --fail http://localhost:18080/api/pet/config > /tmp/pet.json
+          python3 -c "import json; s=json.load(open('/tmp/pet.json'))['settings']; assert s['character']=='moling'; assert s['name']=='墨灵'; assert s['modelUrl']==''"
+          docker compose exec -T backend python -c "from server.desktop_pet import DEFAULTS, TONES; assert DEFAULTS['character']=='moling'; assert '你是墨灵' in DEFAULTS['systemPrompt']; assert '中文' in TONES['moling']; assert set(TONES)=={'moling','custom','custom-image'}"
           bash scripts/backup.sh
           test -s "$(cat backups/latest.txt)/site.db"
       - name: Logs on failure

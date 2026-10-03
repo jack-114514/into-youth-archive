@@ -38,15 +38,35 @@ class PetChatLogicTests(unittest.TestCase):
         self.assertNotIn('never expose this',str(result))
         self.assertEqual(payloads[1]['max_tokens'],5000)
 
-    def test_character_default_migration_preserves_custom_prompts(self):
-        for character in pet.CHARACTER_PROMPTS:
-            if character=='custom':continue
-            for raw in ({'character':character},{'character':character,'systemPrompt':pet.DEFAULTS['systemPrompt']}):
-                self.assertEqual(pet.normalize(raw)['systemPrompt'],pet.CHARACTER_PROMPTS[character])
-            self.assertEqual(pet.normalize({'character':character,'systemPrompt':'我的专属人设'})['systemPrompt'],'我的专属人设')
-        self.assertIn('墨灵',pet.normalize({'character':'moling'})['systemPrompt'])
-        self.assertNotIn('初音',pet.normalize({'character':'moling'})['systemPrompt'])
-        self.assertNotIn('Crypton',pet.normalize({'character':'moling'})['systemPrompt'])
+    def test_fresh_install_and_legacy_presets_use_moling_persona(self):
+        self.assertEqual(set(pet.CHARACTER_PROMPTS), {'moling', 'custom', 'custom-image'})
+        self.assertEqual(set(pet.TONES), {'moling', 'custom', 'custom-image'})
+        config = pet.read(self.db)
+        self.assertEqual(config['name'], '墨灵')
+        self.assertEqual(config['character'], 'moling')
+        self.assertEqual(config['systemPrompt'], pet.MOLING_PROMPT)
+        self.assertIn('中文', pet.tone_for(config))
+        self.assertNotIn('初音', config['systemPrompt'])
+        self.assertNotIn('Crypton', config['systemPrompt'])
+        for character in pet.LEGACY_CHARACTERS:
+            for prompt in pet.LEGACY_PROMPTS:
+                migrated = pet.normalize({'character': character, 'systemPrompt': prompt, 'name': '旧助手', 'tones': {'miku': '元气少女'}, 'size': 267})
+                self.assertEqual(migrated['character'], 'moling')
+                self.assertEqual(migrated['name'], '墨灵')
+                self.assertEqual(migrated['systemPrompt'], pet.MOLING_PROMPT)
+                self.assertEqual(migrated['tones'], pet.TONES)
+                self.assertEqual(migrated['size'], 267)
+            self.assertEqual(pet.normalize({'character': character, 'systemPrompt': '我的专属人设'})['systemPrompt'], '我的专属人设')
+        captured = []
+        def upstream(req, timeout):
+            captured.append(json.loads(req.data))
+            return io.BytesIO(json.dumps(reply()).encode())
+        with patch.object(pet, 'urlopen', upstream):
+            pet.deepseek(config, 'fixture-key', [{'role':'user','content':'你好'}], {})
+        system = captured[0]['messages'][0]['content']
+        self.assertIn(pet.MOLING_PROMPT, system)
+        self.assertIn(pet.TONES['moling'], system)
+        self.assertNotIn('初音', system)
 
     def test_both_modes_empty_fail_honestly_after_two_calls(self):
         with patch.object(pet,'urlopen',side_effect=lambda *a,**kw:io.BytesIO(json.dumps({'choices':[{'finish_reason':'stop','message':{'content':'','reasoning_content':'hidden'}}]}).encode())) as upstream:

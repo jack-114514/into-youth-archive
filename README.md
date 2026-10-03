@@ -18,7 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 ## 📱 安卓管理 App：点这里直接下载
 
-### [⬇ 下载安卓 APK · 通用自建版预览包](https://github.com/jack-114514/into-youth-archive/releases/download/v3.1.1/memory-archive-admin-preview.apk)
+### [⬇ 下载安卓 APK · 通用自建版预览包](https://github.com/jack-114514/into-youth-archive/releases/download/v3.2.0/memory-archive-admin-preview.apk)
 
 **Android 7.0 及以上。安装后填写自己的 HTTPS 域名，再用自己的后台账号登录；不用改源码或重编译 APK。**
 
@@ -42,8 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 | 项目 | 当前版本 |
 | --- | --- |
-| 网站自建发行版 | v3.1.1，前台 + 网页后台 + Python API + 安装运维脚本 |
-| 安卓通用管理 App | 1.2.1，versionCode 4；应用 ID `org.memoryarchive.admin` |
+| 网站自建发行版 | v3.2.0，前台 + 网页后台 + Python API + 安装运维脚本 |
+| 安卓通用管理 App | 1.3.0，versionCode 5；应用 ID `org.memoryarchive.admin` |
 | 默认部署 | Docker Compose + Caddy HTTPS + SQLite；单站点、单管理员 |
 
 新装网站保留整套界面、动画与功能，使用中性文案和生成的演示插画。数据库、账号、照片、域名、Cloudflare、邮箱和 AI 密钥由安装者自行配置。源码不含原作者的真实照片、数据库、上传内容、服务器地址、密码、云服务凭据或安卓签名私钥；运行时不连接原作者的网站。
@@ -71,7 +71,7 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 | 留言板 `/messages` | 昵称、头像、文字/图片留言、回复、点赞；站长可隐藏或删除 |
 | 投稿 | 提交标题、正文、图片、联系邮箱，进入站长审核列表 |
 | 音乐 | 自建播放列表、播放/暂停、音量与播放顺序、音量渐变；自动播放受浏览器限制 |
-| Live2D 桌宠 | Haru / Miku 示例或自己的授权模型；拖动、移动、鼠标跟随、互动台词；可选 AI 对话 |
+| 墨灵 AI 助手 | 默认原创形象，支持自定义图片/Live2D；默认墨灵人设与中文语态，14表情、12动作、拖拽与告别互动 |
 
 ## 网页后台：站长能自定义什么
 
@@ -99,7 +99,7 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 | 网页界面 | React 19.2.6、TypeScript 5.9.3、Vite 8.0.13；VPS 部署为静态 SPA |
 | 3D | Three.js 0.185.x、React Three Fiber 9.x、Drei 10.x；WebGL 场景 |
 | 动画与样式 | Framer Motion 13.x、Tailwind CSS 4.2.1、自定义 CSS、Lucide 图标 |
-| 裁剪 / 桌宠 | react-advanced-cropper；PixiJS 6.5.10 + pixi-live2d-display 0.4.0 + Cubism Core |
+| 裁剪 / 桌宠 | react-advanced-cropper；原创墨灵六部件与 SVG 五官连续动画 |
 | 后端 | Python 标准库 HTTP 服务、JSON API、SQLite；无需额外 Python Web 框架或数据库服务 |
 | 网站部署 | Docker Compose v2；Node 22 构建、Python 3.12 容器、Caddy 2 HTTPS/反向代理 |
 | Android | Flutter 3.47.0 / Dart 3.13、Material 3、Riverpod、Dio、安全存储和手机端媒体压缩 |
@@ -124,10 +124,14 @@ sudo bash scripts/update.sh
 
 ## 开源许可
 
-主要程序采用 [MIT](LICENSE)。[登录组件许可](components/opensource-login/LICENSE)、[第三方素材说明](public/THIRD_PARTY_NOTICES.txt)及 [Live2D 模型说明](public/assets/desktop-pet/NOTICE.txt)分别适用；角色模型和 Cubism Core 不由项目 MIT 许可覆盖。使用自己的内容与授权模型时，请保留对应许可。
+主要程序采用 [MIT](LICENSE)。[登录组件许可](components/opensource-login/LICENSE)、[第三方素材说明](public/THIRD_PARTY_NOTICES.txt)及 [墨灵素材说明](public/assets/desktop-pet/NOTICE.txt)分别适用。墨灵原创素材随项目按 MIT 发布；本版不再包含旧内置角色模型；Cubism Core 仅按其许可用于自定义 Live2D。
 
-## v3.1.1 更新
+## v3.2.0 更新
 
 原创墨灵：六部件透明图集、14表情、12动作、3组拖拽互动、只用眼睛跟随鼠标、挥手告别后休息。AI 默认输出上限 5000，后台最高 10000；异常 JSON 回复自动补试一次。每个签名访客会话独立限流：每分钟20次、每10分钟60次，超额休息5分钟且不调用API。共享IP不会合并访客额度。清除Cookie或跨设备属于新会话，不能识别同一个自然人。
 
-通用安卓管理 App 1.2.1+4 新增原生助手设置：名称、形象、说话风格、大尺寸人设编辑、输出上限、模型、新Key、帧率和互动开关。保存只修改这些字段，保留其他台词和布局参数。墨灵动画仍在电脑网页运行，安卓端负责管理。新安装默认墨灵；旧安装已保存的角色、人设和Key保持原值。
+通用安卓管理 App 1.3.0+5 新增原生助手设置：名称、形象、说话风格、大尺寸人设编辑、输出上限、模型、新Key、帧率和互动开关。保存只修改这些字段，保留其他台词和布局参数。墨灵动画仍在电脑网页运行，安卓端负责管理。新安装默认墨灵；旧内置角色自动切换为墨灵；管理员自写的人设与Key保持原值。
+
+本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
+
+管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。
