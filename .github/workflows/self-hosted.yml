@@ -78,7 +78,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build apk --debug --dart-define=GIT_COMMIT=${{ github.sha }} --dart-define=BUILD_TYPE=preview
+      - run: flutter build apk --debug --dart-define=APP_UPDATE_REPOSITORY=${{ github.repository }} --dart-define=GIT_COMMIT=${{ github.sha }} --dart-define=BUILD_TYPE=preview
       - uses: actions/upload-artifact@v4
         with:
           name: memory-archive-admin-ci-check

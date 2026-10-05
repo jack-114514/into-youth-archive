@@ -61,12 +61,17 @@ void main() {
   };
 
   test(
-    'an empty update URL cannot report a completed latest-version check',
+    'an empty override discovers the update directly from the selected server',
     () async {
       AppConfig.connection = const SiteConnection('https://photos.example.com');
       final adapter = ManifestAdapter(manifest());
-      await expectLater(service(adapter).check(), throwsFormatException);
-      expect(adapter.requests, isEmpty);
+      final result = await service(adapter).check();
+      expect(result.hasUpdate, isTrue);
+      expect(result.sourceName, '本站服务器');
+      expect(
+        adapter.requests.single.uri.path,
+        '/downloads/admin-app/version.json',
+      );
     },
   );
   test('1.5.1 detects code 16 and bypasses a cached manifest URL', () async {
@@ -102,7 +107,7 @@ void main() {
     },
   );
   testWidgets(
-    'unconfigured update UI names the problem instead of claiming latest',
+    'existing blank update settings offer the server update without configuration',
     (tester) async {
       AppConfig.connection = const SiteConnection('https://photos.example.com');
       final adapter = ManifestAdapter(manifest());
@@ -113,11 +118,15 @@ void main() {
       );
       await tester.tap(find.text('检查更新'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('尚未配置 APK 更新清单'), findsOneWidget);
-      expect(find.text('更新来源：未配置'), findsOneWidget);
+      await tester.tap(find.text('从服务器获取更新'));
+      await tester.pumpAndSettle();
+      expect(find.text('发现新版本 1.6.0'), findsOneWidget);
+      expect(find.text('更新来源：本站服务器'), findsOneWidget);
       expect(find.textContaining('当前已是最新版本'), findsNothing);
-      expect(find.text('更新地址设置'), findsOneWidget);
-      expect(adapter.requests, isEmpty);
+      expect(find.text('站点与高级设置'), findsOneWidget);
+      expect(adapter.requests, hasLength(1));
+      await tester.tap(find.text('稍后'));
+      await tester.pumpAndSettle();
     },
   );
   testWidgets('configured 1.5.1 offers the actual 1.6.0 update', (
@@ -131,6 +140,8 @@ void main() {
       ),
     );
     await tester.tap(find.text('检查更新'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('从服务器获取更新'));
     await tester.pumpAndSettle();
     expect(find.text('发现新版本 1.6.0'), findsOneWidget);
     expect(find.text('下载更新'), findsOneWidget);
@@ -153,8 +164,10 @@ void main() {
       );
       await tester.tap(find.text('检查更新'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('已查询更新清单：1.5.1+15'), findsOneWidget);
-      expect(find.text('更新来源：$url'), findsOneWidget);
+      await tester.tap(find.text('从服务器获取更新'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('服务器版本 1.5.1+15'), findsOneWidget);
+      expect(find.text('更新来源：本站服务器'), findsOneWidget);
     },
   );
 }

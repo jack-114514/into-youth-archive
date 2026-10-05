@@ -20,15 +20,17 @@ Run the installation command in the Linux terminal on your VPS. For missing curl
 
 ## 📱 Download the Android admin app
 
-### [⬇ Download Android APK · 1.7.0 (versionCode 18)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk)
+### [⬇ Download Android APK · 1.7.1 (versionCode 19)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.1/memory-archive-admin-v1.7.1.apk)
 
 **Android 7.0 or later. Enter your own HTTPS domain after installation, then sign in with your website admin account. No source changes or APK rebuild are required.**
 
 [Releases and checksums](https://github.com/jack-114514/into-youth-archive/releases/latest) · [Android features, architecture and build guide (Chinese)](mobile-admin-app/README.md) · **[Android privacy policy (Chinese)](mobile-admin-app/PRIVACY.md)**
 
-The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.7.0.apk`. Website release v3.5.0 and Android version 1.7.0 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
+The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.7.1.apk`. Website release v3.5.1 and Android version 1.7.1 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
 
 ---
+
+Android 1.7.1 offers GitHub or the current server after Check for updates, plus a link to the open-source repository. No manual update-manifest URL is required. Retains the image/control and layout fixes from 1.7.0.
 
 ## Documentation
 
@@ -46,8 +48,8 @@ The linked detailed guides are currently in Chinese. This English README covers 
 
 | Component | Current version |
 | --- | --- |
-| Self-hosted website | v3.5.0: visitor site, web dashboard, Python API and installation/maintenance scripts |
-| Universal Android admin app | 1.7.0, versionCode 18; package ID `org.memoryarchive.admin.secure` |
+| Self-hosted website | v3.5.1: visitor site, web dashboard, Python API and installation/maintenance scripts |
+| Universal Android admin app | 1.7.1, versionCode 19; package ID `org.memoryarchive.admin.secure` |
 | Default deployment | Docker Compose, Caddy HTTPS and SQLite; one site and one administrator |
 
 A fresh installation includes the complete interface, animations and features, with neutral text and generated demo illustrations. Configure your own database, accounts, photos, domain, Cloudflare, email and AI credentials. The source excludes the original author's real photos, database, uploads, server address, passwords, cloud credentials and Android signing key. The running site does not connect to the original author's website.
@@ -148,7 +150,7 @@ Administrators may use custom images (PNG/JPEG/WebP/GIF/AVIF/SVG) or licensed Cu
 
 ### Android login security
 
-The current universal app is 1.7.0+18. The first two password attempts do not require a challenge. After two consecutive failures, Cloudflare verification appears below the password field from the third attempt onward; login remains disabled until verification succeeds. Update your backend and configure your own three Turnstile parameters. Web and native dashboards share the same account; the password is never sent to the verification page. The old site-specific package is no longer maintained; historical releases remain available for rollback.
+The current universal app is 1.7.1+19. The first two password attempts do not require a challenge. After two consecutive failures, Cloudflare verification appears below the password field from the third attempt onward; login remains disabled until verification succeeds. Update your backend and configure your own three Turnstile parameters. Web and native dashboards share the same account; the password is never sent to the verification page. The old site-specific package is no longer maintained; historical releases remain available for rollback.
 
 ### Verification after consecutive failures (introduced in 1.4.1)
 

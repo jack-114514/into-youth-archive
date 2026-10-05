@@ -31,7 +31,7 @@ class SiteConnection {
           manifest.userInfo.isNotEmpty ||
           manifest.hasFragment ||
           manifest.hasQuery) {
-        throw const FormatException('更新清单须为同一站点的 HTTPS 地址，留空则关闭自动更新检查');
+        throw const FormatException('自定义更新地址须为同一站点的 HTTPS 地址；留空使用自动更新');
       }
     }
     return SiteConnection(origin, updateUrl: update);
@@ -46,8 +46,22 @@ class AppConfig {
   static String get publicBaseUrl => connection?.origin ?? '';
   static String get adminWebUrl =>
       connection == null ? '' : '${connection!.origin}/admin';
-  static String get updateManifestUrl => connection?.updateUrl ?? '';
-  static String get githubReleasesUrl => '';
+  static String get updateManifestUrl {
+    final site = connection;
+    if (site == null) return '';
+    return site.updateUrl.isEmpty
+        ? '${site.origin}/downloads/admin-app/version.json'
+        : site.updateUrl;
+  }
+
+  static const githubUpdateRepository = String.fromEnvironment(
+    'APP_UPDATE_REPOSITORY',
+  );
+  static String get githubReleasesUrl =>
+      RegExp(r'^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
+          .hasMatch(githubUpdateRepository)
+      ? 'https://github.com/$githubUpdateRepository/releases/latest'
+      : '';
   static bool get isConfigured => connection != null;
   static const buildCommit = String.fromEnvironment(
     'GIT_COMMIT',

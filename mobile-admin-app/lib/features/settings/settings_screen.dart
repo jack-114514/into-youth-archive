@@ -107,26 +107,90 @@ class AppUpdateCard extends StatefulWidget {
 class _UpdateCardState extends State<AppUpdateCard> {
   bool _busy = false;
   double? _progress;
-  String _message = '点击检查更新，查询本站 APK 更新清单';
+  String _message = '点击检查更新，自动获取可用的新版本';
+  String? _source;
 
-  Future<void> _check() async {
+  Future<void> _chooseSource() async {
+    final service = widget.service ?? UpdateService();
+    final source = await showDialog<UpdateSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择更新来源'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              OutlinedButton.icon(
+                onPressed: service.sourceRepositoryUrl.isEmpty
+                    ? null
+                    : () => Navigator.pop(context, UpdateSource.github),
+                icon: const Icon(Icons.code_rounded),
+                label: const Text('从 GitHub 获取更新'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context, UpdateSource.server),
+                icon: const Icon(Icons.dns_outlined),
+                label: const Text('从服务器获取更新'),
+              ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: service.sourceRepositoryUrl.isEmpty
+                    ? null
+                    : () => _openSource(service),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('前往 GitHub 开源地址'),
+              ),
+              if (service.sourceRepositoryUrl.isEmpty)
+                const Text('此构建未设置 GitHub 来源，可从本站服务器更新。'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || source == null) return;
+    await _check(service, source);
+  }
+
+  Future<void> _openSource(UpdateService service) async {
+    try {
+      await service.openSourceRepository();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('无法打开 GitHub，请检查网络和浏览器设置')),
+        );
+      }
+    }
+  }
+
+  Future<void> _check(UpdateService service, UpdateSource source) async {
     setState(() {
       _busy = true;
       _progress = null;
-      _message = '正在检查更新…';
+      _source = source == UpdateSource.github ? 'GitHub 正式发行' : '本站服务器';
+      _message = '正在从$_source检查更新…';
     });
     try {
-      final service = widget.service ?? UpdateService();
-      final result = await service.check();
+      final result = await service.check(source: source);
       if (!mounted) return;
+      setState(() => _source = result.sourceName);
       final manifest = result.manifest;
       if (manifest == null) {
-        throw const FormatException('没有读取到更新清单，无法确认最新版本。');
+        throw const FormatException('没有读取到版本信息，请稍后重试。');
       }
       if (!result.hasUpdate) {
         setState(
           () => _message =
-              '已查询更新清单：${manifest.versionName}+${manifest.versionCode}。'
+              '服务器版本 ${manifest.versionName}+${manifest.versionCode}。'
               '本机 ${result.currentVersion}+${result.currentBuild}，暂无可用更新。',
         );
         return;
@@ -177,7 +241,7 @@ class _UpdateCardState extends State<AppUpdateCard> {
       if (!mounted) return;
       setState(
         () => _message =
-            '未完成更新检查：${error is FormatException ? error.message : error}',
+            '检查更新未完成：${error is FormatException ? error.message : '暂时无法连接更新服务器，请稍后重试。'}',
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -203,9 +267,13 @@ class _UpdateCardState extends State<AppUpdateCard> {
             Text(_message),
             const SizedBox(height: 8),
             Text(
-              AppConfig.updateManifestUrl.isEmpty
-                  ? '更新来源：未配置'
-                  : '更新来源：${AppConfig.updateManifestUrl}',
+              _source != null
+                  ? '更新来源：$_source'
+                  : AppConfig.connection?.updateUrl.isNotEmpty == true
+                  ? '更新来源：自定义本站地址'
+                  : AppConfig.githubReleasesUrl.isNotEmpty
+                  ? '可从 GitHub 或本站服务器获取更新'
+                  : '更新来源：本站服务器（自动）',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (_progress != null) ...[
@@ -214,7 +282,7 @@ class _UpdateCardState extends State<AppUpdateCard> {
             ],
             const SizedBox(height: 14),
             OutlinedButton.icon(
-              onPressed: _busy ? null : _check,
+              onPressed: _busy ? null : _chooseSource,
               icon: const Icon(Icons.refresh_rounded),
               label: Text(_busy ? '正在处理…' : '检查更新'),
             ),
@@ -227,7 +295,18 @@ class _UpdateCardState extends State<AppUpdateCard> {
                       ),
                     ),
               icon: const Icon(Icons.settings_outlined),
-              label: const Text('更新地址设置'),
+              label: const Text('站点与高级设置'),
+            ),
+            TextButton.icon(
+              onPressed:
+                  _busy ||
+                      (widget.service ?? UpdateService())
+                          .sourceRepositoryUrl
+                          .isEmpty
+                  ? null
+                  : () => _openSource(widget.service ?? UpdateService()),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: const Text('前往 GitHub 开源地址'),
             ),
           ],
         ),

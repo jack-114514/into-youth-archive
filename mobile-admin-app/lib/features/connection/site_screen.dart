@@ -113,14 +113,23 @@ class _SiteScreenState extends ConsumerState<SiteScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _update,
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: '本站 APK 更新清单（可选）',
-                      hintText: '留空则不检查更新',
-                    ),
+                  const Text('连接后可直接检查 App 更新，无需填写更新地址。'),
+                  ExpansionTile(
+                    title: const Text('高级更新设置（通常不用修改）'),
+                    initiallyExpanded: _update.text.isNotEmpty,
+                    childrenPadding: const EdgeInsets.only(bottom: 16),
+                    children: [
+                      TextFormField(
+                        controller: _update,
+                        keyboardType: TextInputType.url,
+                        autocorrect: false,
+                        decoration: const InputDecoration(
+                          labelText: '自定义更新地址（可选）',
+                          hintText: '留空使用自动更新',
+                          helperText: '仅自建更新服务需要填写；使用本站的 HTTPS 地址。',
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   if (widget.editing) const Text('保存后会退出当前账号，请重新登录所选站点。'),
