@@ -1,5 +1,5 @@
 网站前台、网页后台与安卓管理端功能详情
-版本：网站 v3.4.0；安卓 1.6.1+17
+版本：网站 v3.5.0；安卓 1.7.0+18
 记录日期：2026-10-05
 适用对象：本仓库独立 VPS 自建版
 编码：UTF-8；纯文本，无需 Markdown 编辑器即可阅读
@@ -11,7 +11,7 @@ https://github.com/jack-114514/into-youth-archive
 curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 
 安卓稳定签名正式通用 APK 直接下载（文件名包含版本）：
-https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk
+https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk
 
 新手完整步骤：docs/QUICK_START.md
 技术与数据说明：docs/TECHNICAL.md
@@ -232,7 +232,7 @@ K. 服务器级配置
 12. 原生编辑高级排版与取景、首页开场路线、3D参数、MP3上传/播放列表排序、联系链接、桌宠台词/布局/预设，与网站共用数据。
 13. 令牌使用系统安全存储并按 origin 隔离；密码不持久保存。
 14. 图片压缩保留 EXIF，视频保留声音；压缩不是隐私脱敏。
-15. 官方下载为稳定签名正式通用版 memory-archive-admin-v1.6.1.apk，可覆盖相同包名/签名的安全通用版；CI debug工件与正式发行区分。自行重新签名时须妥善保管自己的私钥。
+15. 官方下载为稳定签名正式通用版 memory-archive-admin-v1.7.0.apk，可覆盖相同包名/签名的安全通用版；CI debug工件与正式发行区分。自行重新签名时须妥善保管自己的私钥。
 
 
 七、使用的技术
@@ -283,7 +283,7 @@ JDK 17、Android SDK 36、minSdk 24。
 13. 不要执行 docker compose down -v；不要把真实 .env、数据库、备份或签名私钥上传 GitHub。
 
 
-安卓通用版 1.6.1+17（网站自建发行版 v3.4.0）
+安卓通用版 1.7.0+18（网站自建发行版 v3.5.0）
 菜单与网站一致：服务器状态、网站内容设置（内容概览、青春故事集、3D粒子树、校园碎片、时间线、随手记、关于我们、留言操场）、留言与投稿信箱（留言管理、投稿信箱）、首页开场、网站设置、AI桌宠设置、账号管理。
 原生编辑各栏目图片/取景/文案/排版/开关/顺序、时间线、开场路线与参数、3D参数、MP3上传与播放列表排序、联系信息、助手台词/布局/预设；邮箱验证码改密与会话撤销。网站与App共享设置及内容数据。
-更新地址未配置时明确提示，不误报最新；已查询时显示本机版本、远端版本和清单来源，绕过旧缓存。下载文件名 memory-archive-admin-v1.6.1.apk，稳定签名覆盖之前相同安全通用版。
+更新地址未配置时明确提示，不误报最新；已查询时显示本机版本、远端版本和清单来源，绕过旧缓存。下载文件名 memory-archive-admin-v1.7.0.apk，稳定签名覆盖之前相同安全通用版。

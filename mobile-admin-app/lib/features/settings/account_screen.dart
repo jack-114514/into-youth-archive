@@ -92,6 +92,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         children: [
           Text(_message),
           const SizedBox(height: 16),
+          Text('1. 验证身份并获取验证码', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
           KeyedSubtree(
             key: ValueKey(_generation),
             child: ref.watch(inlineVerificationBuilderProvider)(
@@ -104,6 +106,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             child: const Text('发送邮箱验证码'),
           ),
           const SizedBox(height: 20),
+          Text('2. 设置新的登录密码', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _code,
             enabled: !_busy,

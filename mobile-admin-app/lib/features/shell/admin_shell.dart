@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'admin_navigation.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/admin_layout.dart';
 import '../auth/auth_controller.dart';
 import '../connection/site_screen.dart';
 import '../comments/comments_screen.dart';
@@ -94,10 +95,12 @@ class _AdminShellState extends ConsumerState<AdminShell> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 820;
     final ids = _visited.keys.toList();
-    final content = IndexedStack(
-      key: _contentKey,
-      index: ids.indexOf(_selected),
-      children: _visited.values.toList(),
+    final content = AdminPageWidth(
+      child: IndexedStack(
+        key: _contentKey,
+        index: ids.indexOf(_selected),
+        children: _visited.values.toList(),
+      ),
     );
     Widget menu({bool drawer = false}) => AdminMenu(
       selected: _selected,

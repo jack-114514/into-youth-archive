@@ -41,6 +41,10 @@ class AppTheme {
         bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: ink),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        alignLabelWithHint: true,
+        helperMaxLines: 3,
+        errorMaxLines: 3,
         filled: true,
         fillColor: Colors.white.withValues(alpha: .78),
         contentPadding: const EdgeInsets.symmetric(
@@ -63,7 +67,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white.withValues(alpha: .72),
         elevation: 0,
-        margin: EdgeInsets.zero,
+        margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
           side: BorderSide(color: Colors.white.withValues(alpha: .9)),
@@ -75,7 +79,11 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(
+            fontFamily: 'sans-serif',
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

@@ -161,89 +161,104 @@ class _MediaCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
   });
-
   final Map<String, dynamic> item;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
+  final VoidCallback onEdit, onDelete;
   @override
   Widget build(BuildContext context) {
     final imageUri = AppConfig.resolvePublicUrl(item['url']?.toString() ?? '');
     final hasVideo = (item['video_url']?.toString() ?? '').isNotEmpty;
+    Widget preview(bool compact) => ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: compact ? double.infinity : 100,
+        height: compact ? 170 : 100,
+        color: AppTheme.ink.withValues(alpha: .08),
+        child: imageUri == null
+            ? Icon(hasVideo ? Icons.videocam_outlined : Icons.image_outlined)
+            : Image.network(
+                imageUri.toString(),
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
+                    const Icon(Icons.broken_image_outlined),
+              ),
+      ),
+    );
+    Widget details() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          [
+            item['taken_at'],
+            item['meta'],
+          ].where((v) => v != null && v.toString().isNotEmpty).join(' · '),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _Flag(label: '首页', enabled: item['show_on_home'] == 1),
+            _Flag(label: '3D', enabled: item['show_in_3d'] == 1),
+            if (hasVideo) const _Flag(label: '视频', enabled: true),
+            _Flag(label: '排序：${item['sort_order'] ?? '-'}', enabled: false),
+          ],
+        ),
+      ],
+    );
+    final header = Row(
+      children: [
+        Expanded(
+          child: Text(
+            item['title']?.toString() ?? '未命名内容',
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        PopupMenuButton<String>(
+          tooltip: '内容操作',
+          onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'edit', child: Text('编辑')),
+            PopupMenuItem(value: 'delete', child: Text('删除')),
+          ],
+        ),
+      ],
+    );
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                width: 86,
-                height: 86,
-                color: AppTheme.ink.withValues(alpha: .08),
-                child: imageUri == null
-                    ? Icon(
-                        hasVideo
-                            ? Icons.videocam_outlined
-                            : Icons.image_outlined,
-                      )
-                    : Image.network(
-                        imageUri.toString(),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            const Icon(Icons.broken_image_outlined),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final compact =
+                box.maxWidth < 400 ||
+                MediaQuery.textScalerOf(context).scale(14) > 18;
+            return compact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      header,
+                      const SizedBox(height: 8),
+                      preview(true),
+                      const SizedBox(height: 12),
+                      details(),
+                    ],
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      preview(false),
+                      const SizedBox(width: 16),
                       Expanded(
-                        child: Text(
-                          item['title']?.toString() ?? '未命名内容',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [header, details()],
                         ),
                       ),
-                      Text('#${item['sort_order'] ?? '-'}'),
                     ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    [item['taken_at'], item['meta']]
-                        .where(
-                          (value) =>
-                              value != null && value.toString().isNotEmpty,
-                        )
-                        .join(' · '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 9),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      _Flag(label: '首页', enabled: item['show_on_home'] == 1),
-                      _Flag(label: '3D', enabled: item['show_in_3d'] == 1),
-                      if (hasVideo) const _Flag(label: '视频', enabled: true),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'edit', child: Text('编辑')),
-                PopupMenuItem(value: 'delete', child: Text('删除')),
-              ],
-            ),
-          ],
+                  );
+          },
         ),
       ),
     );
@@ -480,44 +495,6 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
             24 + MediaQuery.viewInsetsOf(context).bottom,
           ),
           children: [
-            TextFormField(
-              controller: _primaryUrl,
-              enabled: !_saving,
-              decoration: const InputDecoration(labelText: '原图 / 主视频地址'),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _thumbnail,
-              enabled: !_saving,
-              decoration: const InputDecoration(
-                labelText: '3D 缩略图地址',
-                helperText: '留空使用原图；可填写本站上传地址。',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _videoUrl,
-              enabled: !_saving,
-              decoration: const InputDecoration(
-                labelText: '关联视频地址',
-                helperText: '清空后保存可移除关联视频。',
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: _saving ? null : _pickThumbnail,
-              icon: const Icon(Icons.photo_size_select_actual_outlined),
-              label: Text(
-                _thumbnailImage == null ? '从相册上传 3D 缩略图' : '已选择 3D 缩略图',
-              ),
-            ),
-            SwitchListTile(
-              title: const Text('在青春故事集展示'),
-              value: _showInStories,
-              onChanged: _saving
-                  ? null
-                  : (v) => setState(() => _showInStories = v),
-            ),
-
             Center(
               child: Container(
                 width: 42,
@@ -554,6 +531,73 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
               ],
             ),
             const SizedBox(height: 14),
+            Text('图片与视频资源', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            if (_image != null ||
+                AppConfig.resolvePublicUrl(_primaryUrl.text) != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: SizedBox(
+                  height: 180,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _image != null
+                        ? Image.file(File(_image!.path), fit: BoxFit.contain)
+                        : Image.network(
+                            AppConfig.resolvePublicUrl(_primaryUrl.text)
+                                .toString(),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const Center(child: Text('当前资源无法预览')),
+                          ),
+                  ),
+                ),
+              ),
+            TextFormField(
+              controller: _primaryUrl,
+              enabled: !_saving,
+              decoration: const InputDecoration(labelText: '原图 / 主视频地址'),
+              onEditingComplete: () {
+                FocusScope.of(context).unfocus();
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _thumbnail,
+              enabled: !_saving,
+              decoration: const InputDecoration(
+                labelText: '3D 缩略图地址',
+                helperText: '留空使用原图；可填写本站上传地址。',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _videoUrl,
+              enabled: !_saving,
+              decoration: const InputDecoration(
+                labelText: '关联视频地址',
+                helperText: '清空后保存可移除关联视频。',
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _saving ? null : _pickThumbnail,
+              icon: const Icon(Icons.photo_size_select_actual_outlined),
+              label: Text(
+                _thumbnailImage == null ? '从相册上传 3D 缩略图' : '已选择 3D 缩略图',
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('在青春故事集展示'),
+              value: _showInStories,
+              onChanged: _saving
+                  ? null
+                  : (v) => setState(() => _showInStories = v),
+            ),
+
+            const SizedBox(height: 16),
+            Text('内容与展示', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _title,
               decoration: const InputDecoration(labelText: '标题'),

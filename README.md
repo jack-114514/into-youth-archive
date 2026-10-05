@@ -20,13 +20,13 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 ## 📱 安卓管理 App：点这里直接下载
 
-### [⬇ 下载安卓 APK · 1.6.1（versionCode 17）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk)
+### [⬇ 下载安卓 APK · 1.7.0（versionCode 18）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk)
 
 **Android 7.0 及以上。安装后填写自己的 HTTPS 域名，再用自己的后台账号登录；不用改源码或重编译 APK。**
 
 [发行版与校验文件](https://github.com/jack-114514/into-youth-archive/releases/latest) · [安卓功能 / 技术 / 构建](mobile-admin-app/README.md) · **[安卓隐私政策](mobile-admin-app/PRIVACY.md)**
 
-发行附件是稳定签名的正式通用版，可覆盖之前相同包名/签名的安全通用版。下载文件名明确包含版本：`memory-archive-admin-v1.6.1.apk`；网站发行版本号 v3.4.0 与安卓版本号 1.6.1 分开标识。旧预览版和旧专用版的包名/签名不同，需安装通用版并重新连接站点，服务器内容保持。CI 的 debug APK 仅作测试工件。
+发行附件是稳定签名的正式通用版，可覆盖之前相同包名/签名的安全通用版。下载文件名明确包含版本：`memory-archive-admin-v1.7.0.apk`；网站发行版本号 v3.5.0 与安卓版本号 1.7.0 分开标识。旧预览版和旧专用版的包名/签名不同，需安装通用版并重新连接站点，服务器内容保持。CI 的 debug APK 仅作测试工件。
 
 ---
 
@@ -44,8 +44,8 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 | 项目 | 当前版本 |
 | --- | --- |
-| 网站自建发行版 | v3.4.0，前台 + 网页后台 + Python API + 安装运维脚本 |
-| 安卓通用管理 App | 1.6.1，versionCode 17；应用 ID `org.memoryarchive.admin.secure` |
+| 网站自建发行版 | v3.5.0，前台 + 网页后台 + Python API + 安装运维脚本 |
+| 安卓通用管理 App | 1.7.0，versionCode 18；应用 ID `org.memoryarchive.admin.secure` |
 | 默认部署 | Docker Compose + Caddy HTTPS + SQLite；单站点、单管理员 |
 
 新装网站保留整套界面、动画与功能，使用中性文案和生成的演示插画。数据库、账号、照片、域名、Cloudflare、邮箱和 AI 密钥由安装者自行配置。源码不含原作者的真实照片、数据库、上传内容、服务器地址、密码、云服务凭据或安卓签名私钥；运行时不连接原作者的网站。
@@ -94,6 +94,8 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 安卓原生后台与网站保持相同菜单分组：服务器状态、网站内容设置、留言与投稿信箱、首页开场、网站设置、AI 桌宠设置、账号管理。支持各栏目图片与取景、文案和排版、时间线、开场路线、3D 参数、音乐 MP3 上传与排序、联系链接、桌宠台词/布局/预设，以及邮箱验证码改密。保存后网站读取同一份数据；动画与桌宠形象仍由网站展示。[查看安卓功能覆盖表](mobile-admin-app/README.md#功能覆盖)。
 
+安卓 1.7.0 将每张栏目图片与取景、比例、显示和排序控件放在同一卡片中，开场图片与各自参数就近排列；表单按用途分组，桌宠保存与反馈固定在底部，窄屏媒体卡片和诊断长文本改善可读性。
+
 ## 技术栈：实际运行方式
 
 | 层 | 技术与用途 |
@@ -140,7 +142,7 @@ sudo bash scripts/update.sh
 
 ### 安卓登录安全更新
 
-当前通用管理 App 1.6.1+17，前两次密码尝试无需人机验证，连续两次错误后从第三次起在密码框下显示 Cloudflare 验证，验证通过前安全登录不可点击。自己的后端须同步升级并配置自己的 Turnstile 三项参数。网页后台和原生 App 的账号相同，密码不会进入验证页面。旧专用包不再维护；历史发行保留供回滚。
+当前通用管理 App 1.7.0+18，前两次密码尝试无需人机验证，连续两次错误后从第三次起在密码框下显示 Cloudflare 验证，验证通过前安全登录不可点击。自己的后端须同步升级并配置自己的 Turnstile 三项参数。网页后台和原生 App 的账号相同，密码不会进入验证页面。旧专用包不再维护；历史发行保留供回滚。
 
 ### 连续错误后的验证策略（1.4.1）
 

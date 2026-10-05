@@ -1,12 +1,12 @@
 # 我的站点管理 · Android
 
-原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.6.1+17 / Android 7.0+**，应用 ID `org.memoryarchive.admin.secure`。
+原生 Flutter 管理 App，连接自己的网站；不是网页后台套壳。当前 **1.7.0+18 / Android 7.0+**，应用 ID `org.memoryarchive.admin.secure`。
 
 ## ⬇ 直接下载安装
 
-### [下载安卓 APK · 1.6.1（versionCode 17）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk)
+### [下载安卓 APK · 1.7.0（versionCode 18）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk)
 
-[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.4.0) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
+[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.5.0) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
 
 安装 → 填 `https://自己的域名` → 验证连接 → 输入本站管理员邮箱/密码 → 点击安全登录；连续两次密码错误后，在密码框下完成 Cloudflare 验证再登录。更新清单可先留空。登录页和后台工具栏都可打开“站点设置”，更换连接后重新登录。
 
@@ -14,7 +14,7 @@
 
 ## 与网站一致的菜单
 
-当前 1.6.1+17 安装包：[下载带版本号的正式 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk)。网站与 GitHub 发行附件使用同一份稳定签名安装包。
+当前 1.7.0+18 安装包：[下载带版本号的正式 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk)。网站与 GitHub 发行附件使用同一份稳定签名安装包。
 
 主菜单顺序：服务器状态 → 网站内容设置 → 留言与投稿信箱 → 首页开场 → 网站设置 → AI 桌宠设置 → 账号管理。
 
@@ -82,7 +82,7 @@
 
 旧版本在更新清单留空时没有查询服务器，却显示“当前已是最新版”。现在未配置或清单无有效版本时明确显示失败原因；只有实际读到清单才比较版本，并同时展示本机版本、清单版本和更新来源。每次检查添加独立查询参数并发送 no-cache 请求头，减少旧缓存影响。没有可用 GitHub 地址时不显示空的 GitHub 跳转按钮。
 
-旧客户端仍可先在右上角站点设置中填写本站 APK 清单地址，保存并重新登录后检查更新。自建站点应托管自己的同源清单，例如 https://photos.example.com/downloads/admin-app/version.json；官方 GitHub 发行提供 android-version-v1.6.1.json 作为可修改的模板。更新地址留空仍不发起请求，不自动替你选择更新服务器。也可从网站直接下载安装覆盖升级。
+旧客户端仍可先在右上角站点设置中填写本站 APK 清单地址，保存并重新登录后检查更新。自建站点应托管自己的同源清单，例如 https://photos.example.com/downloads/admin-app/version.json；官方 GitHub 发行提供 android-version-v1.7.0.json 作为可修改的模板。更新地址留空仍不发起请求，不自动替你选择更新服务器。也可从网站直接下载安装覆盖升级。
 
 ## 自有更新（可选）
 
@@ -92,10 +92,10 @@
 
 ```json
 {
-  "version": "1.6.1",
-  "versionCode": 17,
+  "version": "1.7.0",
+  "versionCode": 18,
   "packageName": "org.memoryarchive.admin.secure",
-  "apkUrl": "https://photos.example.com/app/admin-1.6.1.apk",
+  "apkUrl": "https://photos.example.com/app/admin-1.7.0.apk",
   "sha256": "填写该APK实际计算出的64位小写SHA256",
   "gitCommit": "自己的构建提交",
   "notes": "此次更新内容"
@@ -160,4 +160,11 @@ flutter build apk --release
 
 需要服务端同步部署本次 admin_app_api.py 与新增 admin_account_recovery.py。旧后端缺少接口时会明确报错，失败保存保留草稿。服务端预先配置的邮件与 Cloudflare 验证仍需可用。连续两次密码错误后的登录验证策略保持不变。
 
-该功能自 1.5.1 引入，已随 v3.4.0 源码和安卓 1.6.1 发行公开同步。验证：36 项 Flutter 测试、静态分析、26 项真实 HTTP 功能断言、原有登录安全和助手回归。未连接安卓真机，系统选择器、安装及验证服务需手机验收。
+该功能自 1.5.1 引入，已随 v3.4.0 源码和安卓 1.6.1 发行公开同步，本版保留。该功能当时验证：36 项 Flutter 测试、静态分析、26 项真实 HTTP 功能断言、原有登录安全和助手回归。未连接安卓真机，系统选择器、安装及验证服务需手机验收。
+
+
+## 1.7.0+18 排版与图片配对
+
+每张栏目入口图片与上传/地址/取景/比例/显示/排序在同一卡片；首页背景、主视觉与开场桌面/手机图的专属参数在各自图片下方。栏目顺序去重但保留已有顺序，只有操作排序后才保存规范化顺序。通用表单按用途分组，桌宠保存与结果固定底部，列表卡片留出间距，宽屏页面限宽；窄屏媒体上下排列，媒体编辑先显示标题再选择资源与编辑内容。诊断文本可完整换行与选择复制。菜单、数据格式、登录和更新流程保持。
+
+验证：58项Flutter功能/布局回归与静态分析；12类原生页面使用演示数据渲染检查。未连接安卓真机，截图检查不等同于设备验收或完整无障碍认证。

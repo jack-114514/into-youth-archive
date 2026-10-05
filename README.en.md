@@ -20,13 +20,13 @@ Run the installation command in the Linux terminal on your VPS. For missing curl
 
 ## 📱 Download the Android admin app
 
-### [⬇ Download Android APK · 1.6.1 (versionCode 17)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk)
+### [⬇ Download Android APK · 1.7.0 (versionCode 18)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.5.0/memory-archive-admin-v1.7.0.apk)
 
 **Android 7.0 or later. Enter your own HTTPS domain after installation, then sign in with your website admin account. No source changes or APK rebuild are required.**
 
 [Releases and checksums](https://github.com/jack-114514/into-youth-archive/releases/latest) · [Android features, architecture and build guide (Chinese)](mobile-admin-app/README.md) · **[Android privacy policy (Chinese)](mobile-admin-app/PRIVACY.md)**
 
-The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.6.1.apk`. Website release v3.4.0 and Android version 1.6.1 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
+The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.7.0.apk`. Website release v3.5.0 and Android version 1.7.0 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
 
 ---
 
@@ -46,8 +46,8 @@ The linked detailed guides are currently in Chinese. This English README covers 
 
 | Component | Current version |
 | --- | --- |
-| Self-hosted website | v3.4.0: visitor site, web dashboard, Python API and installation/maintenance scripts |
-| Universal Android admin app | 1.6.1, versionCode 17; package ID `org.memoryarchive.admin.secure` |
+| Self-hosted website | v3.5.0: visitor site, web dashboard, Python API and installation/maintenance scripts |
+| Universal Android admin app | 1.7.0, versionCode 18; package ID `org.memoryarchive.admin.secure` |
 | Default deployment | Docker Compose, Caddy HTTPS and SQLite; one site and one administrator |
 
 A fresh installation includes the complete interface, animations and features, with neutral text and generated demo illustrations. Configure your own database, accounts, photos, domain, Cloudflare, email and AI credentials. The source excludes the original author's real photos, database, uploads, server address, passwords, cloud credentials and Android signing key. The running site does not connect to the original author's website.
@@ -95,6 +95,8 @@ Open `/admin` and sign in with the email and password configured during installa
 | Account and statistics | Visit/content counts; email-based password recovery/change requires your own Turnstile and SMTP configuration |
 
 The native Android dashboard follows the same menu groups as the website: Server status, Website content, Messages and submissions, Welcome screen, Website settings, AI companion settings, and Account management. It supports section photos/framing, text/layout, timeline nodes, opening routes, 3D parameters, MP3 uploads/playlist ordering, contact links, companion dialogue/layout/presets and email-code password changes. Both dashboards save to the same data. Animations and the companion are displayed by the website. [Android coverage table (Chinese)](mobile-admin-app/README.md#功能覆盖).
+
+Android 1.7.0 pairs each section image with its framing, aspect ratio, visibility and ordering controls in one card. Opening-image parameters stay beneath their own image. Forms are grouped by purpose; companion save/status controls stay at the bottom, and media cards and diagnostic text adapt to narrow screens.
 
 ## Technology
 
@@ -146,7 +148,7 @@ Administrators may use custom images (PNG/JPEG/WebP/GIF/AVIF/SVG) or licensed Cu
 
 ### Android login security
 
-The current universal app is 1.6.1+17. The first two password attempts do not require a challenge. After two consecutive failures, Cloudflare verification appears below the password field from the third attempt onward; login remains disabled until verification succeeds. Update your backend and configure your own three Turnstile parameters. Web and native dashboards share the same account; the password is never sent to the verification page. The old site-specific package is no longer maintained; historical releases remain available for rollback.
+The current universal app is 1.7.0+18. The first two password attempts do not require a challenge. After two consecutive failures, Cloudflare verification appears below the password field from the third attempt onward; login remains disabled until verification succeeds. Update your backend and configure your own three Turnstile parameters. Web and native dashboards share the same account; the password is never sent to the verification page. The old site-specific package is no longer maintained; historical releases remain available for rollback.
 
 ### Verification after consecutive failures (introduced in 1.4.1)
 

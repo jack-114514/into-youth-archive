@@ -11,6 +11,8 @@ import '../../core/config/app_config.dart';
 import '../../core/providers.dart';
 import 'admin_fields.dart';
 import 'image_crop.dart';
+import 'settings_layout.dart';
+import '../../core/widgets/admin_layout.dart';
 import '../shell/admin_navigation.dart';
 
 Map<String, dynamic> decodeObject(dynamic value) {
@@ -313,6 +315,7 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
         key.endsWith('_extra_text');
     final controller = _controller(key, spec['value'].toString());
     final text = TextFormField(
+      key: ValueKey('field-$key'),
       controller: controller,
       enabled: !_busy,
       minLines: multiline ? 3 : 1,
@@ -342,20 +345,35 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          text,
+          if (spec['kind'] != 'image') text,
           if (spec['kind'] == 'image') ...[
             if (value.isNotEmpty && AppConfig.resolvePublicUrl(value) != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: SizedBox(
-                  height: 150,
-                  child: Image.network(
-                    AppConfig.resolvePublicUrl(value).toString(),
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Text('图片暂时无法预览'),
+                  height: 190,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      AppConfig.resolvePublicUrl(value).toString(),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, _, _) => const Text('图片暂时无法预览'),
+                    ),
                   ),
                 ),
               ),
+            if (value.isEmpty)
+              Container(
+                height: 120,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('尚未设置图片，请上传或填写地址'),
+              ),
+            const SizedBox(height: 12),
+            text,
             Wrap(
               spacing: 12,
               children: [
@@ -542,15 +560,7 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
   }
 
   Widget _cards({String? onlyKey}) {
-    const titles = {
-      'home_card_story_image': '青春故事集',
-      'home_card_memory_image': '3D 粒子树',
-      'home_card_timeline_image': '时间线',
-      'home_card_campus_image': '校园碎片',
-      'home_card_notes_image': '随手记',
-      'home_card_about_image': '关于我们',
-      'home_card_messages_image': '留言操场',
-    };
+    const titles = homeCardTitles;
     Map<String, dynamic> visibility, aspects, crops;
     List<String> order;
     try {
@@ -559,26 +569,45 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
       crops = decodeObject(_values!['home_card_crops'] ?? '{}');
       final raw =
           jsonDecode((_values!['home_card_order'] ?? '[]').toString()) as List;
-      order = [
-        ...raw.whereType<String>().where(titles.containsKey),
-        ...titles.keys.where((k) => !raw.contains(k)),
-      ];
+      order = uniqueHomeCardOrder(raw);
     } catch (_) {
       return const Text('栏目配置格式有误，原内容会保留。');
     }
-    return ExpansionTile(
-      title: const Text('栏目展示、排序与取景'),
-      initiallyExpanded: true,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (onlyKey == null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 16),
+            child: Text(
+              '栏目图片与调整',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
         for (var i = 0; i < order.length; i++)
           if (onlyKey == null || order[i] == onlyKey)
             Card(
+              key: ValueKey('card-${order[i]}'),
+              margin: const EdgeInsets.only(bottom: 16),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Text(
+                      titles[order[i]]!,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    _field(
+                      adminFields.firstWhere(
+                        (field) => field['key'] == order[i],
+                      ),
+                    ),
                     SwitchListTile(
-                      title: Text(titles[order[i]]!),
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('在首页显示此栏目'),
                       value: ![false, 0, '0'].contains(visibility[order[i]]),
                       onChanged: _busy
                           ? null
@@ -631,7 +660,9 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
                                 },
                         ),
                         TextButton(
-                          onPressed: _busy
+                          onPressed:
+                              _busy ||
+                                  (_values![order[i]] ?? '').toString().isEmpty
                               ? null
                               : () async {
                                   final crop =
@@ -658,6 +689,10 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
                       ],
                     ),
                     DropdownButtonFormField<String>(
+                      key: ValueKey(
+                        'aspect-${order[i]}-${aspects[order[i]] ?? _values!['home_card_aspect_ratio']}',
+                      ),
+                      isExpanded: true,
                       initialValue:
                           (aspects[order[i]] ??
                                   _values!['home_card_aspect_ratio'] ??
@@ -684,6 +719,51 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
     );
   }
 
+  List<Widget> _groupedFields() {
+    final fields = adminFields
+        .where(
+          (field) => widget.section == null
+              ? field['group'] == widget.group
+              : fieldInSection(field, widget.section!),
+        )
+        .toList();
+    final handled = <String>{};
+    final panels = <String, List<Widget>>{};
+    final images = <Widget>[];
+    // Related settings stay directly beneath their own image preview.
+    for (final field in fields.where((field) => field['kind'] == 'image')) {
+      final key = field['key'] as String;
+      handled.add(key);
+      if (homeCardTitles.containsKey(key)) continue;
+      final children = <Widget>[_field(field)];
+      for (final related in imageRelatedFields[key] ?? <String>[]) {
+        final matches = fields.where((field) => field['key'] == related);
+        if (matches.isNotEmpty) {
+          handled.add(related);
+          children.add(_field(matches.first));
+        }
+      }
+      images.add(
+        AdminFormSection(
+          key: ValueKey('image-$key'),
+          title: field['label'] as String,
+          children: children,
+        ),
+      );
+    }
+    for (final field in fields) {
+      if (handled.contains(field['key'])) continue;
+      panels
+          .putIfAbsent(settingsPanelTitle(field), () => [])
+          .add(_field(field));
+    }
+    return [
+      for (final panel in panels.entries)
+        AdminFormSection(title: panel.key, children: panel.value),
+      ...images,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) => _frame(_page(context));
 
@@ -702,79 +782,76 @@ class _FullSettingsScreenState extends ConsumerState<FullSettingsScreen> {
           child: page,
         );
 
-  Widget _page(BuildContext context) => Scaffold(
-    appBar: widget.embedded ? null : AppBar(title: Text(widget.group)),
-    bottomNavigationBar: _values == null
-        ? null
-        : SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: FilledButton.icon(
-                onPressed: _busy ? null : _save,
-                icon: const Icon(Icons.save_outlined),
-                label: Text(_busy ? '正在处理…' : '保存${widget.group}'),
+  Widget _page(BuildContext context) => AdminPageWidth(
+    child: Scaffold(
+      appBar: widget.embedded ? null : AppBar(title: Text(widget.group)),
+      bottomNavigationBar: _values == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label: Text(_busy ? '正在处理…' : '保存${widget.group}'),
+                ),
               ),
             ),
-          ),
-    body: _values == null
-        ? Center(
-            child: _error == null
-                ? const CircularProgressIndicator()
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!),
-                      TextButton(onPressed: _load, child: const Text('重试')),
-                    ],
-                  ),
-          )
-        : Form(
-            key: _form,
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                for (final field in adminFields.where(
-                  (f) => widget.section == null
-                      ? f['group'] == widget.group
-                      : fieldInSection(f, widget.section!),
-                ))
-                  _field(field),
-                if (widget.section == 'images' ||
-                    (widget.section == null && widget.group == '首页与栏目图片'))
-                  _cards(),
-                if (sectionCards.containsKey(widget.section))
-                  _cards(onlyKey: sectionCards[widget.section]),
-                if (widget.section == 'timeline' ||
-                    (widget.section == null && widget.group == '网站基础'))
-                  _list('timeline_items', '时间线节点', {
-                    'date': '时间',
-                    'title': '标题',
-                    'text': '正文',
-                  }, limit: 8),
-                if (['settings', 'about'].contains(widget.section) ||
-                    (widget.section == null && widget.group == '联系与应用'))
-                  _list('contact_custom_links', '联系链接', {
-                    'label': '链接名称',
-                    'url': 'HTTPS 地址',
-                  }, limit: 12),
-                if (widget.section == 'settings' ||
-                    (widget.section == null && widget.group == '音乐'))
-                  _list('music_playlist', '歌曲', {
-                    'name': '歌曲名称',
-                    'url': '本站 MP3 地址',
-                  }, music: true),
-                if (_intro)
-                  _list(
-                    'intro_nodes',
-                    '路线节点',
-                    {'title': '节点标题', 'subtitle': '副标题'},
-                    intro: true,
-                    limit: 12,
-                  ),
-                if (widget.footer != null) widget.footer!,
-              ],
+      body: _values == null
+          ? Center(
+              child: _error == null
+                  ? const CircularProgressIndicator()
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        TextButton(onPressed: _load, child: const Text('重试')),
+                      ],
+                    ),
+            )
+          : Form(
+              key: _form,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  ..._groupedFields(),
+                  if (widget.section == 'images' ||
+                      (widget.section == null && widget.group == '首页与栏目图片'))
+                    _cards(),
+                  if (sectionCards.containsKey(widget.section))
+                    _cards(onlyKey: sectionCards[widget.section]),
+                  if (widget.section == 'timeline' ||
+                      (widget.section == null && widget.group == '网站基础'))
+                    _list('timeline_items', '时间线节点', {
+                      'date': '时间',
+                      'title': '标题',
+                      'text': '正文',
+                    }, limit: 8),
+                  if (['settings', 'about'].contains(widget.section) ||
+                      (widget.section == null && widget.group == '联系与应用'))
+                    _list('contact_custom_links', '联系链接', {
+                      'label': '链接名称',
+                      'url': 'HTTPS 地址',
+                    }, limit: 12),
+                  if (widget.section == 'settings' ||
+                      (widget.section == null && widget.group == '音乐'))
+                    _list('music_playlist', '歌曲', {
+                      'name': '歌曲名称',
+                      'url': '本站 MP3 地址',
+                    }, music: true),
+                  if (_intro)
+                    _list(
+                      'intro_nodes',
+                      '路线节点',
+                      {'title': '节点标题', 'subtitle': '副标题'},
+                      intro: true,
+                      limit: 12,
+                    ),
+                  if (widget.footer != null) widget.footer!,
+                ],
+              ),
             ),
-          ),
+    ),
   );
 }
 

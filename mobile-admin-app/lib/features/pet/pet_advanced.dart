@@ -134,6 +134,7 @@ class _PetAdvancedState extends ConsumerState<PetAdvanced> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       ExpansionTile(
+        childrenPadding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         title: const Text('布局与互动参数'),
         children: [
           DropdownButtonFormField<String>(
@@ -210,6 +211,7 @@ class _PetAdvancedState extends ConsumerState<PetAdvanced> {
         ],
       ),
       ExpansionTile(
+        childrenPadding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         title: const Text('所有互动台词'),
         children: [
           const Text('每行一条。可使用 {name}、{time}、{page}；游客欢迎语不使用 {name}。'),
@@ -250,6 +252,7 @@ class _PetAdvancedState extends ConsumerState<PetAdvanced> {
         ],
       ),
       ExpansionTile(
+        childrenPadding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
         title: const Text('助手预设'),
         onExpansionChanged: (open) {
           if (open && _presets == null && !_loading) _load();

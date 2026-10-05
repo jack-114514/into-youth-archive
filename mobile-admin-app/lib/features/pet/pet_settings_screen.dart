@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import 'pet_advanced.dart';
+import '../../core/widgets/admin_layout.dart';
 import '../../core/network/api_client.dart';
 
 abstract class PetSettingsRepository {
@@ -57,7 +58,7 @@ class PetSettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          data: (data) => _PetForm(initial: data),
+          data: (data) => AdminPageWidth(child: _PetForm(initial: data)),
         ),
   );
 }
@@ -202,138 +203,183 @@ class _PetFormState extends ConsumerState<_PetForm> {
   @override
   Widget build(BuildContext context) => Form(
     key: _form,
-    child: ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const Text('网页上的墨灵支持 14 种表情、12 种动作、3 组拖拽反应与挥手告别。助手在电脑网页显示；这里管理站点配置。'),
-        const SizedBox(height: 20),
-        _field('name', '助手名称', limit: 40),
-        DropdownButtonFormField<String>(
-          key: ValueKey('character-$_presetRevision'),
-          initialValue: _settings['character'].toString(),
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: '助手形象'),
-          items:
-              {
-                    ..._characters,
-                    if (!_characters.containsKey(_settings['character']))
-                      _settings['character'].toString(): '已有自定义角色',
-                  }.entries
-                  .map(
-                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
-                  )
-                  .toList(),
-          onChanged: _busy
-              ? null
-              : (value) {
+    child: Scaffold(
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          const Text('网页上的墨灵支持 14 种表情、12 种动作、3 组拖拽反应与挥手告别。助手在电脑网页显示；这里管理站点配置。'),
+          const SizedBox(height: 20),
+          AdminFormSection(
+            title: '形象与表达',
+            children: [
+              _field('name', '助手名称', limit: 40),
+              DropdownButtonFormField<String>(
+                key: ValueKey('character-$_presetRevision'),
+                initialValue: _settings['character'].toString(),
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: '助手形象'),
+                items:
+                    {
+                          ..._characters,
+                          if (!_characters.containsKey(_settings['character']))
+                            _settings['character'].toString(): '已有自定义角色',
+                        }.entries
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e.key,
+                            child: Text(e.value),
+                          ),
+                        )
+                        .toList(),
+                onChanged: _busy
+                    ? null
+                    : (value) {
+                        _storeTone();
+                        setState(() {
+                          _settings['character'] = value;
+                          _text['tone']!.text =
+                              (_settings['tones'] as Map)[_toneCharacter]
+                                  ?.toString() ??
+                              '';
+                        });
+                      },
+              ),
+              const SizedBox(height: 20),
+              if ((_settings['character'] == 'custom' ||
+                  _settings['character'] == 'custom-image'))
+                _field(
+                  'modelUrl',
+                  '形象资源地址',
+                  hint: '本站路径或HTTPS；Live2D填.model3.json，图片填PNG/WebP等地址。',
+                  limit: 1000,
+                ),
+              _field('tone', '说话风格', lines: 3, limit: 600),
+            ],
+          ),
+          AdminFormSection(
+            title: 'AI 对话设置',
+            children: [
+              _field('systemPrompt', 'AI 助手人设', lines: 5, limit: 6000),
+              _field('maxTokens', '输出上限', hint: '默认 5000，最高 10000。'),
+              _field('model', 'AI 模型', limit: 80),
+              TextFormField(
+                controller: _key,
+                enabled: !_busy,
+                obscureText: true,
+                enableSuggestions: false,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: '新的 DeepSeek API Key',
+                  helperText: _mask.isEmpty
+                      ? '尚未配置；保存后清空输入。'
+                      : '已配置 $_mask；留空保留。',
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+          AdminFormSection(
+            title: '动画与互动开关',
+            children: [
+              DropdownButtonFormField<int>(
+                key: ValueKey('fps-$_presetRevision'),
+                initialValue: (_settings['maxFPS'] as num?)?.toInt() ?? 30,
+                decoration: const InputDecoration(labelText: '动画帧率上限'),
+                items: [30, 24, 20, 15, 10, 5]
+                    .map(
+                      (fps) =>
+                          DropdownMenuItem(value: fps, child: Text('$fps FPS')),
+                    )
+                    .toList(),
+                onChanged: _busy
+                    ? null
+                    : (value) => setState(() => _settings['maxFPS'] = value),
+              ),
+              const SizedBox(height: 16),
+              for (final e in _toggles.entries)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    e.key == 'mouseFollow' && _settings['character'] != 'moling'
+                        ? '鼠标跟随'
+                        : e.value,
+                  ),
+                  value: _settings[e.key] == true,
+                  onChanged: _busy
+                      ? null
+                      : (value) => setState(() => _settings[e.key] = value),
+                ),
+              const Text(
+                '每位访客最多 20 次/分钟、60 次/10分钟，超额休息 5 分钟。休息期间不调用 AI API；同一 IP 的独立访客分别计数。',
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+          AdminFormSection(
+            title: '互动台词与预设',
+            children: [
+              PetAdvanced(
+                key: ValueKey(_presetRevision),
+                settings: _settings,
+                busy: _busy,
+                onChange: (patch) => setState(() => _settings.addAll(patch)),
+                current: () {
                   _storeTone();
-                  setState(() {
-                    _settings['character'] = value;
-                    _text['tone']!.text =
-                        (_settings['tones'] as Map)[_toneCharacter]
-                            ?.toString() ??
-                        '';
-                  });
+                  return {
+                    ..._settings,
+                    for (final field in [
+                      'name',
+                      'systemPrompt',
+                      'model',
+                      'modelUrl',
+                    ])
+                      field: _text[field]!.text.trim(),
+                    'maxTokens': int.tryParse(_text['maxTokens']!.text) ?? 5000,
+                  };
                 },
-        ),
-        const SizedBox(height: 20),
-        if ((_settings['character'] == 'custom' ||
-            _settings['character'] == 'custom-image'))
-          _field(
-            'modelUrl',
-            '形象资源地址',
-            hint: '本站路径或HTTPS；Live2D填.model3.json，图片填PNG/WebP等地址。',
-            limit: 1000,
+                onApply: (value) => setState(() {
+                  _settings = value;
+                  for (final field in [
+                    'name',
+                    'systemPrompt',
+                    'model',
+                    'modelUrl',
+                    'maxTokens',
+                  ]) {
+                    _text[field]!.text = value[field]?.toString() ?? '';
+                  }
+                  _text['tone']!.text =
+                      (value['tones'] as Map?)?[_toneCharacter]?.toString() ??
+                      '';
+                  _presetRevision++;
+                  _message = '预设已载入，保存助手设置后生效';
+                }),
+              ),
+            ],
           ),
-        _field('tone', '说话风格', lines: 3, limit: 600),
-        _field('systemPrompt', 'AI 助手人设', lines: 8, limit: 6000),
-        _field('maxTokens', '输出上限', hint: '默认 5000，最高 10000。'),
-        _field('model', 'AI 模型', limit: 80),
-        TextFormField(
-          controller: _key,
-          enabled: !_busy,
-          obscureText: true,
-          enableSuggestions: false,
-          autocorrect: false,
-          decoration: InputDecoration(
-            labelText: '新的 DeepSeek API Key',
-            helperText: _mask.isEmpty ? '尚未配置；保存后清空输入。' : '已配置 $_mask；留空保留。',
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_message.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(_message, key: const ValueKey('pet-save-status')),
+                ),
+              FilledButton.icon(
+                onPressed: _busy ? null : _save,
+                icon: const Icon(Icons.save_outlined),
+                label: Text(_busy ? '正在保存…' : '保存助手设置'),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<int>(
-          key: ValueKey('fps-$_presetRevision'),
-          initialValue: (_settings['maxFPS'] as num?)?.toInt() ?? 30,
-          decoration: const InputDecoration(labelText: '动画帧率上限'),
-          items: [30, 24, 20, 15, 10, 5]
-              .map(
-                (fps) => DropdownMenuItem(value: fps, child: Text('$fps FPS')),
-              )
-              .toList(),
-          onChanged: _busy
-              ? null
-              : (value) => setState(() => _settings['maxFPS'] = value),
-        ),
-        const SizedBox(height: 16),
-        for (final e in _toggles.entries)
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              e.key == 'mouseFollow' && _settings['character'] != 'moling'
-                  ? '鼠标跟随'
-                  : e.value,
-            ),
-            value: _settings[e.key] == true,
-            onChanged: _busy
-                ? null
-                : (value) => setState(() => _settings[e.key] = value),
-          ),
-        const Text(
-          '每位访客最多 20 次/分钟、60 次/10分钟，超额休息 5 分钟。休息期间不调用 AI API；同一 IP 的独立访客分别计数。',
-        ),
-        const SizedBox(height: 16),
-        PetAdvanced(
-          key: ValueKey(_presetRevision),
-          settings: _settings,
-          busy: _busy,
-          onChange: (patch) => setState(() => _settings.addAll(patch)),
-          current: () {
-            _storeTone();
-            return {
-              ..._settings,
-              for (final field in ['name', 'systemPrompt', 'model', 'modelUrl'])
-                field: _text[field]!.text.trim(),
-              'maxTokens': int.tryParse(_text['maxTokens']!.text) ?? 5000,
-            };
-          },
-          onApply: (value) => setState(() {
-            _settings = value;
-            for (final field in [
-              'name',
-              'systemPrompt',
-              'model',
-              'modelUrl',
-              'maxTokens',
-            ]) {
-              _text[field]!.text = value[field]?.toString() ?? '';
-            }
-            _text['tone']!.text =
-                (value['tones'] as Map?)?[_toneCharacter]?.toString() ?? '';
-            _presetRevision++;
-            _message = '预设已载入，保存助手设置后生效';
-          }),
-        ),
-        if (_message.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(_message),
-          ),
-        FilledButton.icon(
-          onPressed: _busy ? null : _save,
-          icon: const Icon(Icons.save_outlined),
-          label: Text(_busy ? '正在保存…' : '保存助手设置'),
-        ),
-      ],
+      ),
     ),
   );
 }

@@ -141,16 +141,18 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: ListTile(
-        title: Text(label),
-        trailing: SizedBox(
-          width: 180,
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 6),
+            SelectableText(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
       ),
     );

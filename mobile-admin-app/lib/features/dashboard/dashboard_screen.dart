@@ -130,7 +130,10 @@ class DashboardScreen extends ConsumerWidget {
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: columns,
-                                mainAxisExtent: 142,
+                                mainAxisExtent:
+                                    142 *
+                                    MediaQuery.textScalerOf(context).scale(14) /
+                                    14,
                                 crossAxisSpacing: 14,
                                 mainAxisSpacing: 14,
                               ),
@@ -151,32 +154,39 @@ class DashboardScreen extends ConsumerWidget {
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(20),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF61C48D),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '已读取服务器实时状态',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF61C48D),
+                                    shape: BoxShape.circle,
                                   ),
-                                  SizedBox(height: 3),
-                                  Text('下拉页面可重新获取实时状态'),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '已读取服务器实时状态',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 3),
+                                      Text('下拉页面可重新获取实时状态'),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 12),
                             Text(
                               data['server_time']?.toString() ?? '',
                               style: Theme.of(context).textTheme.bodySmall,
