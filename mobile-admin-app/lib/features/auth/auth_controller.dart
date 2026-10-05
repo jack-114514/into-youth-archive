@@ -136,6 +136,12 @@ class AuthController extends Notifier<AuthState> {
     state = const AuthState(status: AuthStatus.signedOut);
     await refreshLoginSecurity();
   }
+
+  Future<void> passwordChanged() async {
+    await ref.read(apiClientProvider).clearLocalSession();
+    state = const AuthState(status: AuthStatus.signedOut);
+    await refreshLoginSecurity();
+  }
 }
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(

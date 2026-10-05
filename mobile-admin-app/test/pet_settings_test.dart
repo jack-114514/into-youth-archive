@@ -66,7 +66,7 @@ void main() {
     'saves native settings, preserves unedited parameters and clears new key',
     (tester) async {
       final repo = await open(tester);
-      expect(find.text('AI 助手设置'), findsOneWidget);
+      expect(find.text('AI 桌宠设置'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.widgetWithText(TextFormField, '输出上限'),
         200,

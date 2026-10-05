@@ -78,29 +78,44 @@ class UpdateCheckResult {
 }
 
 class UpdateService {
-  final Dio _dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 45),
-    ),
-  );
+  UpdateService({Dio? dio})
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 45),
+            ),
+          );
+  final Dio _dio;
 
   Future<UpdateCheckResult> check() async {
+    final manifestUri = Uri.tryParse(AppConfig.updateManifestUrl);
+    if (manifestUri == null ||
+        manifestUri.scheme != 'https' ||
+        manifestUri.host.isEmpty) {
+      throw const FormatException('尚未配置 APK 更新清单，无法检查新版本。请在更新地址设置中填写本站清单地址。');
+    }
     final package = await PackageInfo.fromPlatform();
     final currentBuild = int.tryParse(package.buildNumber) ?? 0;
-    final manifestUri = Uri.tryParse(AppConfig.updateManifestUrl);
-    if (manifestUri == null || manifestUri.scheme != 'https') {
-      return UpdateCheckResult(
-        currentVersion: package.version,
-        currentBuild: currentBuild,
-        hasUpdate: false,
-      );
-    }
     final response = await _dio.get<Map<String, dynamic>>(
-      manifestUri.toString(),
+      manifestUri
+          .replace(
+            queryParameters: {
+              ...manifestUri.queryParameters,
+              '_updateCheck': DateTime.now().microsecondsSinceEpoch.toString(),
+            },
+          )
+          .toString(),
+      options: Options(
+        headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+      ),
     );
     final manifest = UpdateManifest.fromJson(response.data ?? const {});
     manifest.requirePackage(package.packageName);
+    if (manifest.versionCode < 1 || manifest.versionName.isEmpty) {
+      throw const FormatException('更新清单缺少有效的版本信息，请检查更新地址。');
+    }
     return UpdateCheckResult(
       currentVersion: package.version,
       currentBuild: currentBuild,
@@ -172,5 +187,6 @@ class UpdateService {
         'update_available': result.hasUpdate,
         'remote_version': result.manifest?.versionName,
         'remote_commit': result.manifest?.gitCommit,
+        'update_source': AppConfig.updateManifestUrl,
       });
 }

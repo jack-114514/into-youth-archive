@@ -1,7 +1,9 @@
-Self-hosted v3.3.1 · Universal Android admin 1.4.1+13
+# v3.4.0 · 安卓通用管理 App 1.6.1+17
 
-- The first two password attempts do not require or load Cloudflare. After two consecutive incorrect credentials, the third and subsequent attempts require inline verification before submitting the password.
-- The selected server owns the persistent site-wide native login counter. Changing usernames, IPs or restarting the app does not reset it. Atomic reservation prevents concurrent free-attempt bypasses. Successful login clears the counter; it expires after 30 minutes without a new password attempt. Web login tracking is independent.
-- Keep rate limits, strict Siteverify action/hostname validation, secret-bound sessions and one-use proofs. When verification is required, missing configuration or failed challenges never permit password checking.
-- Update your own backend to v3.3.1 and configure your own Turnstile. Older backends continue requiring verification for every login.
-- One universal APK, org.memoryarchive.admin.secure, same stable signature as 1.4.0. Website and GitHub provide identical bytes. Private keys stay local; CI debug APKs remain test artifacts only.
+安卓原生功能与菜单同步网站后台：栏目图片/取景/文案/排版、时间线、开场路线、3D 参数、音乐 MP3 上传及排序、联系信息、桌宠台词/布局/预设、邮箱验证码改密与服务器状态。App 和网站共用内容数据，保留原有两次错误后的人机验证策略。
+
+修复更新清单留空却误报最新版；未配置时明确提示，实际查询后显示本机与清单版本、更新来源，每次检查绕过旧缓存。旧客户端应在站点设置中填写自己站点的 HTTPS 更新清单后重新登录再检查。
+
+README、功能清单、技术说明与新手指南同步实际功能。正式 APK 名称为 memory-archive-admin-v1.6.1.apk；网站与 GitHub 提供同一稳定签名包，可覆盖同包名/签名的安全通用版。源码不含站点凭据、数据库、用户上传或签名私钥。CI debug APK 只作测试工件。
+
+验证：49 项 Flutter 测试、静态分析、正式签名/包名/版本核验；公开后端与网站 CI 结果见对应提交。未连接安卓真机。

@@ -5,7 +5,7 @@ import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 
 final dashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
-  (ref) => ref.watch(apiClientProvider).getJson('/dashboard'),
+  (ref) => ref.watch(apiClientProvider).getJson('/status'),
 );
 
 class DashboardScreen extends ConsumerWidget {
@@ -26,7 +26,7 @@ class DashboardScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '青春控制室',
+                    '服务器状态',
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 8),
@@ -56,6 +56,12 @@ class DashboardScreen extends ConsumerWidget {
               final counts =
                   (data['counts'] as Map?)?.cast<String, dynamic>() ??
                   const <String, dynamic>{};
+              final storage = (data['storage'] as Map?) ?? {};
+              final memory = (data['memory'] as Map?) ?? {};
+              final service = (data['service'] as Map?) ?? {};
+              String bytes(dynamic value) => value is num
+                  ? '${(value / 1024 / 1024).toStringAsFixed(1)} MiB'
+                  : '暂无数据';
               final items = [
                 ('媒体内容', counts['media'] ?? 0, Icons.photo_library_outlined),
                 ('全部评论', counts['comments'] ?? 0, Icons.forum_outlined),
@@ -70,6 +76,41 @@ class DashboardScreen extends ConsumerWidget {
                   Icons.inbox_outlined,
                 ),
                 ('页面访问', counts['page_views'] ?? 0, Icons.insights_outlined),
+                (
+                  '服务运行（秒）',
+                  service['uptime_seconds'] ?? '暂无数据',
+                  Icons.timer_outlined,
+                ),
+                (
+                  '磁盘占用',
+                  storage['disk_used_percent'] == null
+                      ? '暂无数据'
+                      : '${storage['disk_used_percent']}%',
+                  Icons.storage_outlined,
+                ),
+                (
+                  '上传总大小',
+                  bytes(storage['uploads_bytes']),
+                  Icons.cloud_upload_outlined,
+                ),
+                (
+                  '数据库大小',
+                  bytes((data['database'] as Map?)?['size_bytes']),
+                  Icons.data_object,
+                ),
+                (
+                  '内存使用',
+                  memory['used_percent'] == null
+                      ? '暂无数据'
+                      : '${memory['used_percent']}%',
+                  Icons.memory_outlined,
+                ),
+                (
+                  '可用磁盘',
+                  bytes(storage['disk_free_bytes']),
+                  Icons.disc_full_outlined,
+                ),
+                ('系统负载', service['load_1m'] ?? '暂无数据', Icons.speed),
               ];
               return SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -126,7 +167,7 @@ class DashboardScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'API 与数据库响应正常',
+                                    '已读取服务器实时状态',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),

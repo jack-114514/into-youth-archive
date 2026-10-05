@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/config/app_config.dart';
-import '../../core/network/api_exception.dart';
 import '../../core/providers.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/update/update_service.dart';
-import '../pet/pet_settings_screen.dart';
+import '../../core/config/app_config.dart';
+import '../connection/site_screen.dart';
+import 'full_settings_screen.dart';
 
 final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
@@ -17,191 +15,26 @@ final settingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   return (data['settings'] as Map?)?.cast<String, dynamic>() ?? const {};
 });
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, this.onVersionTap});
-
   final VoidCallback? onVersionTap;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    return settings.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text(error.toString())),
-      data: (data) => _SettingsForm(initial: data, onVersionTap: onVersionTap),
-    );
-  }
+  Widget build(BuildContext context) =>
+      const FullSettingsScreen(group: '网站设置', section: 'settings');
 }
 
-class _SettingsForm extends ConsumerStatefulWidget {
-  const _SettingsForm({required this.initial, this.onVersionTap});
-
-  final Map<String, dynamic> initial;
+class AppToolsScreen extends StatelessWidget {
+  const AppToolsScreen({super.key, this.onVersionTap});
   final VoidCallback? onVersionTap;
-
   @override
-  ConsumerState<_SettingsForm> createState() => _SettingsFormState();
-}
-
-class _SettingsFormState extends ConsumerState<_SettingsForm> {
-  late final TextEditingController _siteTitle;
-  late final TextEditingController _heroTitle;
-  late final TextEditingController _profile;
-  late final TextEditingController _timeline;
-  bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _siteTitle = TextEditingController(
-      text: widget.initial['site_title']?.toString() ?? '',
-    );
-    _heroTitle = TextEditingController(
-      text: widget.initial['hero_title']?.toString() ?? '',
-    );
-    _profile = TextEditingController(
-      text: widget.initial['profile_text']?.toString() ?? '',
-    );
-    _timeline = TextEditingController(
-      text: widget.initial['timeline_items']?.toString() ?? '[]',
-    );
-  }
-
-  @override
-  void dispose() {
-    _siteTitle.dispose();
-    _heroTitle.dispose();
-    _profile.dispose();
-    _timeline.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      await ref.read(apiClientProvider).patchJson('/settings', {
-        'site_title': _siteTitle.text,
-        'hero_title': _heroTitle.text,
-        'profile_text': _profile.text,
-        'timeline_items': _timeline.text,
-      });
-      ref.invalidate(settingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('网站设置已保存')));
-      }
-    } on ApiException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _openAccountSecurity() async {
-    final uri = Uri.tryParse(AppConfig.adminWebUrl);
-    if (uri == null || uri.scheme != 'https') return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-      children: [
-        Text('系统设置', style: Theme.of(context).textTheme.headlineLarge),
-        const SizedBox(height: 8),
-        Text(
-          '这里只允许修改服务端白名单中的展示内容。',
-          style: TextStyle(color: AppTheme.ink.withValues(alpha: .58)),
-        ),
-        const SizedBox(height: 22),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('网站文字', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _siteTitle,
-                  decoration: const InputDecoration(labelText: '网站名称'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _heroTitle,
-                  decoration: const InputDecoration(labelText: '首页标题'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _profile,
-                  minLines: 4,
-                  maxLines: 8,
-                  decoration: const InputDecoration(labelText: '个人简介'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _timeline,
-                  minLines: 5,
-                  maxLines: 10,
-                  decoration: const InputDecoration(
-                    labelText: '青春时间线 JSON',
-                    helperText: '保留现有字段结构；后续补丁将升级为逐条编辑器',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.save_outlined),
-                  label: Text(_saving ? '正在保存…' : '保存网站设置'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Card(
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(18),
-            leading: const Icon(Icons.verified_user_outlined),
-            title: const Text(
-              '账号安全',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: const Text('通过 Cloudflare 人机验证与邮箱验证码修改密码'),
-            trailing: const Icon(Icons.open_in_new_rounded),
-            onTap: _openAccountSecurity,
-          ),
-        ),
-        const SizedBox(height: 14),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.smart_toy_outlined),
-            title: const Text('AI 助手与墨灵'),
-            subtitle: const Text('角色、人设、输出上限与互动设置'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const PetSettingsScreen(),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        const _UpdateCard(),
-        const SizedBox(height: 14),
-        _AboutCard(onVersionTap: widget.onVersionTap),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      const AppUpdateCard(),
+      const SizedBox(height: 16),
+      _AboutCard(onVersionTap: onVersionTap),
+    ],
+  );
 }
 
 class _AboutCard extends StatefulWidget {
@@ -263,17 +96,18 @@ class _AboutCardState extends State<_AboutCard> {
   }
 }
 
-class _UpdateCard extends StatefulWidget {
-  const _UpdateCard();
+class AppUpdateCard extends StatefulWidget {
+  const AppUpdateCard({super.key, this.service});
+  final UpdateService? service;
 
   @override
-  State<_UpdateCard> createState() => _UpdateCardState();
+  State<AppUpdateCard> createState() => _UpdateCardState();
 }
 
-class _UpdateCardState extends State<_UpdateCard> {
+class _UpdateCardState extends State<AppUpdateCard> {
   bool _busy = false;
   double? _progress;
-  String _message = '检查服务器 version.json，并校验 APK SHA-256';
+  String _message = '点击检查更新，查询本站 APK 更新清单';
 
   Future<void> _check() async {
     setState(() {
@@ -282,17 +116,21 @@ class _UpdateCardState extends State<_UpdateCard> {
       _message = '正在检查更新…';
     });
     try {
-      final service = UpdateService();
+      final service = widget.service ?? UpdateService();
       final result = await service.check();
-      if (!result.hasUpdate || result.manifest == null) {
+      if (!mounted) return;
+      final manifest = result.manifest;
+      if (manifest == null) {
+        throw const FormatException('没有读取到更新清单，无法确认最新版本。');
+      }
+      if (!result.hasUpdate) {
         setState(
           () => _message =
-              '当前已是最新版本 ${result.currentVersion}+${result.currentBuild}',
+              '已查询更新清单：${manifest.versionName}+${manifest.versionCode}。'
+              '本机 ${result.currentVersion}+${result.currentBuild}，暂无可用更新。',
         );
         return;
       }
-      if (!mounted) return;
-      final manifest = result.manifest!;
       final download = await showDialog<bool>(
         context: context,
         barrierDismissible: !manifest.mandatory,
@@ -302,13 +140,15 @@ class _UpdateCardState extends State<_UpdateCard> {
             manifest.notes.isEmpty ? '是否下载并校验安装包？' : manifest.notes,
           ),
           actions: [
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, false);
-                await service.openGithubFallback(manifest);
-              },
-              child: const Text('GitHub Release'),
-            ),
+            if (manifest.githubReleaseUrl.isNotEmpty ||
+                AppConfig.githubReleasesUrl.isNotEmpty)
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context, false);
+                  await service.openGithubFallback(manifest);
+                },
+                child: const Text('GitHub Release'),
+              ),
             if (!manifest.mandatory)
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -331,9 +171,14 @@ class _UpdateCardState extends State<_UpdateCard> {
         },
       );
       await service.openInstaller(file);
+      if (!mounted) return;
       setState(() => _message = 'APK 校验通过，已打开系统安装界面');
     } catch (error) {
-      setState(() => _message = '更新失败：$error');
+      if (!mounted) return;
+      setState(
+        () => _message =
+            '未完成更新检查：${error is FormatException ? error.message : error}',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -356,6 +201,13 @@ class _UpdateCardState extends State<_UpdateCard> {
             ),
             const SizedBox(height: 8),
             Text(_message),
+            const SizedBox(height: 8),
+            Text(
+              AppConfig.updateManifestUrl.isEmpty
+                  ? '更新来源：未配置'
+                  : '更新来源：${AppConfig.updateManifestUrl}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             if (_progress != null) ...[
               const SizedBox(height: 10),
               LinearProgressIndicator(value: _progress),
@@ -365,6 +217,17 @@ class _UpdateCardState extends State<_UpdateCard> {
               onPressed: _busy ? null : _check,
               icon: const Icon(Icons.refresh_rounded),
               label: Text(_busy ? '正在处理…' : '检查更新'),
+            ),
+            TextButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SiteScreen(editing: true),
+                      ),
+                    ),
+              icon: const Icon(Icons.settings_outlined),
+              label: const Text('更新地址设置'),
             ),
           ],
         ),

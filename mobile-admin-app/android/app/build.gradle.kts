@@ -7,7 +7,9 @@ plugins {
 }
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
+val keystorePropertiesFile = rootProject.file(
+    System.getenv("ANDROID_SIGNING_PROPERTIES") ?: "key.properties"
+)
 val isReleaseBuild = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
 }

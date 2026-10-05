@@ -16,6 +16,7 @@ import re
 import secrets
 import shutil
 import sqlite3
+import sys
 import threading
 import time
 from collections import defaultdict, deque
@@ -81,7 +82,7 @@ ALLOWED_SETTINGS = {
 }
 ALLOWED_SETTINGS.update(
     f"home_{section}_{field}"
-    for section in ("hero", "stories", "portal", "timeline", "about", "comments")
+    for section in ("hero", "stories", "portal", "campus", "timeline", "notes", "about", "comments")
     for field in ("kicker", "title", "accent", "subtitle", "extra_text", "extra_enabled", "title_size", "title_weight")
 )
 INTRO_SETTING_DEFAULTS = {
@@ -400,6 +401,7 @@ def _media_payload(data: dict, existing: sqlite3.Row | None = None) -> dict:
         raise ValueError("每条内容至少需要一张图片或一个视频")
     return {
         "url": url,
+        "thumbnail_url": str(data.get("thumbnail_url", fallback.get("thumbnail_url", ""))).strip()[:500],
         "video_url": video_url,
         "title": str(data.get("title", fallback.get("title", "未命名内容"))).strip()[:100],
         "meta": str(data.get("meta", fallback.get("meta", ""))).strip()[:100],
@@ -427,6 +429,9 @@ def dispatch_get(handler, path: str) -> None:
         return
     query = parse_qs(urlparse(handler.path).query)
     with _db() as connection:
+        if path == "/api/v1/admin-app/status":
+            host = sys.modules[type(handler).__module__]
+            return _send(handler, 200, host.build_admin_server_status(connection))
         if path == "/api/v1/admin-app/dashboard":
             upload_bytes = (
                 sum(item.stat().st_size for item in UPLOAD_DIR.iterdir() if item.is_file())
@@ -541,6 +546,14 @@ def dispatch_get(handler, path: str) -> None:
 def dispatch_post(handler, path: str) -> None:
     request_id = _request_id()
     try:
+        if path in {'/api/v1/admin-app/account/recovery/code', '/api/v1/admin-app/account/recovery/complete'}:
+            if not _require_rate(handler, request_id, 'password_recovery', 10, 600):
+                return
+            try:
+                import admin_account_recovery
+            except ModuleNotFoundError:
+                from server import admin_account_recovery
+            return admin_account_recovery.dispatch(handler, path, sys.modules[__name__], _read_json(handler), request_id)
         if path in {"/api/v1/admin-app/auth/challenge/start", "/api/v1/admin-app/auth/challenge/status", "/api/v1/admin-app/auth/challenge/complete"}:
             scope = 'challenge-status' if path.endswith('/status') else 'challenge-start' if path.endswith('/start') else 'challenge-complete'
             limit, window = (120, 60) if path.endswith('/status') else (10, 300)
@@ -758,11 +771,12 @@ def dispatch_post(handler, path: str) -> None:
                 ).fetchone()[0]
                 cursor = connection.execute(
                     "INSERT INTO media("
-                    "url,video_url,title,meta,body,taken_at,sort_order,sort_manual,"
+                    "url,thumbnail_url,video_url,title,meta,body,taken_at,sort_order,sort_manual,"
                     "show_on_home,show_in_3d,show_in_stories,created_at"
-                    ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         payload["url"],
+                        payload["thumbnail_url"],
                         payload["video_url"],
                         payload["title"],
                         payload["meta"],
@@ -810,10 +824,11 @@ def dispatch_patch(handler, path: str) -> None:
                     return _error(handler, 404, "not_found", "内容不存在", request_id)
                 payload = _media_payload(data, existing)
                 connection.execute(
-                    "UPDATE media SET url=?,video_url=?,title=?,meta=?,body=?,taken_at=?,"
+                    "UPDATE media SET url=?,thumbnail_url=?,video_url=?,title=?,meta=?,body=?,taken_at=?,"
                     "sort_manual=?,show_on_home=?,show_in_3d=?,show_in_stories=? WHERE id=?",
                     (
                         payload["url"],
+                        payload["thumbnail_url"],
                         payload["video_url"],
                         payload["title"],
                         payload["meta"],
@@ -865,7 +880,10 @@ def dispatch_patch(handler, path: str) -> None:
                 for key, value in data.items():
                     if key not in ALLOWED_SETTINGS:
                         continue
-                    if key in {"display_font_scale", "display_media_scale"}:
+                    if key in {"home_card_aspects", "home_card_crops"}:
+                        host = sys.modules[type(handler).__module__]
+                        value = getattr(host, "sanitize_" + key)(value)
+                    elif key in {"display_font_scale", "display_media_scale"}:
                         value = str(value) if str(value) in {"80", "90", "100", "110", "120"} else "100"
                     elif key == "hero_art_style":
                         value = str(value) if str(value) in {"editorial", "dreamy", "cinematic"} else "editorial"
@@ -981,7 +999,9 @@ def dispatch_patch(handler, path: str) -> None:
                                 if label and re.fullmatch(r"https://[^\s\"'<>]+", url, re.IGNORECASE) and valid_url:
                                     clean_links.append({"label": label, "url": url})
                         value = json.dumps(clean_links, ensure_ascii=False, separators=(",", ":"))
-                    limit = 12000 if key == "timeline_items" else 8000 if key == "contact_custom_links" else 2000
+                    limit = 12000 if key in {"timeline_items", "music_playlist", "home_card_crops"} else 8000 if key == "contact_custom_links" else 2000
+                    if len(str(value)) > limit:
+                        raise ValueError("设置内容过长，请缩短后重试")
                     connection.execute(
                         "INSERT INTO settings(key,value) VALUES(?,?) "
                         "ON CONFLICT(key) DO UPDATE SET value=excluded.value",

@@ -11,6 +11,7 @@ import '../../core/config/app_config.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../shell/admin_navigation.dart';
 
 final mediaProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
   ref,
@@ -23,7 +24,8 @@ final mediaProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
 });
 
 class MediaScreen extends ConsumerWidget {
-  const MediaScreen({super.key});
+  const MediaScreen({super.key, this.section});
+  final String? section;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,53 +48,58 @@ class MediaScreen extends ConsumerWidget {
               Center(child: Text(error.toString())),
             ],
           ),
-          data: (items) => CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '图片与内容',
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '共 ${items.length} 条 · 下拉刷新',
-                        style: TextStyle(
-                          color: AppTheme.ink.withValues(alpha: .58),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (items.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: Text('还没有内容，点击右下角开始添加')),
-                )
-              else
+          data: (allItems) {
+            final items = allItems
+                .where((item) => mediaInSection(item, section))
+                .toList();
+            return CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
-                  sliver: SliverList.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return _MediaCard(
-                        item: item,
-                        onEdit: () => _openEditor(context, ref, item: item),
-                        onDelete: () => _delete(context, ref, item),
-                      );
-                    },
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          section == null ? '图片与内容' : sectionLabel(section!),
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '共 ${items.length} 条 · 下拉刷新',
+                          style: TextStyle(
+                            color: AppTheme.ink.withValues(alpha: .58),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-            ],
-          ),
+                if (items.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: Text('还没有内容，点击右下角开始添加')),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+                    sliver: SliverList.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return _MediaCard(
+                          item: item,
+                          onEdit: () => _openEditor(context, ref, item: item),
+                          onDelete: () => _delete(context, ref, item),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -108,7 +115,7 @@ class MediaScreen extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: AppTheme.mint,
-      builder: (_) => _MediaEditor(item: item),
+      builder: (_) => _MediaEditor(item: item, section: section),
     );
     if (changed == true) ref.invalidate(mediaProvider);
   }
@@ -265,9 +272,10 @@ class _Flag extends StatelessWidget {
 }
 
 class _MediaEditor extends ConsumerStatefulWidget {
-  const _MediaEditor({this.item});
+  const _MediaEditor({this.item, this.section});
 
   final Map<String, dynamic>? item;
+  final String? section;
 
   @override
   ConsumerState<_MediaEditor> createState() => _MediaEditorState();
@@ -282,7 +290,12 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
   late final TextEditingController _order;
   late bool _showOnHome;
   late bool _showIn3d;
+  late bool _showInStories;
+  final _thumbnail = TextEditingController();
+  final _primaryUrl = TextEditingController();
+  final _videoUrl = TextEditingController();
   XFile? _image;
+  XFile? _thumbnailImage;
   XFile? _video;
   bool _saving = false;
   double? _progress;
@@ -296,8 +309,18 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
     _body = TextEditingController(text: item['body']?.toString() ?? '');
     _takenAt = TextEditingController(text: item['taken_at']?.toString() ?? '');
     _order = TextEditingController(text: item['sort_order']?.toString() ?? '');
-    _showOnHome = item['show_on_home'] != 0;
-    _showIn3d = item['show_in_3d'] != 0;
+    _showOnHome = widget.item == null && widget.section != null
+        ? widget.section == 'campus'
+        : item['show_on_home'] != 0;
+    _showIn3d = widget.item == null && widget.section != null
+        ? widget.section == 'river'
+        : item['show_in_3d'] != 0;
+    _showInStories = widget.item == null && widget.section != null
+        ? widget.section == 'media'
+        : item['show_in_stories'] == 1;
+    _thumbnail.text = item['thumbnail_url']?.toString() ?? '';
+    _primaryUrl.text = item['url']?.toString() ?? '';
+    _videoUrl.text = item['video_url']?.toString() ?? '';
   }
 
   @override
@@ -307,6 +330,9 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
     _body.dispose();
     _takenAt.dispose();
     _order.dispose();
+    _thumbnail.dispose();
+    _primaryUrl.dispose();
+    _videoUrl.dispose();
     super.dispose();
   }
 
@@ -318,6 +344,11 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
   Future<void> _pickVideo() async {
     final file = await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (file != null) setState(() => _video = file);
+  }
+
+  Future<void> _pickThumbnail() async {
+    final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (file != null && mounted) setState(() => _thumbnailImage = file);
   }
 
   Future<String> _upload(XFile file, String contentType) async {
@@ -379,9 +410,9 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
       _progress = null;
     });
     try {
-      final existing = widget.item ?? const <String, dynamic>{};
-      var imageUrl = existing['url']?.toString() ?? '';
-      var videoUrl = existing['video_url']?.toString() ?? '';
+      var imageUrl = _primaryUrl.text.trim();
+      var videoUrl = _videoUrl.text.trim();
+      var thumbnailUrl = _thumbnail.text.trim();
       if (_image != null) {
         final preparedImage = await _prepareImage(_image!);
         imageUrl = await _upload(
@@ -393,9 +424,18 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
         final preparedVideo = await _prepareVideo(_video!);
         videoUrl = await _upload(preparedVideo, 'video/mp4');
       }
+      if (_thumbnailImage != null) {
+        final prepared = await _prepareImage(_thumbnailImage!);
+        thumbnailUrl = await _upload(
+          prepared,
+          _imageContentType(prepared.path),
+        );
+      }
       final payload = <String, dynamic>{
         'url': imageUrl,
         'video_url': videoUrl,
+        'thumbnail_url': thumbnailUrl,
+        'show_in_stories': _showInStories,
         'title': _title.text,
         'meta': _meta.text,
         'body': _body.text,
@@ -440,6 +480,44 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
             24 + MediaQuery.viewInsetsOf(context).bottom,
           ),
           children: [
+            TextFormField(
+              controller: _primaryUrl,
+              enabled: !_saving,
+              decoration: const InputDecoration(labelText: '原图 / 主视频地址'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _thumbnail,
+              enabled: !_saving,
+              decoration: const InputDecoration(
+                labelText: '3D 缩略图地址',
+                helperText: '留空使用原图；可填写本站上传地址。',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _videoUrl,
+              enabled: !_saving,
+              decoration: const InputDecoration(
+                labelText: '关联视频地址',
+                helperText: '清空后保存可移除关联视频。',
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _saving ? null : _pickThumbnail,
+              icon: const Icon(Icons.photo_size_select_actual_outlined),
+              label: Text(
+                _thumbnailImage == null ? '从相册上传 3D 缩略图' : '已选择 3D 缩略图',
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('在青春故事集展示'),
+              value: _showInStories,
+              onChanged: _saving
+                  ? null
+                  : (v) => setState(() => _showInStories = v),
+            ),
+
             Center(
               child: Container(
                 width: 42,

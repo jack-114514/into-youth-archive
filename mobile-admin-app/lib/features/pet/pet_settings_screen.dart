@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import 'pet_advanced.dart';
 import '../../core/network/api_client.dart';
 
 abstract class PetSettingsRepository {
@@ -32,10 +33,11 @@ final petSettingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
 );
 
 class PetSettingsScreen extends ConsumerWidget {
-  const PetSettingsScreen({super.key});
+  const PetSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text('AI 助手设置')),
+    appBar: embedded ? null : AppBar(title: const Text('AI 桌宠设置')),
     body: ref
         .watch(petSettingsProvider)
         .when(
@@ -75,6 +77,7 @@ class _PetFormState extends ConsumerState<_PetForm> {
   String _mask = '';
   bool _busy = false;
   String _message = '';
+  int _presetRevision = 0;
   static const _characters = {
     'moling': '墨灵 · 原创图片角色',
     'custom-image': '自定义图片形象',
@@ -206,6 +209,7 @@ class _PetFormState extends ConsumerState<_PetForm> {
         const SizedBox(height: 20),
         _field('name', '助手名称', limit: 40),
         DropdownButtonFormField<String>(
+          key: ValueKey('character-$_presetRevision'),
           initialValue: _settings['character'].toString(),
           isExpanded: true,
           decoration: const InputDecoration(labelText: '助手形象'),
@@ -258,6 +262,7 @@ class _PetFormState extends ConsumerState<_PetForm> {
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<int>(
+          key: ValueKey('fps-$_presetRevision'),
           initialValue: (_settings['maxFPS'] as num?)?.toInt() ?? 30,
           decoration: const InputDecoration(labelText: '动画帧率上限'),
           items: [30, 24, 20, 15, 10, 5]
@@ -287,6 +292,37 @@ class _PetFormState extends ConsumerState<_PetForm> {
           '每位访客最多 20 次/分钟、60 次/10分钟，超额休息 5 分钟。休息期间不调用 AI API；同一 IP 的独立访客分别计数。',
         ),
         const SizedBox(height: 16),
+        PetAdvanced(
+          key: ValueKey(_presetRevision),
+          settings: _settings,
+          busy: _busy,
+          onChange: (patch) => setState(() => _settings.addAll(patch)),
+          current: () {
+            _storeTone();
+            return {
+              ..._settings,
+              for (final field in ['name', 'systemPrompt', 'model', 'modelUrl'])
+                field: _text[field]!.text.trim(),
+              'maxTokens': int.tryParse(_text['maxTokens']!.text) ?? 5000,
+            };
+          },
+          onApply: (value) => setState(() {
+            _settings = value;
+            for (final field in [
+              'name',
+              'systemPrompt',
+              'model',
+              'modelUrl',
+              'maxTokens',
+            ]) {
+              _text[field]!.text = value[field]?.toString() ?? '';
+            }
+            _text['tone']!.text =
+                (value['tones'] as Map?)?[_toneCharacter]?.toString() ?? '';
+            _presetRevision++;
+            _message = '预设已载入，保存助手设置后生效';
+          }),
+        ),
         if (_message.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),

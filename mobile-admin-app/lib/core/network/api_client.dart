@@ -34,6 +34,11 @@ class ApiClient {
     await _tokenStore.deactivate();
   }
 
+  Future<void> clearLocalSession() async {
+    _tokens = null;
+    await _tokenStore.clear();
+  }
+
   SessionTokens? _tokens;
   Future<bool>? _refreshing;
 

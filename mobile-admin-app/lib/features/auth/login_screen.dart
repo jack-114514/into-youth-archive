@@ -1,6 +1,7 @@
+import '../settings/account_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
@@ -54,14 +55,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (mounted) setState(() => _verificationAttempt++);
   }
 
-  Future<void> _openRecovery() async {
-    final uri = Uri.tryParse(AppConfig.adminWebUrl);
-    if (uri == null || uri.scheme != 'https') {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('尚未配置安全密码恢复页面')));
-      return;
-    }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  void _openRecovery() {
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const AccountScreen()),
+    );
   }
 
   @override
@@ -212,7 +210,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: _openRecovery,
-                          child: const Text('忘记密码？在浏览器完成人机验证'),
+                          child: const Text('忘记密码？通过邮箱验证码重置'),
                         ),
                       ],
                     ),
