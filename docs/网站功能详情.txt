@@ -1,6 +1,6 @@
 网站前台、网页后台与安卓管理端功能详情
-版本：网站 v3.0.0；安卓 1.1.0+2
-记录日期：2026-10-01
+版本：网站 v3.4.0；安卓 1.6.1+17
+记录日期：2026-10-05
 适用对象：本仓库独立 VPS 自建版
 编码：UTF-8；纯文本，无需 Markdown 编辑器即可阅读
 
@@ -10,8 +10,8 @@ https://github.com/jack-114514/into-youth-archive
 网站一键下载、配置和启动命令（以 root 登录自己的 VPS Linux 终端后执行）：
 curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 
-安卓预览 APK 直接下载：
-https://github.com/jack-114514/into-youth-archive/releases/download/v3.0.0/memory-archive-admin-preview.apk
+安卓稳定签名正式通用 APK 直接下载（文件名包含版本）：
+https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk
 
 新手完整步骤：docs/QUICK_START.md
 技术与数据说明：docs/TECHNICAL.md
@@ -40,7 +40,7 @@ https://github.com/jack-114514/into-youth-archive/releases/download/v3.0.0/memor
 4. 桌面与手机布局响应式适配，卡片、图片与文字尺寸随窗口调整。
 5. 3D 页面是全屏深色场景：中央发光粒子树，照片在周围漂浮，雪花或星点持续运动。
 6. 图片点击后显示原比例大图及详情，支持全屏查看；有视频的媒体可播放视频。
-7. 背景音乐与 Live2D 桌宠提供独立交互入口。
+7. 背景音乐与墨灵 AI 桌宠提供独立交互入口，可配置自定义图片或授权 Live2D 模型。
 8. 实际显示由站长的图片、裁剪、颜色、文字、显示开关和场景参数共同决定。
 9. 首页默认内容用于演示；部分导航和界面按钮名称来自源码，不是所有文字都属于后台配置。
 
@@ -77,7 +77,7 @@ D. 3D 粒子树，路径 /memory
 E. 时间线，路径 /timeline
 - 根据站长配置的时间线事件展示日期、标题/文字。
 - 用于记录阶段、经历或事件。
-- 内容在后台设置中编辑，安卓端以 JSON 编辑器修改时间线数据。
+- 网页与安卓端均以节点表单编辑时间线，支持新增、删除和排序。
 
 F. 校园碎片，路径 /campus
 - 展示对应媒体栏目中的影像。
@@ -110,8 +110,8 @@ K. 音乐
 - 播放与暂停采用音量渐变。
 - 自动播放受浏览器策略影响，可能需要首次点击。
 
-L. Live2D 桌宠
-- 提供 Haru、Miku 示例，或使用站长自己的授权模型。
+L. 墨灵 AI 桌宠
+- 默认原创墨灵形象，支持自定义图片或站长自己的授权 Live2D 模型；旧内置角色模型已移除。
 - 支持拖动、移动、鼠标跟随、交互台词与情绪表现。
 - 可配置欢迎、点击、空闲等互动文字和行为参数。
 - AI 对话默认关闭；站长填自己的 DeepSeek 配置后可启用。
@@ -185,7 +185,7 @@ G. 音乐
 - 实际自动播放由浏览器权限与用户操作决定。
 
 H. 桌宠
-- 选择示例或自有模型，配置显示尺寸和位置。
+- 选择原创墨灵、自定义图片或自有授权模型，配置显示尺寸和位置。
 - 移动、鼠标跟随及互动参数。
 - 台词分组、情绪和角色表现。
 - 保存/使用配置预设。
@@ -243,7 +243,7 @@ Three.js 0.185.x、React Three Fiber 9.x、Drei 10.x 实现 WebGL 场景。
 Framer Motion 13.x 实现过渡动画。
 Tailwind CSS 4.2.1、自定义 CSS 和 Lucide 图标。
 react-advanced-cropper 用于网页图片取景。
-PixiJS 6.5.10、pixi-live2d-display 0.4.0、Cubism Core 用于桌宠。
+默认墨灵采用原创六部件图集与 SVG 五官动画；PixiJS 6.5.10、pixi-live2d-display 0.4.0、Cubism Core 仅用于可选自定义 Live2D，默认不加载该运行库。
 
 后端：
 Python 标准库 HTTP 服务与 JSON API。

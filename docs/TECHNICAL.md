@@ -1,6 +1,6 @@
 # 技术说明
 
-对应网站 v3.0.0、安卓 1.1.0+2。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
+对应网站 v3.4.0、安卓 1.6.1+17。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
 
 ## 运行结构
 
