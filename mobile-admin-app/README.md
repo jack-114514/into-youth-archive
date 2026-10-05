@@ -6,7 +6,7 @@
 
 ### [下载安卓 APK · 1.6.1（versionCode 17）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.4.0/memory-archive-admin-v1.6.1.apk)
 
-[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.2.1) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
+[发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.4.0) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
 
 安装 → 填 `https://自己的域名` → 验证连接 → 输入本站管理员邮箱/密码 → 点击安全登录；连续两次密码错误后，在密码框下完成 Cloudflare 验证再登录。更新清单可先留空。登录页和后台工具栏都可打开“站点设置”，更换连接后重新登录。
 
@@ -138,7 +138,7 @@ flutter build apk --release
 
 ## 1.3.1+6
 
-系统设置 → AI 助手与墨灵，原生编辑角色、人设、说话风格、500–10000输出上限、模型、新 API Key、动画帧率及互动开关。需要服务端 v3.2.1；旧站点先按更新流程更新。Key 仅发送到你选定的 HTTPS 站点，服务端只回传掩码；成功保存后新Key输入立即清空，不写本机存储。页面不向 AI 服务发测试聊天。其余台词、预设与布局参数保留。角色动画显示在电脑网页，不在管理App内运行。
+主菜单 → AI 桌宠设置，原生编辑角色、人设、说话风格、500–10000输出上限、模型、新 API Key、动画帧率及互动开关。需要服务端 v3.2.1；旧站点先按更新流程更新。Key 仅发送到你选定的 HTTPS 站点，服务端只回传掩码；成功保存后新Key输入立即清空，不写本机存储。页面不向 AI 服务发测试聊天。其余台词、预设与布局参数保留。角色动画显示在电脑网页，不在管理App内运行。
 
 本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
 
