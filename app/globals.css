@@ -1634,7 +1634,7 @@ img { display: block; max-width: 100%; }
 .ix-campus-page .ix-section-head > div:last-child > p { color: #eaf7f0; font-size: 14px; line-height: 1.8; }
 .ix-campus-page .ix-section-head .ix-copy-extra { color: #d9f6e7 !important; }
 .ix-campus-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
-.ix-campus-grid figure { margin: 0; overflow: hidden; border: 1px solid rgba(8,45,48,.16); border-radius: 18px; background: rgba(255,255,255,.32); box-shadow: 0 16px 40px rgba(8,38,42,.1); }
+.ix-campus-grid figure { margin: 0; overflow: hidden; contain: layout paint; border: 1px solid rgba(8,45,48,.16); border-radius: 18px; background: rgba(255,255,255,.32); box-shadow: 0 16px 40px rgba(8,38,42,.1); }
 .ix-campus-grid figure > img,.ix-campus-grid figure > video { display: block; width: 100%; aspect-ratio: 1.18; object-fit: cover; }
 .ix-campus-grid figcaption { display: flex; gap: 13px; padding: 16px 17px 18px; color: #163f41; }
 .ix-campus-grid figcaption > span { color: #73a57b; font: 700 11px/1 ui-monospace,monospace; }
@@ -2280,3 +2280,35 @@ body:has(.ix-image-lightbox[open]) { overflow: hidden; }
   .admin-shell .pet-settings-layout { grid-template-columns: minmax(0,1fr); }
   .admin-shell .pet-preview-panel { width: 100%; max-width: none; justify-self: stretch; }
 }
+
+/* Journal entries remain readable over the configured photo background. */
+.ix-notes-page { position: relative; z-index: 6; }
+.ix-journal-heading,.ix-journal-status,.ix-journal-entry { padding: clamp(22px,3vw,36px); border: 1px solid rgba(255,255,255,.3); border-radius: 22px; background: rgba(246,252,248,.94); color: #153d39; box-shadow: 0 16px 38px rgba(5,25,28,.12); }
+.ix-journal-heading { margin-bottom: 24px; }
+.ix-journal-heading > span { color: #4e7769; font: 700 11px/1.5 ui-monospace,monospace; letter-spacing: .13em; }
+.ix-journal-heading h1 { margin: 14px 0; font: 600 clamp(32px,5vw,54px)/1.15 "STKaiti","KaiTi",serif; }
+.ix-journal-heading p { margin: 0; white-space: pre-wrap; line-height: 1.8; overflow-wrap: anywhere; }
+.ix-journal-list { display: grid; gap: 20px; }
+.ix-journal-entry { contain: layout paint; }
+.ix-journal-entry time { color: #527364; font: 700 12px/1.5 ui-monospace,monospace; }
+.ix-journal-entry h2 { margin: 12px 0 18px; font-size: clamp(22px,3vw,30px); line-height: 1.4; overflow-wrap: anywhere; }
+.ix-journal-entry p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 1.9; }
+.ix-journal-status { text-align: center; line-height: 1.8; }
+.ix-journal-status button,.ix-journal-status a { display: inline-block; padding: 10px 18px; border: 1px solid #8aa797; border-radius: 12px; color: #153d39; background: #d8f6c6; }
+.admin-notes-manager { margin-top: 24px; padding: clamp(16px,2vw,24px); border: 1px solid var(--admin-border,rgba(130,160,145,.25)); border-radius: 18px; }
+.admin-notes-manager > header { display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 22px; }
+.admin-notes-manager h2,.admin-notes-manager h3 { margin: 0 0 10px; }
+.admin-notes-manager p { margin: 8px 0; line-height: 1.7; overflow-wrap: anywhere; }
+.admin-notes-manager button { flex-shrink: 0; padding: 10px 16px; border: 1px solid rgba(110,155,134,.4); border-radius: 10px; color: inherit; background: rgba(110,155,134,.16); }
+.admin-notes-manager button:disabled { opacity: .55; cursor: wait; }
+.admin-note-editor { display: grid; gap: 16px; padding-bottom: 24px; }
+.admin-note-editor label { display: grid; gap: 8px; }
+.admin-note-editor textarea { min-height: 180px; resize: vertical; }
+.admin-note-editor small { text-align: right; }
+.admin-note-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-note-editor .admin-note-actions button:nth-child(2) { background: #baff67; color: #153b2c; border-color: #baff67; }
+.admin-note-list { display: grid; gap: 14px; }
+.admin-note-list > article { display: grid; gap: 14px; padding: 18px; border: 1px solid rgba(110,155,134,.25); border-radius: 14px; }
+.admin-note-list article span { font-size: 12px; opacity: .8; }
+.admin-note-list article h3 { margin-top: 10px; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .admin-notes-manager > header { flex-direction: column; }.ix-journal-entry p { font-size: 15px; }.admin-note-actions button { flex: 1 1 auto; } }

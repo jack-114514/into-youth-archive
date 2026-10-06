@@ -134,6 +134,8 @@ void main() {
     (tester) async {
       final api = await open(tester);
       await select(tester, 'notes');
+      await tester.tap(find.text('栏目设置'));
+      await tester.pumpAndSettle();
       final label =
           adminFields.firstWhere((f) => f['key'] == 'notes_title')['label']
               as String;

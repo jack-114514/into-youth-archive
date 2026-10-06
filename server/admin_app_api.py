@@ -25,6 +25,16 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 try:
+    import notes
+except ModuleNotFoundError:
+    from server import notes
+
+try:
+    import media_thumbnails
+except ModuleNotFoundError:
+    from server import media_thumbnails
+
+try:
     import desktop_pet
 except ModuleNotFoundError:
     from server import desktop_pet
@@ -399,9 +409,14 @@ def _media_payload(data: dict, existing: sqlite3.Row | None = None) -> dict:
     video_url = str(data.get("video_url", fallback.get("video_url", ""))).strip()[:500]
     if not url and not video_url:
         raise ValueError("每条内容至少需要一张图片或一个视频")
+    thumbnail_url = str(data.get("thumbnail_url", fallback.get("thumbnail_url", ""))).strip()[:500]
+    if url != fallback.get("url") and "thumbnail_url" not in data:
+        thumbnail_url = ""
+    if not thumbnail_url:
+        thumbnail_url = media_thumbnails.generate(url, UPLOAD_DIR)
     return {
         "url": url,
-        "thumbnail_url": str(data.get("thumbnail_url", fallback.get("thumbnail_url", ""))).strip()[:500],
+        "thumbnail_url": thumbnail_url,
         "video_url": video_url,
         "title": str(data.get("title", fallback.get("title", "未命名内容"))).strip()[:100],
         "meta": str(data.get("meta", fallback.get("meta", ""))).strip()[:100],
@@ -412,6 +427,13 @@ def _media_payload(data: dict, existing: sqlite3.Row | None = None) -> dict:
         "show_in_stories": _bool_int(data.get("show_in_stories"), int(fallback.get("show_in_stories", 0))),
         "sort_order": _optional_order(data.get("sort_order")),
     }
+
+
+def _dispatch_notes(handler, path: str) -> bool:
+    prefix = "/api/v1/admin-app/notes"
+    if path != prefix and not re.fullmatch(re.escape(prefix) + r"/\d+", path):
+        return False
+    return notes.dispatch(handler, _db, handler.command, "/api/admin/notes" + path[len(prefix):], authorized=True)
 
 
 def dispatch_get(handler, path: str) -> None:
@@ -426,6 +448,8 @@ def dispatch_get(handler, path: str) -> None:
         except RuntimeError:
             return _error(handler, 503, "verification_unavailable", "登录人机验证尚未配置，请联系管理员", request_id)
     if not _require_session(handler, request_id):
+        return
+    if _dispatch_notes(handler, path):
         return
     query = parse_qs(urlparse(handler.path).query)
     with _db() as connection:
@@ -653,6 +677,8 @@ def dispatch_post(handler, path: str) -> None:
 
         if not _require_session(handler, request_id):
             return
+        if _dispatch_notes(handler, path):
+            return
         if not _require_rate(handler, request_id, "general", 240, 60):
             return
 
@@ -809,6 +835,8 @@ def dispatch_patch(handler, path: str) -> None:
         return
     if not _require_session(handler, request_id):
         return
+    if _dispatch_notes(handler, path):
+        return
     try:
         data = _read_json(handler)
         media_match = re.fullmatch(r"/api/v1/admin-app/media/(\d+)", path)
@@ -843,6 +871,7 @@ def dispatch_patch(handler, path: str) -> None:
                 )
                 _reposition_media(connection, media_id, payload["sort_order"])
                 _audit(connection, "update", request_id, "media", media_id)
+                connection.commit()
                 return _send(handler, 200, {"ok": True})
             if comment_match:
                 status = str(data.get("status", ""))
@@ -1132,6 +1161,8 @@ def dispatch_delete(handler, path: str) -> None:
     if not _require_rate(handler, request_id, "general", 240, 60):
         return
     if not _require_session(handler, request_id):
+        return
+    if _dispatch_notes(handler, path):
         return
     match = re.fullmatch(
         r"/api/v1/admin-app/(media|comments|submissions)/(\d+)", path

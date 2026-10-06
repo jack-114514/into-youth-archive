@@ -11,6 +11,7 @@ import '../comments/comments_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../developer/developer_screen.dart';
 import '../media/media_screen.dart';
+import '../notes/notes_screen.dart';
 import '../pet/pet_settings_screen.dart';
 import '../settings/account_screen.dart';
 import '../settings/full_settings_screen.dart';
@@ -54,6 +55,22 @@ class _AdminShellState extends ConsumerState<AdminShell> {
     'account' => const AccountScreen(embedded: true),
     'tools' => AppToolsScreen(onVersionTap: _versionTap),
     'developer' => const DeveloperScreen(),
+    'notes' => DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(text: '随手记内容'),
+              Tab(text: '栏目设置'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(children: [const NotesScreen(), _settings(id)]),
+          ),
+        ],
+      ),
+    ),
     'media' || 'river' || 'campus' => DefaultTabController(
       length: 2,
       child: Column(

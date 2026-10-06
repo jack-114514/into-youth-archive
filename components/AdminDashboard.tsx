@@ -1,5 +1,7 @@
 "use client";
 
+import { NotesManager } from "./NotesJournal";
+
 import { FormEvent, lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Cropper, ImageRestriction } from "react-advanced-cropper";
@@ -1181,7 +1183,6 @@ export default function AdminDashboard() {
       const reader = new FileReader();
       reader.onload = () => {
         const source = String(reader.result);
-        if (isImage && !companionTarget) { setMediaCrop({ source, target, replaceOriginal: true }); return; }
         if (typeof target === "object") { updateMediaRow(target.id, target.field, source); if (target.field === "url") updateMediaRow(target.id, "thumbnail_url", ""); }
         else if (target === "companion") setVideoUploadData(source);
         else { setUploadData(source); setUploadThumbnailData(""); }
@@ -1206,7 +1207,6 @@ export default function AdminDashboard() {
     event.preventDefault();
     if (dirtyMediaIds.length) return setMessage("请先点击顶部“保存全部设置”，再添加新图片，以免丢失尚未保存的编辑");
     if (!uploadData) return setMessage("请先选择图片或短视频");
-    if (!isVideoUrl(uploadData) && !uploadThumbnailData) return setMessage("请先完成取景");
     if (videoUploadData && isVideoUrl(uploadData)) return setMessage("只有照片可以再关联一个视频；如果只上传视频，请清除右侧关联视频");
     if (!Object.values(mediaDestinations).some(Boolean)) return setMessage("请至少选择一个图片展示栏目");
     try {
@@ -1755,7 +1755,7 @@ export default function AdminDashboard() {
             <div className="media-create-layout">
               <section className="media-edit-panel media-edit-story">
                 <div className="media-edit-panel-heading"><strong>图片内容</strong><span>填写访客将看到的标题、地点与正文</span></div>
-                {uploadData && !isVideoUrl(uploadData) && <button type="button" className="media-recrop-button" onClick={() => setMediaCrop({ source: uploadData, target: "primary", replaceOriginal: false })}>重新调整取景</button>}
+                {uploadData && !isVideoUrl(uploadData) && <><small>保存时自动生成压缩预览，原图保留。需要调整画面时可手动取景。</small><button type="button" className="media-recrop-button" onClick={() => setMediaCrop({ source: uploadData, target: "primary", replaceOriginal: false })}>手动调整取景（可选）</button></>}
                 <div className="media-edit-field-grid">
                   <label>标题<input placeholder="故事标题" value={mediaTitle} onChange={(event) => setMediaTitle(event.target.value)} /></label>
                   <label>地点 / 说明<input placeholder="例如：初夏 · 操场" value={mediaMeta} onChange={(event) => setMediaMeta(event.target.value)} /></label>
@@ -2112,7 +2112,8 @@ export default function AdminDashboard() {
                 <button className="timeline-add" type="button" disabled={timelineItems.length >= 8} onClick={() => setTimelineItems([...timelineItems, { date: "", title: "新的青春片段", text: "" }])}>＋ 新增节点</button>
               </div>
               </details>}
-              {tab === "notes" && <details className="admin-settings-accordion" open><summary>随手记页面文字<span>编辑访客看到的标题和正文</span></summary><section className="home-copy-settings"><label>页面标题<input maxLength={100} value={settings.notes_title} onChange={(event) => setSettings((current) => ({ ...current, notes_title: event.target.value }))} /></label><label>正文<textarea maxLength={2000} value={settings.notes_body} onChange={(event) => setSettings((current) => ({ ...current, notes_body: event.target.value }))} /></label></section></details>}
+              {tab === "notes" && <details className="admin-settings-accordion" open><summary>随手记页面介绍<span>编辑栏目标题和介绍，具体记录在下方添加</span></summary><section className="home-copy-settings"><label>页面标题<input maxLength={100} value={settings.notes_title} onChange={(event) => setSettings((current) => ({ ...current, notes_title: event.target.value }))} /></label><label>栏目介绍<textarea maxLength={2000} value={settings.notes_body} onChange={(event) => setSettings((current) => ({ ...current, notes_body: event.target.value }))} /></label></section></details>}
+              {tab === "notes" && <NotesManager token={token} />}
             </form>
             {tab === "images" && <aside className="intro-admin-preview home-visual-preview-panel">
               <header><div><strong>实时预览</strong><span>图片与色调修改后立即更新</span></div><div className="intro-preview-actions"><button type="button" onClick={() => setHomePreviewKey((value) => value + 1)}>重播</button><button type="button" onClick={() => setHomePreviewOpen(true)}>放大</button></div></header>

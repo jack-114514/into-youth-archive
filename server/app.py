@@ -20,6 +20,11 @@ from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 try:
+    import notes, media_thumbnails
+except ModuleNotFoundError:
+    from server import notes, media_thumbnails
+
+try:
     import desktop_pet
 except ModuleNotFoundError:
     from server import desktop_pet
@@ -510,6 +515,7 @@ def initialize():
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     with db() as connection:
         desktop_pet.initialize(connection)
+        notes.initialize(connection)
         connection.executescript(
             """
             CREATE TABLE IF NOT EXISTS admins (
@@ -737,6 +743,7 @@ def initialize():
                 "INSERT INTO homepage_intro_nodes(title,subtitle,sort_order,enabled) VALUES(?,?,?,?)",
                 INTRO_DEFAULT_NODES,
             )
+        media_thumbnails.backfill(connection, UPLOAD_DIR)
         if first_install and os.environ.get("SEED_DEMO_CONTENT", "1") == "1":
             for index in range(1, 17):
                 url = f"/assets/demo-{(index - 1) % 5 + 1}.svg"
@@ -828,6 +835,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.route()
+        if notes.dispatch(self, db, "GET", path):
+            return
         if desktop_pet.dispatch(self, db, 'GET', path):
             return
         if path.startswith("/api/v1/admin-app/"):
@@ -910,6 +919,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.route()
+        if notes.dispatch(self, db, "POST", path):
+            return
         if desktop_pet.dispatch(self, db, 'POST', path):
             return
         if path.startswith("/api/v1/admin-app/"):
@@ -1004,6 +1015,7 @@ class Handler(BaseHTTPRequestHandler):
                     connection.execute("UPDATE admins SET salt=?,password_hash=? WHERE id=1", (salt, password_hash(password, salt)))
                     connection.execute("DELETE FROM password_change_codes")
                     connection.execute("DELETE FROM sessions")
+                    connection.execute("DELETE FROM admin_app_sessions")
                 return self.send_json(200, {"ok": True})
             if path == "/api/upload":
                 encoded = str(data.get("data", ""))
@@ -1102,6 +1114,8 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/admin/media":
                         url = str(data.get("url", "")).strip()[:500]
                         thumbnail_url = str(data.get("thumbnail_url", "")).strip()[:500]
+                        if not thumbnail_url:
+                            thumbnail_url = media_thumbnails.generate(url, UPLOAD_DIR)
                         video_url = str(data.get("video_url", "")).strip()[:500]
                         title = str(data.get("title", "未命名照片")).strip()[:100]
                         meta = str(data.get("meta", "")).strip()[:100]
@@ -1353,6 +1367,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_PATCH(self):
         path = self.route()
+        if notes.dispatch(self, db, "PATCH", path):
+            return
         if path.startswith("/api/v1/admin-app/"):
             return dispatch_admin_app_patch(self, path)
         if not self.require_admin():
@@ -1381,6 +1397,10 @@ class Handler(BaseHTTPRequestHandler):
                 show_in_stories = 0 if str(data.get("show_in_stories", existing["show_in_stories"])).lower() in {"0", "false", "off"} else 1
                 url = str(data.get("url", existing["url"])).strip()[:500]
                 thumbnail_url = str(data.get("thumbnail_url", existing["thumbnail_url"])).strip()[:500]
+                if url != existing["url"] and "thumbnail_url" not in data:
+                    thumbnail_url = ""
+                if not thumbnail_url:
+                    thumbnail_url = media_thumbnails.generate(url, UPLOAD_DIR)
                 video_url = str(data.get("video_url", existing["video_url"])).strip()[:500]
                 if not url and not video_url:
                     return self.send_json(400, {"error": "每条内容至少要保留一张图片或一个视频"})
@@ -1396,6 +1416,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = self.route()
+        if notes.dispatch(self, db, "DELETE", path):
+            return
         if path.startswith("/api/v1/admin-app/"):
             return dispatch_admin_app_delete(self, path)
         if not self.require_admin():

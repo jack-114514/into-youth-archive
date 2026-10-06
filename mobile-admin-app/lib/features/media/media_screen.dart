@@ -165,7 +165,10 @@ class _MediaCard extends StatelessWidget {
   final VoidCallback onEdit, onDelete;
   @override
   Widget build(BuildContext context) {
-    final imageUri = AppConfig.resolvePublicUrl(item['url']?.toString() ?? '');
+    final thumbnail = item['thumbnail_url']?.toString() ?? '';
+    final imageUri = AppConfig.resolvePublicUrl(
+      thumbnail.isNotEmpty ? thumbnail : item['url']?.toString() ?? '',
+    );
     final hasVideo = (item['video_url']?.toString() ?? '').isNotEmpty;
     Widget preview(bool compact) => ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -446,6 +449,11 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
           _imageContentType(prepared.path),
         );
       }
+      if (_thumbnailImage == null &&
+          imageUrl != (widget.item?['url']?.toString() ?? '') &&
+          thumbnailUrl == (widget.item?['thumbnail_url']?.toString() ?? '')) {
+        thumbnailUrl = '';
+      }
       final payload = <String, dynamic>{
         'url': imageUrl,
         'video_url': videoUrl,
@@ -567,8 +575,8 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
               controller: _thumbnail,
               enabled: !_saving,
               decoration: const InputDecoration(
-                labelText: '3D 缩略图地址',
-                helperText: '留空使用原图；可填写本站上传地址。',
+                labelText: '自定义缩略图地址（可选）',
+                helperText: '留空自动生成压缩预览，上传原图保留。更换照片会重新生成。',
               ),
             ),
             const SizedBox(height: 12),
@@ -584,7 +592,7 @@ class _MediaEditorState extends ConsumerState<_MediaEditor> {
               onPressed: _saving ? null : _pickThumbnail,
               icon: const Icon(Icons.photo_size_select_actual_outlined),
               label: Text(
-                _thumbnailImage == null ? '从相册上传 3D 缩略图' : '已选择 3D 缩略图',
+                _thumbnailImage == null ? '手动上传缩略图（可选）' : '已选择自定义缩略图',
               ),
             ),
             SwitchListTile(

@@ -1,6 +1,6 @@
 # 技术说明
 
-对应网站 v3.5.1、安卓 1.7.1+19。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
+对应网站 v3.6.0、安卓 1.8.0+20。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
 
 ## 运行结构
 
@@ -59,7 +59,7 @@ Node.js 要求 >=22.13，Docker 构建阶段使用 Node 22。当前 VPS 入口�
 
 栏目路径为 `/`、`/stories`、`/memory`、`/timeline`、`/campus`、`/notes`、`/about`、`/messages`；后台为 `/admin`。Caddy 对 SPA 页面路径返回入口 HTML。
 
-3D 图片详情使用提前解码、最多 3 张的解码缓存及按交互时机预热，降低点击时的解码阻塞；图片按原比例显示。粒子、相框、雪花和旋转动画继续运行。帧率仍受设备 GPU、屏幕分辨率、粒子参数与图片体积影响。服务端没有自动把所有上传图片生成多尺寸缩略图的管线。
+3D 图片详情使用提前解码、最多 3 张的解码缓存及按交互时机预热，降低点击时的解码阻塞；图片按原比例显示。粒子、相框、雪花和旋转动画继续运行。帧率仍受设备 GPU、屏幕分辨率、粒子参数与图片体积影响。server/media_thumbnails.py 为本站照片生成720px WebP预览；新增、换图和启动历史补齐使用同一逻辑。原文件保持；thumbnail_url 优先展示，自定义预览保留。动画与外部图片保持原样。
 
 ## API 概览
 
@@ -81,7 +81,7 @@ Node.js 要求 >=22.13，Docker 构建阶段使用 Node 22。当前 VPS 入口�
 | /api/v1/admin-app/media、/comments、/submissions、/settings | App 使用的管理资源 |
 | /api/v1/admin-app/operation-logs | 已认证管理员查看操作摘要 |
 
-安卓 1.7.1 的原生界面已覆盖栏目图片与取景、文案与排版、时间线、首页开场路线、3D 参数、音乐上传/排序、联系链接、桌宠全部配置与预设、邮箱验证码改密，以及媒体、留言、投稿和服务器状态。App 与网站使用同一份数据；菜单名称、顺序和两级分组与网站保持一致。投稿“接受”记录审核状态，不会自动替站长编辑成公开故事。
+安卓 1.8.0 的原生界面已覆盖栏目图片与取景、文案与排版、时间线、首页开场路线、3D 参数、音乐上传/排序、联系链接、桌宠全部配置与预设、邮箱验证码改密，以及媒体、留言、投稿和服务器状态。App 与网站使用同一份数据；菜单名称、顺序和两级分组与网站保持一致。投稿“接受”记录审核状态，不会自动替站长编辑成公开故事。
 
 后端请求体上限 18 MiB。安卓端图片压缩为 JPEG（quality 86、1920 参数，保留 EXIF）；视频压缩为 720P并保留音轨，大文件仍可能超限。压缩在手机上完成，不是服务器转码服务。
 
@@ -155,3 +155,7 @@ npm run build
 本版默认内置墨灵。全新安装默认名称、形象、人设、中文语态均为墨灵；后台仍可编辑墨灵名称、人设与语态。旧角色默认模板自动迁移，自写人设与 API Key 保留。需配置自己的 AI Key 并开启 AI 对话后才能调用服务。
 
 管理员仍可选择自定义图片（PNG/JPEG/WebP/GIF/AVIF/SVG）或有授权的 Cubism 3/4 Live2D。网页后台与通用App填写本站资源路径或HTTPS地址；Live2D使用.model3.json入口且保持贴图、动作等相对路径完整。默认安装不加载Live2D运行库。自定义角色可以分别设置语态、人设与名称。
+
+## 随手记与自动预览
+
+notes 表存储标题、正文、日期、draft/published/archived及时间戳。/api/notes 只读公开记录；网页/api/admin/notes 使用网页会话，安卓/api/v1/admin-app/notes 使用原生访问令牌和既有速率限制。两端共享验证和归档逻辑；写入提交后才返回成功。详见[使用说明](随手记与图片预览.md)。Docker安装requirements.txt；非Docker部署安装python3-pil。
