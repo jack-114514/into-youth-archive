@@ -9,10 +9,12 @@ A self-hosted memory website for photos, videos and writing, with a **3D particl
 > **Prepare your own VPS and domain.** Point the domain to the VPS and open ports 80/443. The installer supports Debian / Ubuntu; 2 CPU cores and 2 GB RAM are recommended. Connect over SSH as root and run the complete command below. For a regular account, replace the final `bash` with `sudo bash`.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
+curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 ```
 
-**Enter your domain, email and admin password → wait for the build → open `https://your-domain`. Dashboard: `https://your-domain/admin`.** Turnstile and email recovery can be configured later.
+**Enter your domain and email; press Enter for the other defaults.** Select `2` for English at the first prompt (Enter defaults to Simplified Chinese). Basic setup is the default. Leave the password empty to generate one; initial credentials appear in the terminal after installation. Only Advanced setup asks for Turnstile and mail settings. Dashboard: `https://your-domain/admin`.
+
+The installer shows stages, elapsed time and real download progress when available. Steps without measurable totals show ongoing status. Low-memory servers are offered swap before compilation; Enter accepts the disclosed disk allocation. Swap is not enabled automatically after reboot. Run `bash install.sh --resume` in the installation directory after resolving an interrupted build; configuration and caches are retained. Tool logs keep their original language in private local files.
 
 **[📖 Step-by-step installation guide (Chinese)](docs/QUICK_START.md)** · **[View/download the installation script](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**
 

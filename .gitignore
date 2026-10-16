@@ -35,3 +35,4 @@ yarn-debug.log*
 *.keystore
 key.properties
 local.properties
+.install-complete

@@ -1,4 +1,5 @@
 .git
+.install-complete
 node_modules
 .env
 .env.*

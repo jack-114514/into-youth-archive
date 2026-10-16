@@ -38,7 +38,7 @@ ssh root@你的VPS地址
 **看到 VPS 的 Linux 命令提示符后**，复制整行执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
+curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 ```
 
 上面的命令供 root 登录后执行。普通账号需把最后的 `bash` 改为 `sudo bash`，并具备 sudo 权限。
@@ -47,24 +47,37 @@ curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main
 
 想先检查可[点击查看安装脚本](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)，或执行前运行 `less /tmp/memory-archive-install.sh`。
 
-## 4. 按提示填写自己的配置
+## 4. 只填写域名和邮箱，其余可直接回车
+
+语言选项直接回车为**简体中文**，输入 `2` 为 English。默认使用基础设置，验证码与邮件服务参数不会展开。提示均标明默认值；填错域名、邮箱或密码长度会就地重填。
 
 | 提示 | 填写方法 |
 | --- | --- |
 | 自己的域名 | `photos.example.com`；不加 `https://`、端口或路径 |
-| 证书联系邮箱 | 自己的有效邮箱 |
-| 管理员登录及恢复邮箱 | 自己的邮箱，之后用于网页后台和安卓登录 |
-| 管理员密码 | 至少 12 位；建议自己填写并保存到密码管理器 |
-| Turnstile Site Key / Secret Key | 可先都留空；邮箱恢复需要自己的一对密钥 |
-| SMTP 服务器 | 可先留空；填写后会继续询问端口、加密方式、账号、授权码、发件邮箱 |
+| 你的邮箱 | 必填；同时用于网页/安卓后台登录和证书通知 |
+| 后台密码 | 回车自动生成；自己填写时需至少 12 位，输入不显示 |
+| 配置方式 | 回车为基础设置；输入 `2` 才进入高级设置 |
+| 是否增加辅助内存 | 仅内存不足时询问；回车同意使用所示磁盘空间，输入 `n` 停止安装 |
 
-密码留空会生成随机值，只写入服务器本地 `.env`，不会显示在安装日志。可在服务器本地用编辑器查看，勿截图或上传：
+安装成功后会在**当前终端**显示网站、后台地址和初始账号密码。密码写入本地 `.env`，直接写入终端而不进入重定向日志；终端历史/录屏仍可能记录，请妥善保存。需要再次查看时在服务器终端运行：
 
 ```bash
-sudo nano /opt/memory-archive/.env
+cd /opt/memory-archive
+sudo python3 scripts/show_login.py
 ```
 
 `ADMIN_PASSWORD` 只用于首次建立管理员；之后改此值不会重设已有账号密码。邮箱恢复需要完整配置自己的 Turnstile 和 SMTP。
+
+安装分为8个阶段，显示当前任务与已用时间；源码接收、具有总量的镜像层下载显示真实进度条。编译、依赖安装等没有可靠总量时持续刷新状态，不显示虚假的整体百分比。底层工具的原始日志保存在提示的本机日志目录。
+
+约1GB内存的服务器可能在网页编译时被系统终止。安装器会检查可用内存和交换空间，必要时询问是否准备辅助内存；回车同意后创建专用交换文件，并在磁盘不足或服务器不支持时给出提示。交换文件保留供下次复用，不修改开机配置，重启后不自动启用。仍建议至少2GB物理内存；交换空间不能保证编译速度。
+
+安装中断时，修复提示的问题后继续，不要删除站点目录或数据卷：
+
+```bash
+cd /opt/memory-archive
+sudo bash install.sh --resume
+```
 
 ## 5. 打开网站，换成自己的内容
 
@@ -103,7 +116,9 @@ cd /opt/memory-archive
 sudo bash scripts/reconfigure.sh
 ```
 
-填自己的密钥/SMTP。脚本先备份，再保存配置、重建容器、检查健康；失败恢复原配置。换域名前先改 DNS 与 Turnstile 允许域名。回车保留已有值；需清空可选配置时，先备份后手工编辑 `.env` 并按运维说明重建。
+选择 `2 高级设置`，再对需要配置的项目输入 `y`。真人验证的公开/私密密钥分别对应 Cloudflare 的 Site Key / Secret Key；邮件服务器地址类似 `smtp.example.com`，不能填自己的邮箱。授权码通常需要在邮箱服务商处单独获取。
+
+脚本先备份，再保存配置、重建容器、检查健康；失败恢复原配置。换域名前先改 DNS 与 Turnstile 允许域名。基础模式、跳过可选项目和回车均保留已有高级配置；需清空时，先备份后手工编辑 `.env` 并按运维说明重建。英文重配可用 `sudo env INSTALL_LANG=en bash scripts/reconfigure.sh`。
 
 桌宠 AI 在网页后台填写自己的 DeepSeek Key，默认关闭；模型与动画无需 AI。
 
@@ -142,6 +157,8 @@ sudo bash install.sh
 | `curl: command not found` | root 先执行 `apt-get update && apt-get install -y curl`，再复制安装命令；普通用户加 sudo |
 | `sudo: command not found` | root 下用 `bash /tmp/memory-archive-install.sh`；普通用户需管理员配置 sudo |
 | 提示目录存在 / 已配置 | 安装器停止以避免覆盖；已有站点用 update.sh 或 reconfigure.sh |
+| 编译时 `Killed` / `exit code: 137` | 表示进程被强制终止，常见原因是内存不足；核查系统日志确认，准备辅助内存或升级内存后用 `install.sh --resume` 继续 |
+| 一段时间没有百分比变化 | 查看中文状态与已用时间；编译没有可靠百分比，日志路径在安装提示中。网络慢需检查服务器到 GitHub/依赖源/镜像源的连接 |
 | 没有 Compose v2 | 按 [Docker 官方说明](https://docs.docker.com/compose/install/linux/)补装插件，确认 `docker compose version` 可用 |
 | 安装通过但域名打不开 | 核对 DNS、80/443、安全组；容器健康不等于公共 DNS 生效 |
 | 证书错误 / 代理跳转循环 | 初次用 DNS only；源站 HTTPS 正常后开代理并用 Full (strict) |
