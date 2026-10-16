@@ -7,8 +7,10 @@ from install_ui import message
 
 def main():
     values = read_env(ROOT / '.env')
-    print(message('网站：', 'Website: ') + 'https://' + values['DOMAIN'])
-    print(message('后台：', 'Admin: ') + 'https://' + values['DOMAIN'] + '/admin')
+    port = values.get('HTTPS_PORT', '443')
+    origin = 'https://' + values['DOMAIN'] + (':' + port if port != '443' else '')
+    print(message('网站：', 'Website: ') + origin)
+    print(message('后台：', 'Admin: ') + origin + '/admin')
     try:
         with Path('/dev/tty').open('w', encoding='utf-8') as terminal:
             terminal.write(message('\n请保存初始登录信息（仅在当前终端显示）：\n', '\nSave the initial login details (shown only in this terminal):\n'))

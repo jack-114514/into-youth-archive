@@ -161,6 +161,12 @@ class ProgressAndMemoryTests(unittest.TestCase):
             show_login.main()
             self.assertNotIn('hidden-fixture-password', output.getvalue())
 
+    def test_custom_https_port_is_in_completed_install_links(self):
+        with patch.object(show_login, 'read_env', return_value={'DOMAIN': 'photos.example.org', 'HTTPS_PORT': '18443', 'ADMIN_USERNAME': 'owner@example.org', 'ADMIN_PASSWORD': 'hidden-fixture-password'}), \
+             patch.object(Path, 'open', side_effect=OSError('no tty')), contextlib.redirect_stdout(io.StringIO()) as output:
+            show_login.main()
+            self.assertIn('https://photos.example.org:18443/admin', output.getvalue())
+
 
 if __name__ == '__main__':
     unittest.main()
