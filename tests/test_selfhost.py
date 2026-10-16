@@ -1,5 +1,6 @@
 """Exercise a truly fresh database and preserve owner edits across restarts."""
 import importlib
+import gc
 import json
 import os
 from pathlib import Path
@@ -42,15 +43,24 @@ class FreshSiteTests(unittest.TestCase):
           'SITE_DATA_DIR': str(Path(cls.temp.name)/'data'), 'SITE_UPLOAD_DIR': str(Path(cls.temp.name)/'uploads'),
           'ADMIN_USERNAME':'owner@example.org', 'ADMIN_PASSWORD':'first-test-password-1234',
           'TURNSTILE_SITE_KEY':'', 'TURNSTILE_SECRET_KEY':'', 'SMTP_HOST':'',
+          'SEED_DEMO_CONTENT':'0',
         })
         cls.environment.start()
-        cls.app=importlib.import_module('server.app'); cls.app.initialize()
+        cls.app=importlib.import_module('server.app')
+        paths = dict(DATA_DIR=Path(cls.temp.name)/'data', UPLOAD_DIR=Path(cls.temp.name)/'uploads',
+                     DB_PATH=Path(cls.temp.name)/'data'/'site.db')
+        cls.paths = [patch.multiple(module, **paths) for module in
+                     (cls.app, importlib.import_module('server.admin_app_api'))]
+        for item in cls.paths: item.start()
+        cls.app.initialize()
         cls.server=cls.app.ThreadingHTTPServer(('127.0.0.1',0), cls.app.Handler)
         cls.thread=threading.Thread(target=cls.server.serve_forever, daemon=True); cls.thread.start()
         cls.origin=f'http://127.0.0.1:{cls.server.server_port}'
     @classmethod
     def tearDownClass(cls):
-        cls.server.shutdown(); cls.server.server_close(); cls.thread.join(); cls.environment.stop(); cls.temp.cleanup()
+        cls.server.shutdown(); cls.server.server_close(); cls.thread.join()
+        for item in reversed(cls.paths): item.stop()
+        cls.environment.stop(); gc.collect(); cls.temp.cleanup()
     def request(self, path, data=None, token=None, method=None):
         headers={'Content-Type':'application/json'}
         if token: headers['Authorization']='Bearer '+token
@@ -62,21 +72,28 @@ class FreshSiteTests(unittest.TestCase):
              patch('server.mobile_turnstile.verify', return_value=True):
             return self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org',
                                 'password':'first-test-password-1234', 'turnstile_token':'unit-test-token'})
-    def test_01_fresh_content_contains_only_demo_media(self):
+    def test_01_fresh_content_and_counts_are_empty(self):
         self.assertTrue(self.request('/api/health')['ok'])
-        data=self.request('/api/content'); self.assertEqual(len(data['media']),16)
+        data=self.request('/api/content'); self.assertEqual(data['media'],[])
+        self.assertEqual(self.request('/api/stats')['media_count'],0)
+        self.assertEqual(data['settings']['timeline_items'],'[]')
+        self.assertEqual(data['settings']['notes_body'],'')
+        self.assertEqual(self.request('/api/notes')['notes'],[])
+        with self.app.db() as connection:
+            for table in ('media','notes','comments','submissions'):
+                self.assertEqual(connection.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0],0)
         self.assertEqual(data['settings']['contact_email'],''); self.assertEqual(data['settings']['github_url'],'')
-        for item in data['media']: self.assertTrue(item['url'].startswith('/assets/demo-'))
         self.assertEqual(self.request('/api/comments')['comments'],[])
         config=self.request('/api/public-config'); self.assertEqual(config['turnstile_site_key'],'')
         self.assertFalse(config['password_recovery_enabled']); self.assertEqual(len(config),2)
     def test_02_own_admin_authenticates_both_clients(self):
         token=self.request('/api/admin/login', {'username':'owner@example.org','password':'first-test-password-1234'})['token']
-        self.assertIn('media',self.request('/api/admin/media',token=token))
+        self.assertEqual(self.request('/api/admin/media',token=token)['media'],[])
         direct=self.request('/api/v1/admin-app/auth/login', {'username':'owner@example.org','password':'first-test-password-1234'})
         self.assertIn('access_token',direct)
         mobile=self.verified_native_login()
         self.assertIn('access_token',mobile); self.assertIn('refresh_token',mobile)
+        self.assertEqual(self.request('/api/v1/admin-app/dashboard',token=mobile['access_token'])['counts']['media'],0)
         for path in ('/api/admin/media', '/api/v1/admin-app/dashboard'):
             with self.assertRaises(HTTPError) as error: self.request(path)
             self.assertEqual(error.exception.code,401)
@@ -113,5 +130,16 @@ class FreshSiteTests(unittest.TestCase):
         for method in ('GET','PATCH'):
             with self.assertRaises(HTTPError) as error: self.request('/api/v1/admin-app/pet',None if method=='GET' else {'settings':settings},method=method)
             self.assertEqual(error.exception.code,401)
+
+    def test_06_owner_adds_first_content_and_restart_keeps_it(self):
+        token=self.request('/api/admin/login', {'username':'owner@example.org','password':'first-test-password-1234'})['token']
+        self.request('/api/admin/media', {'url':'/uploads/own-first.png', 'title':'My first photo',
+                     'meta':'My place', 'body':'My own story', 'show_in_stories':1}, token=token)
+        content=self.request('/api/content')['media']
+        self.assertEqual(len(content),1)
+        self.assertEqual(content[0]['title'],'My first photo')
+        self.assertEqual(self.request('/api/stats')['media_count'],1)
+        self.app.initialize()
+        self.assertEqual(self.request('/api/content')['media'],content)
 
 if __name__=='__main__': unittest.main()

@@ -78,12 +78,7 @@ type CommentItem = {
   liked?: boolean;
 };
 
-const defaultTimelineItems: TimelineItem[] = [
-  { date: "2023.09", title: "第一次走进这里", text: "风很轻，书包很重，未来还是一张没有写字的纸。" },
-  { date: "2024.03", title: "春天在操场集合", text: "我们用一整个下午，把笑声留在跑道边。" },
-  { date: "2025.06", title: "教室最后一排", text: "黑板上的倒计时越来越小，想说的话却越来越多。" },
-  { date: "NOW", title: "故事仍在继续", text: "今天也值得记录。等未来回头看，它一定很亮。" },
-];
+const defaultTimelineItems: TimelineItem[] = [];
 
 function parseTimelineItems(value: unknown): TimelineItem[] {
   try {
@@ -94,24 +89,12 @@ function parseTimelineItems(value: unknown): TimelineItem[] {
       title: String(item?.title || ""),
       text: String(item?.text || ""),
     })).filter((item) => item.date || item.title || item.text);
-    return items.length ? items : defaultTimelineItems;
+    return items;
   } catch {
     return defaultTimelineItems;
   }
 }
 
-const defaultMemories: Memory[] = [
-  { url: "/assets/demo-1.svg", title: "风从教学楼穿过", meta: "初夏 · 放学后" },
-  { url: "/assets/demo-2.svg", title: "一起笑得很大声", meta: "社团日 · 操场边" },
-  { url: "/assets/demo-3.svg", title: "熟悉的那条路", meta: "九月 · 新学期" },
-  { url: "/assets/demo-4.svg", title: "课桌上的光", meta: "午后 · 自习课" },
-  { url: "/assets/demo-5.svg", title: "落日在黑板停留", meta: "傍晚 · 最后一节课" },
-];
-
-const fallbackComments: CommentItem[] = [
-  { id: 1, nickname: "一颗汽水糖", avatar: "🌤️", text: "看到这些照片，突然想起放学铃响以后，大家一起冲出教室的样子。", likes: 24, created_at: "2026-09-12T00:00:00.000Z" },
-  { id: 2, nickname: "晚风同学", avatar: "🌿", text: "这个网站好像一封慢慢打开的信。期待看到更多校园故事！", likes: 16, created_at: "2026-09-12T00:00:00.000Z", reply_to: "一颗汽水糖" },
-];
 
 function fileToData(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -333,11 +316,11 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
   const [gate, setGate] = useState(false);
   const [visitorLoginSession, setVisitorLoginSession] = useState(0);
   const [visitor, setVisitor] = useState<Visitor | null>(null);
-  const [memories, setMemories] = useState(defaultMemories);
-  const [comments, setComments] = useState(fallbackComments);
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [comments, setComments] = useState<CommentItem[]>([]);
   const [serverOnline, setServerOnline] = useState(false);
   const [stats, setStats] = useState<SiteStats>({ page_views: 0, media_count: 0, online: false });
-  const [settings, setSettings] = useState({ site_title: "我的记忆档案", footer_title: "我的记忆档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "一个正在校园里认真生活的普通人。喜欢傍晚六点的风、窗边的位置，还有把一闪而过的瞬间变成很久很久的记忆。", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "这里会慢慢收集校园里真实发生的片段。", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
+  const [settings, setSettings] = useState({ site_title: "我的记忆档案", footer_title: "我的记忆档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "一个正在校园里认真生活的普通人。喜欢傍晚六点的风、窗边的位置，还有把一闪而过的瞬间变成很久很久的记忆。", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
   const [introNodes, setIntroNodes] = useState<HomepageIntroNode[]>(defaultHomepageIntroNodes);
   const [riverOpen, setRiverOpen] = useState(initialRoute === "/memory");
   const [riverOrigin, setRiverOrigin] = useState({ x: 0, y: 0 });
@@ -458,11 +441,11 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
     event.currentTarget.style.setProperty("--spot-y", "50%");
   };
 
-  const displayMemories = useMemo(() => memories.length ? memories : defaultMemories, [memories]);
+  const displayMemories = memories;
   const homepageMemories = useMemo(() => displayMemories.filter((memory) => Number(memory.show_on_home ?? 1) === 1), [displayMemories]);
   const storyMemories = useMemo(() => displayMemories.filter((memory) => Number(memory.show_in_stories ?? 1) === 1), [displayMemories]);
   const threeDimensionalMemories = useMemo(() => selectThreeDimensionalMemories(displayMemories), [displayMemories]);
-  const heroMemories = homepageMemories.length ? homepageMemories : defaultMemories.slice(0, 1);
+  const heroMemory = homepageMemories[0];
   const visibleStories = storyMemories.slice(0, showAllStories ? storyMemories.length : 4);
   const timelineItems = useMemo(() => parseTimelineItems(settings.timeline_items), [settings.timeline_items]);
   const displaySizingStyle = useMemo(
@@ -709,13 +692,12 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
       setServerOnline(true);
       if (content.settings) setSettings((current) => ({ ...current, ...content.settings }));
       if (Array.isArray(content.intro_nodes)) setIntroNodes(content.intro_nodes);
-      const loadedMemories: Memory[] = content.media?.length ? content.media : defaultMemories;
-      if (content.media?.length) setMemories(content.media);
+      const loadedMemories: Memory[] = Array.isArray(content.media) ? content.media : [];
+      setMemories(loadedMemories);
       void galaxyModulePromise.then((module) => module.preloadGalaxyTextures(selectThreeDimensionalMemories(loadedMemories), "background"));
     }).catch(() => {
       setServerOnline(false);
       setStats((current) => ({ ...current, online: false }));
-      void galaxyModulePromise.then((module) => module.preloadGalaxyTextures(selectThreeDimensionalMemories(defaultMemories), "background"));
     }).finally(() => setContentLoaded(true));
 
     void request("/api/comments")
@@ -960,9 +942,9 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
       {currentRoute === "/" && <>
       <section className={`ix-hero is-art-${heroArtStyle} is-motion-${heroMotionLevel}${entryPhase === "site" ? " is-active" : ""}`} id="home">
         <div className="ix-hero-media" onPointerMove={moveHeroCollage} onPointerLeave={settleHeroCollage}>
-          {homeHeroImage ? <img src={homeHeroImage} alt="校园青春主视觉" decoding="async" /> : <MemoryVisual memory={heroMemories[0]} alt="校园青春主视觉" />}
+          {homeHeroImage ? <img src={homeHeroImage} alt="校园青春主视觉" decoding="async" /> : heroMemory ? <MemoryVisual memory={heroMemory} alt="校园青春主视觉" /> : <div className="ix-content-placeholder">等待添加图片</div>}
           <div className="ix-hero-shade" aria-hidden="true" />
-          {showHeroCaptions && <div className="ix-hero-caption-panel"><span>{settings.home_hero_caption_kicker || "CAMPUS · FRIENDS · SUNSET"}</span><strong>{settings.home_hero_caption_title || heroMemories[0].title}</strong></div>}
+          {showHeroCaptions && <div className="ix-hero-caption-panel"><span>{settings.home_hero_caption_kicker || "CAMPUS · FRIENDS · SUNSET"}</span><strong>{settings.home_hero_caption_title || heroMemory?.title || "等待添加内容"}</strong></div>}
         </div>
         <div className="ix-hero-copy">
           <p className="ix-kicker"><span /> {heroCopy.kicker}</p>
@@ -982,17 +964,17 @@ export default function ImmersiveHome({ initialRoute }: { initialRoute?: Archive
 
       {currentRoute !== "/" && <>
       <div className="ix-route-toolbar"><span>{currentRoute === "/stories" ? "STORIES / 青春故事集" : currentRoute === "/memory" ? "MEMORY / 3D 粒子树" : currentRoute === "/timeline" ? "TIMELINE / 青春时间线" : currentRoute === "/campus" ? "CAMPUS / 校园碎片" : currentRoute === "/notes" ? "NOTES / 随手记" : currentRoute === "/about" ? "ABOUT / 关于我们" : "MESSAGES / 留言操场"}</span></div>
-      {currentRoute === "/campus" && <section className="ix-campus-page"><div className="ix-section-head compact"><div><span className="ix-number">03</span><p className="ix-kicker"><span /> {campusCopy.kicker}</p></div><div><h2 className="ix-copy-title" data-copy-size={campusCopy.titleSize} data-copy-weight={campusCopy.titleWeight}>{campusCopy.title}<br /><em>{campusCopy.accent}</em></h2>{campusCopy.subtitle && <p className="ix-copy-subtitle">{campusCopy.subtitle}</p>}{campusCopy.extraEnabled && campusCopy.extraText && <p className="ix-copy-extra">{campusCopy.extraText}</p>}</div></div><div className="ix-campus-grid">{homepageMemories.map((memory, index) => <figure key={`${memory.url}-${index}`}><MemoryVisual memory={memory} alt={memory.title} /><figcaption><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{memory.title}</strong><small>{memoryMeta(memory)}</small></div></figcaption></figure>)}</div></section>}
+      {currentRoute === "/campus" && <section className="ix-campus-page"><div className="ix-section-head compact"><div><span className="ix-number">03</span><p className="ix-kicker"><span /> {campusCopy.kicker}</p></div><div><h2 className="ix-copy-title" data-copy-size={campusCopy.titleSize} data-copy-weight={campusCopy.titleWeight}>{campusCopy.title}<br /><em>{campusCopy.accent}</em></h2>{campusCopy.subtitle && <p className="ix-copy-subtitle">{campusCopy.subtitle}</p>}{campusCopy.extraEnabled && campusCopy.extraText && <p className="ix-copy-extra">{campusCopy.extraText}</p>}</div></div><div className="ix-campus-grid">{homepageMemories.map((memory, index) => <figure key={`${memory.url}-${index}`}><MemoryVisual memory={memory} alt={memory.title} /><figcaption><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{memory.title}</strong><small>{memoryMeta(memory)}</small></div></figcaption></figure>)}</div>{homepageMemories.length === 0 && <p className="ix-story-empty">暂无内容，等待管理员添加。</p>}</section>}
       {currentRoute === "/notes" && <PublicNotes title={settings.notes_title} introduction={settings.notes_body} />}
       </>}
 
       {currentRoute !== "/" && <>
-      {currentRoute === "/stories" && <section className="ix-stories" id="stories"><div className="ix-section-head"><div><span className="ix-number">01</span><p className="ix-kicker"><span /> {storiesCopy.kicker}</p></div><h2 className="ix-copy-title" data-copy-size={storiesCopy.titleSize} data-copy-weight={storiesCopy.titleWeight}>{storiesCopy.title}<br /><em>{storiesCopy.accent}</em></h2><div className="ix-copy-description">{storiesCopy.subtitle && <p className="ix-copy-subtitle">{storiesCopy.subtitle}</p>}{storiesCopy.extraEnabled && storiesCopy.extraText && <p className="ix-copy-extra">{storiesCopy.extraText}</p>}</div></div><div className="ix-story-grid">{visibleStories.map((memory, index) => <article key={`${memory.url}-${index}`} className={`ix-story-card tone-${index % 4 + 1}`}><div><button type="button" className="ix-story-image-open" aria-label={`放大图片：${memory.title}`} onClick={() => setExpandedStory(memory)}><MemoryVisual memory={memory} alt={memory.title} /></button><span>{String(index + 1).padStart(2, "0")}</span></div><footer><section><h3>{memory.title}</h3><p>{memoryMeta(memory)}</p></section><button type="button" aria-label={`阅读故事：${memory.title}`} onClick={() => setSelectedStory(memory)}><span className="micro-arrow">↗</span></button></footer></article>)}</div>{storyMemories.length === 0 && <p className="ix-story-empty">故事正在整理中，稍后再来看看。</p>}{storyMemories.length > 4 && <button className="ix-story-more" type="button" onClick={() => setShowAllStories((current) => !current)}>{showAllStories ? "收起部分内容" : `展开更多 · ${storyMemories.length - 4}`}</button>}</section>}
+      {currentRoute === "/stories" && <section className="ix-stories" id="stories"><div className="ix-section-head"><div><span className="ix-number">01</span><p className="ix-kicker"><span /> {storiesCopy.kicker}</p></div><h2 className="ix-copy-title" data-copy-size={storiesCopy.titleSize} data-copy-weight={storiesCopy.titleWeight}>{storiesCopy.title}<br /><em>{storiesCopy.accent}</em></h2><div className="ix-copy-description">{storiesCopy.subtitle && <p className="ix-copy-subtitle">{storiesCopy.subtitle}</p>}{storiesCopy.extraEnabled && storiesCopy.extraText && <p className="ix-copy-extra">{storiesCopy.extraText}</p>}</div></div><div className="ix-story-grid">{visibleStories.map((memory, index) => <article key={`${memory.url}-${index}`} className={`ix-story-card tone-${index % 4 + 1}`}><div><button type="button" className="ix-story-image-open" aria-label={`放大图片：${memory.title}`} onClick={() => setExpandedStory(memory)}><MemoryVisual memory={memory} alt={memory.title} /></button><span>{String(index + 1).padStart(2, "0")}</span></div><footer><section><h3>{memory.title}</h3><p>{memoryMeta(memory)}</p></section><button type="button" aria-label={`阅读故事：${memory.title}`} onClick={() => setSelectedStory(memory)}><span className="micro-arrow">↗</span></button></footer></article>)}</div>{storyMemories.length === 0 && <p className="ix-story-empty">暂无内容，等待管理员添加。</p>}{storyMemories.length > 4 && <button className="ix-story-more" type="button" onClick={() => setShowAllStories((current) => !current)}>{showAllStories ? "收起部分内容" : `展开更多 · ${storyMemories.length - 4}`}</button>}</section>}
 
       {currentRoute === "/memory" && <section className="ix-portal" onPointerMove={movePortalSpotlight} onPointerLeave={(event) => { event.currentTarget.style.setProperty("--spot-x", "50%"); event.currentTarget.style.setProperty("--spot-y", "52%"); event.currentTarget.style.setProperty("--terrain-rx", "0deg"); event.currentTarget.style.setProperty("--terrain-ry", "0deg"); }}><div className="ix-portal-terrain" aria-hidden="true" /><div className="ix-portal-reveal" aria-hidden="true" /><div className="ix-portal-glow" /><p className="ix-kicker"><span /> {portalCopy.kicker}</p><h2 className="ix-copy-title" data-copy-size={portalCopy.titleSize} data-copy-weight={portalCopy.titleWeight}>{portalCopy.title}<br /><em>{portalCopy.accent}</em></h2>{portalCopy.subtitle && <p className="ix-copy-subtitle">{portalCopy.subtitle}</p>}{portalCopy.extraEnabled && portalCopy.extraText && <p className="ix-copy-extra">{portalCopy.extraText}</p>}<button onClick={openMemoryRiver}>进入粒子树 <span className="micro-arrow">↗</span></button><div className="ix-portal-track"><i /><i /><i /><i /><i /></div></section>}
-      {currentRoute === "/timeline" && <section className="ix-timeline" id="timeline"><div className="ix-section-head compact"><div><span className="ix-number">02</span><p className="ix-kicker"><span /> {timelineCopy.kicker}</p></div><div><h2 className="ix-copy-title" data-copy-size={timelineCopy.titleSize} data-copy-weight={timelineCopy.titleWeight}>{timelineCopy.title}<br /><em>{timelineCopy.accent}</em></h2>{timelineCopy.subtitle && <p className="ix-copy-subtitle">{timelineCopy.subtitle}</p>}{timelineCopy.extraEnabled && timelineCopy.extraText && <p className="ix-copy-extra">{timelineCopy.extraText}</p>}</div></div><TimelineJourney items={timelineItems} active={currentRoute === "/timeline"} /></section>}
+      {currentRoute === "/timeline" && <section className="ix-timeline" id="timeline"><div className="ix-section-head compact"><div><span className="ix-number">02</span><p className="ix-kicker"><span /> {timelineCopy.kicker}</p></div><div><h2 className="ix-copy-title" data-copy-size={timelineCopy.titleSize} data-copy-weight={timelineCopy.titleWeight}>{timelineCopy.title}<br /><em>{timelineCopy.accent}</em></h2>{timelineCopy.subtitle && <p className="ix-copy-subtitle">{timelineCopy.subtitle}</p>}{timelineCopy.extraEnabled && timelineCopy.extraText && <p className="ix-copy-extra">{timelineCopy.extraText}</p>}</div></div>{timelineItems.length === 0 && <p className="ix-story-empty">暂无时间线，等待管理员添加。</p>}<TimelineJourney items={timelineItems} active={currentRoute === "/timeline"} /></section>}
 
-      {currentRoute === "/about" && <section className="ix-about" id="about"><div className="ix-about-image">{normalizeHomeVisualAsset(settings.about_page_image) ? <img src={normalizeHomeVisualAsset(settings.about_page_image)} alt="关于我们的校园图片" decoding="async" /> : <MemoryVisual memory={displayMemories[4] || defaultMemories[4]} alt="校园里的青春片段" />}<span>KEEP<br />YOUNG ✦</span></div><div><p className="ix-kicker"><span /> {aboutCopy.kicker}</p><h2 className="ix-copy-title" data-copy-size={aboutCopy.titleSize} data-copy-weight={aboutCopy.titleWeight}>{aboutCopy.title}<br /><em>{aboutCopy.accent}</em></h2>{aboutCopy.subtitle && <p className="ix-copy-subtitle">{aboutCopy.subtitle}</p>}{aboutCopy.extraEnabled && aboutCopy.extraText && <p className="ix-copy-extra">{aboutCopy.extraText}</p>}<div className="ix-tags"><span>摄影</span><span>校园日常</span><span>音乐</span><span>胡思乱想</span></div><div className="ix-about-actions"><button onClick={() => setSubmissionOpen(true)}>和我交换一个故事 <span className="micro-arrow">→</span></button><div className="ix-about-bubbles" aria-label="开源与联系">{normalizeContactLink(settings.github_url) && <a href={normalizeContactLink(settings.github_url)} target="_blank" rel="noreferrer"><small>OPEN SOURCE</small>GitHub 开源代码 <span className="micro-arrow">↗</span></a>}{contactEmailHref && <a href={contactEmailHref}><small>CONTACT</small>邮箱联系 <span className="micro-arrow">↗</span></a>}{normalizeContactLink(settings.contact_douyin_url) && <a href={normalizeContactLink(settings.contact_douyin_url)} target="_blank" rel="noreferrer"><small>SOCIAL</small>抖音主页 <span className="micro-arrow">↗</span></a>}{customContactLinks.map(({ label, url }, index) => <a key={`${label}-${index}`} href={url} target="_blank" rel="noopener noreferrer"><small>LINK</small>{label} <span className="micro-arrow">↗</span></a>)}</div></div></div></section>}
+      {currentRoute === "/about" && <section className="ix-about" id="about"><div className="ix-about-image">{normalizeHomeVisualAsset(settings.about_page_image) ? <img src={normalizeHomeVisualAsset(settings.about_page_image)} alt="关于我们的校园图片" decoding="async" /> : displayMemories.length ? <MemoryVisual memory={displayMemories[4] || displayMemories[0]} alt="校园里的青春片段" /> : <div className="ix-content-placeholder">等待添加图片</div>}<span>KEEP<br />YOUNG ✦</span></div><div><p className="ix-kicker"><span /> {aboutCopy.kicker}</p><h2 className="ix-copy-title" data-copy-size={aboutCopy.titleSize} data-copy-weight={aboutCopy.titleWeight}>{aboutCopy.title}<br /><em>{aboutCopy.accent}</em></h2>{aboutCopy.subtitle && <p className="ix-copy-subtitle">{aboutCopy.subtitle}</p>}{aboutCopy.extraEnabled && aboutCopy.extraText && <p className="ix-copy-extra">{aboutCopy.extraText}</p>}<div className="ix-tags"><span>摄影</span><span>校园日常</span><span>音乐</span><span>胡思乱想</span></div><div className="ix-about-actions"><button onClick={() => setSubmissionOpen(true)}>和我交换一个故事 <span className="micro-arrow">→</span></button><div className="ix-about-bubbles" aria-label="开源与联系">{normalizeContactLink(settings.github_url) && <a href={normalizeContactLink(settings.github_url)} target="_blank" rel="noreferrer"><small>OPEN SOURCE</small>GitHub 开源代码 <span className="micro-arrow">↗</span></a>}{contactEmailHref && <a href={contactEmailHref}><small>CONTACT</small>邮箱联系 <span className="micro-arrow">↗</span></a>}{normalizeContactLink(settings.contact_douyin_url) && <a href={normalizeContactLink(settings.contact_douyin_url)} target="_blank" rel="noreferrer"><small>SOCIAL</small>抖音主页 <span className="micro-arrow">↗</span></a>}{customContactLinks.map(({ label, url }, index) => <a key={`${label}-${index}`} href={url} target="_blank" rel="noopener noreferrer"><small>LINK</small>{label} <span className="micro-arrow">↗</span></a>)}</div></div></div></section>}
 
       {currentRoute === "/messages" && <section className="ix-comments" id="comments"><div className="ix-comment-head"><div><p className="ix-kicker"><span /> {commentsCopy.kicker}</p><h2 className="ix-copy-title" data-copy-size={commentsCopy.titleSize} data-copy-weight={commentsCopy.titleWeight}>{commentsCopy.title}<br /><em>{commentsCopy.accent}</em></h2>{commentsCopy.extraEnabled && commentsCopy.extraText && <p className="ix-copy-extra">{commentsCopy.extraText}</p>}</div>{commentsCopy.subtitle && <p className="ix-copy-subtitle">{commentsCopy.subtitle}</p>}</div><form className="ix-composer" onSubmit={submitComment}><div className="ix-avatar">{visitor?.avatar.startsWith("/") ? <img src={visitor.avatar} alt="头像" /> : visitor?.avatar || "○"}</div><div>{reply && <p className="ix-replying">正在回复 @{reply.nickname} <button type="button" onClick={() => setReply(null)}>×</button></p>}<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} onFocus={() => !visitor && setGate(true)} placeholder={visitor ? "写下此刻想说的话……" : "领取游客证后，可以在这里留言……"} maxLength={500} />{commentImage && <img className="ix-upload-preview" src={commentImage} alt="待上传图片" />}<footer><label>▧ 添加图片<input type="file" accept="image/*" onChange={async (event) => event.target.files?.[0] && setCommentImage(await fileToData(event.target.files[0]))} /></label><span>{commentText.length}/500</span><button type="submit">发送留言 <span className="micro-arrow">↗</span></button></footer></div></form><div className="ix-comment-list">{comments.map((comment) => <article key={comment.id}><div className="ix-avatar">{comment.avatar.startsWith("/") ? <img src={comment.avatar} alt="游客头像" /> : comment.avatar}</div><div><header><strong>{comment.nickname}</strong><time>{formatTime(comment.created_at)}</time></header>{comment.reply_to && <small>回复 @{comment.reply_to}</small>}<p>{comment.text}</p>{comment.image && <img className="ix-comment-image" src={comment.image} alt="留言附图" />}<footer><button className={comment.liked ? "liked" : ""} onClick={() => like(comment)}>♡ {comment.likes}</button><button onClick={() => visitor ? setReply(comment) : setGate(true)}>回复</button></footer></div></article>)}</div></section>}
 

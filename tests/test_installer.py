@@ -48,6 +48,7 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertGreaterEqual(len(values['PASSWORD_CODE_PEPPER']), 32)
         self.assertEqual(values['SMTP_HOST'], '')
         self.assertEqual(values['TURNSTILE_SITE_KEY'], '')
+        self.assertNotIn('SEED_DEMO_CONTENT', values)
         self.assertNotIn('SMTP', ''.join(prompts))
         self.assertNotIn(values['ADMIN_PASSWORD'], output)
         self.assertIn('邮箱找回密码暂未启用', output)
@@ -58,14 +59,15 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(values['DOMAIN'], 'photos.example.org')
 
     def test_advanced_skips_services_on_enter(self):
-        values, prompts, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '', '', '', ''])
+        values, prompts, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '', '', ''])
         self.assertEqual(values['ADMIN_USERNAME'], 'owner@example.org')
         self.assertEqual(values['SMTP_HOST'], '')
-        self.assertEqual(len(prompts), 9)
+        self.assertEqual(len(prompts), 8)
+        self.assertNotIn('SEED_DEMO_CONTENT', values)
 
     def test_advanced_rejects_email_as_mail_hostname(self):
         values, _, _, _ = self.configure([
-            'photos.example.org', 'owner@example.org', '2', '', '',
+            'photos.example.org', 'owner@example.org', '2', '',
             'y', 'public-test-key', 'y', 'owner@example.org', 'smtp.example.org', '', '', 'owner@example.org', '', '',
         ], ['', 'private-test-key', 'mail-test-authorization'])
         self.assertEqual(values['SMTP_HOST'], 'smtp.example.org')
@@ -74,22 +76,22 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(values['TURNSTILE_SECRET_KEY'], 'private-test-key')
 
     def test_basic_reconfigure_preserves_secrets_and_backs_up(self):
-        old, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '',
+        old, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '',
                                       'y', 'public-test-key', 'y', 'smtp.example.org', '', '', 'owner@example.org', '', ''],
                                      ['', 'private-test-key', 'mail-test-authorization'])
         new, _, _, backups = self.configure(['', '', ''], old=old)
         self.assertEqual(new, old)
         self.assertEqual(backups, [old])
 
-    def test_advanced_offers_empty_site_and_custom_ports_with_validation(self):
-        values, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '2', '', '', 'y', '18080', '18080', '18443'])
-        self.assertEqual(values['SEED_DEMO_CONTENT'], '0')
+    def test_advanced_custom_ports_with_validation(self):
+        values, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '', '', 'y', '18080', '18080', '18443'])
+        self.assertNotIn('SEED_DEMO_CONTENT', values)
         self.assertEqual(values['HTTP_PORT'], '18080')
         self.assertEqual(values['HTTPS_PORT'], '18443')
 
     def test_english_advanced_options_and_numeric_mail_encryption(self):
         values, prompts, output, _ = self.configure([
-            'photos.example.org', 'owner@example.org', '2', '', '', '', 'y', 'smtp.example.org', '587', '', 'owner@example.org', '', '',
+            'photos.example.org', 'owner@example.org', '2', '', '', 'y', 'smtp.example.org', '587', '', 'owner@example.org', '', '',
         ], ['', 'mail-test-authorization'], lang='en')
         self.assertEqual(values['SMTP_SECURITY'], 'starttls')
         self.assertNotRegex(''.join(prompts) + output, r'[\u4e00-\u9fff]')
@@ -106,6 +108,11 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(prompts, [])
         self.assertEqual(saved['HTTP_PORT'], '18080')
         self.assertEqual(saved['SMTP_HOST'], 'smtp.example.org')
+        self.assertNotIn('SEED_DEMO_CONTENT', saved)
+        demo, _, _, _ = self.configure([], non_interactive=True, extra_env={
+            'DOMAIN': 'photos.example.org', 'ACME_EMAIL': 'owner@example.org', 'SEED_DEMO_CONTENT': '1',
+        })
+        self.assertNotIn('SEED_DEMO_CONTENT', demo)
 
 
 class ProgressAndMemoryTests(unittest.TestCase):

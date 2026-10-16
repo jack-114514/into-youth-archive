@@ -510,7 +510,6 @@ def verify_turnstile(token, remote_ip):
 
 
 def initialize():
-    first_install = not DB_PATH.exists()
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     with db() as connection:
@@ -697,8 +696,8 @@ def initialize():
             "display_font_scale": "100",
             "display_media_scale": "100",
             "notes_title": "随手记",
-            "notes_body": "这里会慢慢收集校园里真实发生的片段。",
-            "timeline_items": '[{"date":"2023.09","title":"第一次走进这里","text":"风很轻，书包很重，未来还是一张没有写字的纸。"},{"date":"2024.03","title":"春天在操场集合","text":"我们用一整个下午，把笑声留在跑道边。"},{"date":"2025.06","title":"教室最后一排","text":"黑板上的倒计时越来越小，想说的话却越来越多。"},{"date":"NOW","title":"故事仍在继续","text":"今天也值得记录。等未来回头看，它一定很亮。"}]',
+            "notes_body": "",
+            "timeline_items": "[]",
             **INTRO_SETTING_DEFAULTS,
             **HOME_COPY_DEFAULTS,
             **HOME_VISUAL_DEFAULTS,
@@ -744,15 +743,6 @@ def initialize():
                 INTRO_DEFAULT_NODES,
             )
         media_thumbnails.backfill(connection, UPLOAD_DIR)
-        if first_install and os.environ.get("SEED_DEMO_CONTENT", "1") == "1":
-            for index in range(1, 17):
-                url = f"/assets/demo-{(index - 1) % 5 + 1}.svg"
-                connection.execute(
-                    "INSERT INTO media(url,thumbnail_url,title,meta,body,sort_order,show_in_stories,created_at) VALUES(?,?,?,?,?,?,?,?)",
-                    (url, url, f"示例记忆 {index:02}", "可在后台替换的演示插画",
-                     "这是生成的示例内容，不是真实照片。登录后台上传自己的照片、视频并编辑文案。",
-                     index, 1, now_iso()),
-                )
         connection.execute("PRAGMA optimize")
     initialize_admin_app_api()
 

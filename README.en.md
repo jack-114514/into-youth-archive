@@ -14,7 +14,7 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 **Enter your domain and email; press Enter for the other defaults.** Select `2` for English at the first prompt (Enter defaults to Simplified Chinese). Basic setup is the default. Leave the password empty to generate one; initial credentials appear in the terminal after installation. Only Advanced setup asks for Turnstile and mail settings. Dashboard: `https://your-domain/admin`.
 
-Advanced setup also offers a separate login email, demo or empty initial content and custom website ports. Mail encryption uses numbered choices.
+Every fresh installation starts with 0 content items, ready for the owner to add their own. Advanced setup offers a separate login email and custom website ports. Mail encryption uses numbered choices.
 
 The installer shows stages, elapsed time and real download progress when available. Steps without measurable totals show ongoing status. Low-memory servers are offered swap before compilation; Enter accepts the disclosed disk allocation. Swap is not enabled automatically after reboot. Run `bash install.sh --resume` in the installation directory after resolving an interrupted build; configuration and caches are retained. Tool logs keep their original language in private local files.
 
@@ -58,7 +58,7 @@ The linked detailed guides are currently in Chinese. This English README covers 
 | Universal Android admin app | 1.8.0, versionCode 20; package ID `org.memoryarchive.admin.secure` |
 | Default deployment | Docker Compose, Caddy HTTPS and SQLite; one site and one administrator |
 
-A fresh installation includes the complete interface, animations and features, with neutral text and generated demo illustrations. Configure your own database, accounts, photos, domain, Cloudflare, email and AI credentials. The source excludes the original author's real photos, database, uploads, server address, passwords, cloud credentials and Android signing key. The running site does not connect to the original author's website.
+A fresh installation includes the complete interface, animations and features, with neutral interface text and empty photos, stories, timeline, journals, comments and submissions. No example records are generated. Configure your own database, accounts, photos, domain, Cloudflare, email and AI credentials. The source excludes the original author's real photos, database, uploads, server address, passwords, cloud credentials and Android signing key. The running site does not connect to the original author's website.
 
 Installation and updates access the selected GitHub repository, dependency registries and image services. Third-party services run according to your configuration. Retain the open-source licenses and third-party attribution.
 

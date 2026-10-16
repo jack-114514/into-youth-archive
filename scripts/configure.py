@@ -12,7 +12,7 @@ from install_ui import message
 
 ROOT = Path(__file__).resolve().parent.parent
 FIELDS = ("DOMAIN", "ACME_EMAIL", "HTTP_PORT", "HTTPS_PORT", "ADMIN_USERNAME", "ADMIN_PASSWORD",
-          "SEED_DEMO_CONTENT", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY", "TURNSTILE_ALLOWED_HOSTNAMES",
+          "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY", "TURNSTILE_ALLOWED_HOSTNAMES",
           "PASSWORD_CODE_PEPPER", "SMTP_HOST", "SMTP_PORT", "SMTP_SECURITY", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM")
 def quote(value):
     if any(ord(c) < 32 for c in value):
@@ -42,8 +42,6 @@ def validate(values):
         if not values.get(key, '').isdigit() or not 1 <= int(values[key]) <= 65535: raise ValueError(message('端口应为1至65535之间的整数', 'Port must be an integer between 1 and 65535'))
     if values.get('HTTP_PORT') == values.get('HTTPS_PORT'):
         raise ValueError(message('普通访问端口和加密访问端口不能相同', 'HTTP and HTTPS ports must be different'))
-    if values.get('SEED_DEMO_CONTENT', '1') not in ('0', '1'):
-        raise ValueError(message('初始内容选项无效', 'Invalid initial content option'))
     if values.get('SMTP_SECURITY') not in ('ssl', 'starttls'): raise ValueError(message('邮件加密方式只支持 ssl 或 starttls', 'Mail encryption must be ssl or starttls'))
     if values.get('SMTP_HOST'):
         host = values['SMTP_HOST']
@@ -78,7 +76,7 @@ def main():
     os.environ['INSTALL_LANG'] = args.lang
     if path.exists() and not args.edit: raise SystemExit(message('配置已存在；请用 --edit 修改，避免覆盖已有站点', 'Configuration exists. Use --edit to change it.'))
     old = read_env(path)
-    values = {'HTTP_PORT':'80', 'HTTPS_PORT':'443', 'SMTP_PORT':'465', 'SMTP_SECURITY':'ssl', 'SEED_DEMO_CONTENT':'1', **old}
+    values = {'HTTP_PORT':'80', 'HTTPS_PORT':'443', 'SMTP_PORT':'465', 'SMTP_SECURITY':'ssl', **old}
     def ask(key, label, default='', private=False, check=None):
         current = values.get(key, default)
         if args.non_interactive: values[key] = os.environ.get(key, current); return
@@ -128,14 +126,9 @@ def main():
             if mode in ('1', '2'): break
             print(message('请输入 1 或 2。', 'Enter 1 or 2.'))
     if mode == '2':
-        print(message('高级设置：独立登录邮箱、初始内容、真人验证、邮件发送、访问端口。可跳过不需要的项目。',
-                      'Advanced settings: separate login email, initial content, human verification, mail and website ports. Skip anything you do not need.'))
+        print(message('高级设置：独立登录邮箱、真人验证、邮件发送、访问端口。可跳过不需要的项目。',
+                      'Advanced settings: separate login email, human verification, mail and website ports. Skip anything you do not need.'))
         ask('ADMIN_USERNAME', message('后台登录邮箱（回车使用上面的邮箱）', 'Admin login email (Enter to keep default)'), check=email)
-        print(message('新站初始内容：1 带示例内容（推荐，可在后台替换）  2 空白站点（自己从头添加）',
-                      'Initial content: 1 Demo examples (recommended, replace in dashboard)  2 Empty site (start from scratch)'))
-        print(message('此选项只在首次创建数据库时生效；已有站点请在后台管理内容。',
-                      'This only applies when the database is first created. Manage existing content in the dashboard.'))
-        choose('SEED_DEMO_CONTENT', message('初始内容选择', 'Initial content choice'), {'1': '1', '2': '0'}, '1')
         print(message('真人验证：通过 Cloudflare 判断是否由真人操作；邮箱找回密码需要它。已有配置回车保留。',
                       'Human verification: Cloudflare Turnstile is needed for email password recovery. Existing values are preserved.'))
         if yes('配置真人验证？', 'Configure human verification?'):

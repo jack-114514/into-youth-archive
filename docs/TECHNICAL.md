@@ -110,7 +110,7 @@ App 管理 API 使用进程内限流，登录上限为每来源分组 300 秒内
 | 域名与证书 | DOMAIN、ACME_EMAIL；裸域名，证书由 Caddy 管理 |
 | 端口 | HTTP_PORT=80、HTTPS_PORT=443 |
 | 初始管理员 | ADMIN_USERNAME、ADMIN_PASSWORD；密码仅用于首次创建 |
-| 演示数据 | SEED_DEMO_CONTENT；全新数据库可选演示数据 |
+| 初始内容 | 全新数据库不创建示例记录；旧 SEED_DEMO_CONTENT 参数不再生效 |
 | Turnstile | TURNSTILE_SITE_KEY、TURNSTILE_SECRET_KEY、TURNSTILE_ALLOWED_HOSTNAMES |
 | 邮件恢复 | PASSWORD_CODE_PEPPER、SMTP_HOST/PORT/SECURITY/USERNAME/PASSWORD/FROM |
 | 服务端目录 | SITE_DATA_DIR、SITE_UPLOAD_DIR；容器中 /data 与 /uploads |
@@ -148,7 +148,7 @@ npm run test:server
 npm run build
 ```
 
-构建输出 `vps-dist`。CI 还执行全新 Docker 构建/启动、API 路由/演示数据/备份检查，以及 Flutter analyze、test 和预览 APK 构建。源码公共检查排除凭据、数据库、私人媒体与运行目录；它不能替代对新增内容的人工审阅。
+构建输出 `vps-dist`。CI 还执行全新 Docker 构建/启动、API 路由/空白内容/备份检查，以及 Flutter analyze、test 和预览 APK 构建。源码公共检查排除凭据、数据库、私人媒体与运行目录；它不能替代对新增内容的人工审阅。
 
 备份脚本使用 SQLite 在线一致备份，同时保存上传与配置；更新脚本拒绝脏工作树、先备份、再快进更新，失败回退代码和镜像。数据时间点恢复是独立操作，见[运维说明](SELF_HOSTING.md)。
 

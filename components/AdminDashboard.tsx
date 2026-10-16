@@ -253,12 +253,7 @@ function TurnstileVerification({ onVerify, resetSignal, theme }: { onVerify: (to
   return <div className="turnstile-box"><div ref={containerRef} /><small role="status">{statusText}</small>{phase === "error" && <button type="button" onClick={retryVerification}>重新加载人机验证</button>}</div>;
 }
 
-const defaultTimelineItems: TimelineItem[] = [
-  { date: "2023.09", title: "第一次走进这里", text: "风很轻，书包很重，未来还是一张没有写字的纸。" },
-  { date: "2024.03", title: "春天在操场集合", text: "我们用一整个下午，把笑声留在跑道边。" },
-  { date: "2025.06", title: "教室最后一排", text: "黑板上的倒计时越来越小，想说的话却越来越多。" },
-  { date: "NOW", title: "故事仍在继续", text: "今天也值得记录。等未来回头看，它一定很亮。" },
-];
+const defaultTimelineItems: TimelineItem[] = [];
 
 function parseTimelineItems(value: unknown): TimelineItem[] {
   try {
@@ -814,7 +809,7 @@ export default function AdminDashboard() {
   const [mediaTakenAt, setMediaTakenAt] = useState("");
   const [mediaSortOrder, setMediaSortOrder] = useState("");
   const [mediaDestinations, setMediaDestinations] = useState(mediaDestinationsForTab("media"));
-  const [settings, setSettings] = useState({ site_title: "我的记忆档案", footer_title: "我的记忆档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "这里会慢慢收集校园里真实发生的片段。", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
+  const [settings, setSettings] = useState({ site_title: "我的记忆档案", footer_title: "我的记忆档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
   const [introNodes, setIntroNodes] = useState<HomepageIntroNode[]>(defaultHomepageIntroNodes);
   const [introPreviewKey, setIntroPreviewKey] = useState(0);
   const [introPreviewOpen, setIntroPreviewOpen] = useState(false);
@@ -2106,7 +2101,7 @@ export default function AdminDashboard() {
                     <label>时间<input value={item.date} maxLength={20} onChange={(event) => updateTimelineItem(index, "date", event.target.value)} /></label>
                     <label>标题<input value={item.title} maxLength={80} onChange={(event) => updateTimelineItem(index, "title", event.target.value)} /></label>
                     <label className="timeline-body-field">正文<textarea value={item.text} maxLength={500} onChange={(event) => updateTimelineItem(index, "text", event.target.value)} /></label>
-                    <div className="timeline-row-actions"><button type="button" disabled={index === 0} onClick={() => moveTimelineItem(index, -1)}>上移</button><button type="button" disabled={index === timelineItems.length - 1} onClick={() => moveTimelineItem(index, 1)}>下移</button><button type="button" disabled={timelineItems.length === 1} onClick={() => requestDeletion(`删除“${item.title || `第 ${index + 1} 段`}”时间线？`, "确认后会从当前网站设置中移除；保存全部设置后将无法恢复。", () => setTimelineItems((items) => items.filter((_, itemIndex) => itemIndex !== index)))}>删除</button></div>
+                    <div className="timeline-row-actions"><button type="button" disabled={index === 0} onClick={() => moveTimelineItem(index, -1)}>上移</button><button type="button" disabled={index === timelineItems.length - 1} onClick={() => moveTimelineItem(index, 1)}>下移</button><button type="button" onClick={() => requestDeletion(`删除“${item.title || `第 ${index + 1} 段`}”时间线？`, "确认后会从当前网站设置中移除；保存全部设置后将无法恢复。", () => setTimelineItems(timelineItems.filter((_, itemIndex) => itemIndex !== index)))}>删除</button></div>
                   </fieldset>
                 ))}
                 <button className="timeline-add" type="button" disabled={timelineItems.length >= 8} onClick={() => setTimelineItems([...timelineItems, { date: "", title: "新的青春片段", text: "" }])}>＋ 新增节点</button>
