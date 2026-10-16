@@ -18,6 +18,8 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 安装时显示阶段、已用时间和可获得的真实下载进度；无法计算百分比时显示持续状态。小内存服务器会先提示增加辅助内存，回车同意后才创建交换文件（占用磁盘，重启后不自动启用）。构建中断后在安装目录运行 `bash install.sh --resume` 继续，不必重新填写配置。
 
+系统正在安装/更新其他软件时，安装器会等待安装锁释放。失败后可运行 `python3 scripts/install_log.py` 直接查看最新日志，无需抄写文件名。
+
 **[📖 第一次建站？点这里看逐步安装指南](docs/QUICK_START.md)** · **[查看/下载网站安装脚本](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**
 
 链接用于查看/下载脚本；安装命令要在 VPS 的 Linux 终端执行。没有 curl 或 sudo 时，见[常见问题](docs/QUICK_START.md#常见问题)。已有 Docker 需支持 Compose v2。

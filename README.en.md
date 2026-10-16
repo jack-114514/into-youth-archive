@@ -18,6 +18,8 @@ Advanced setup also offers a separate login email, demo or empty initial content
 
 The installer shows stages, elapsed time and real download progress when available. Steps without measurable totals show ongoing status. Low-memory servers are offered swap before compilation; Enter accepts the disclosed disk allocation. Swap is not enabled automatically after reboot. Run `bash install.sh --resume` in the installation directory after resolving an interrupted build; configuration and caches are retained. Tool logs keep their original language in private local files.
 
+If another system package task is running, Docker setup waits for its install lock instead of failing immediately. Run `python3 scripts/install_log.py` to inspect the latest log without copying its filename.
+
 **[📖 Step-by-step installation guide (Chinese)](docs/QUICK_START.md)** · **[View/download the installation script](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**
 
 Run the installation command in the Linux terminal on your VPS. For missing curl/sudo, see the [FAQ (Chinese)](docs/QUICK_START.md#常见问题). Existing Docker installations must support Compose v2.

@@ -59,7 +59,7 @@ fi
 if ! command -v git >/dev/null || ! command -v curl >/dev/null || ! command -v python3 >/dev/null; then
   export DEBIAN_FRONTEND=noninteractive
   bootstrap "$(say '[1/8] 准备系统工具' '[1/8] Preparing system tools')" apt-get update
-  bootstrap "$(say '[1/8] 安装系统工具' '[1/8] Installing system tools')" apt-get install -y git curl python3 ca-certificates
+  bootstrap "$(say '[1/8] 安装系统工具' '[1/8] Installing system tools')" apt-get -o DPkg::Lock::Timeout=300 install -y git curl python3 ca-certificates
 else
   say '[1/8] 系统工具已就绪' '[1/8] System tools ready'
 fi
@@ -90,7 +90,7 @@ python3 scripts/install_memory.py
 if ! command -v docker >/dev/null; then
   docker_setup=$(mktemp)
   stage '[5/8] 下载容器工具安装程序（Docker 官方）' '[5/8] Downloading official Docker installer' curl --fail --show-error --location --retry 3 --connect-timeout 20 https://get.docker.com -o "$docker_setup"
-  stage '[5/8] 安装容器工具（Docker）' '[5/8] Installing Docker' sh "$docker_setup"
+  stage '[5/8] 安装容器工具（Docker）' '[5/8] Installing Docker' python3 scripts/install_apt.py -- sh "$docker_setup"
 else
   say '[5/8] 容器工具已安装' '[5/8] Docker is installed'
 fi

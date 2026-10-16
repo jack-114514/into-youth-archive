@@ -70,6 +70,14 @@ sudo python3 scripts/show_login.py
 
 安装分为8个阶段，显示当前任务与已用时间；源码接收、具有总量的镜像层下载显示真实进度条。编译、依赖安装等没有可靠总量时持续刷新状态，不显示虚假的整体百分比。底层工具的原始日志保存在提示的本机日志目录。
 
+新装服务器可能同时在自动更新系统软件。安装器遇到软件安装锁时会显示中文等待提示，最多等待5分钟，并在锁释放后继续；不会删除锁文件或中断其他系统任务。等待超时可稍后用 `bash install.sh --resume` 继续。
+
+查看最近一步的详细日志无需抄写长文件名，在安装目录运行：
+
+```bash
+python3 scripts/install_log.py
+```
+
 约1GB内存的服务器可能在网页编译时被系统终止。安装器会检查可用内存和交换空间，必要时询问是否准备辅助内存；回车同意后创建专用交换文件，并在磁盘不足或服务器不支持时给出提示。交换文件保留供下次复用，不修改开机配置，重启后不自动启用。仍建议至少2GB物理内存；交换空间不能保证编译速度。
 
 安装中断时，修复提示的问题后继续，不要删除站点目录或数据卷：
@@ -160,6 +168,7 @@ sudo bash install.sh
 | `sudo: command not found` | root 下用 `bash /tmp/memory-archive-install.sh`；普通用户需管理员配置 sudo |
 | 提示目录存在 / 已配置 | 安装器停止以避免覆盖；已有站点用 update.sh 或 reconfigure.sh |
 | 编译时 `Killed` / `exit code: 137` | 表示进程被强制终止，常见原因是内存不足；核查系统日志确认，准备辅助内存或升级内存后用 `install.sh --resume` 继续 |
+| `Could not get lock` / `Unable to acquire the dpkg frontend lock` | 系统有其他软件安装/更新任务；安装器会等待，超时后稍后继续。不要删除锁文件；用 `python3 scripts/install_log.py` 查看详情 |
 | 后端提示 `app.py: Permission denied` | 更新源码中的Dockerfile后运行 `bash install.sh --resume`；镜像构建会设置程序源码读取权限，不需要放宽真实.env的权限 |
 | 一段时间没有百分比变化 | 查看中文状态与已用时间；编译没有可靠百分比，日志路径在安装提示中。网络慢需检查服务器到 GitHub/依赖源/镜像源的连接 |
 | 没有 Compose v2 | 按 [Docker 官方说明](https://docs.docker.com/compose/install/linux/)补装插件，确认 `docker compose version` 可用 |

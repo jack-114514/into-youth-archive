@@ -16,6 +16,8 @@ def message(zh, en):
 def describe(log, title=''):
     # A tool's percentage describes that operation only, never the entire install.
     lines = log.replace('\r', '\n').splitlines()
+    if any(re.search(r'系统软件任务正在运行|Waiting for system package tasks|Waiting for cache lock', line) for line in lines[-5:]):
+        return message('系统正在处理其他软件任务，等待完成后自动继续', 'Waiting for another system package task; installation will continue automatically')
     # Installing the engine downloads OS packages, not application image layers.
     if '安装容器工具（Docker）' in title or 'Installing Docker' in title:
         if any(re.search(r'Setting up |Unpacking ', line) for line in lines[-5:]):
@@ -58,10 +60,14 @@ def bar(percent):
     return '[' + '#' * filled + '-' * (20 - filled) + f'] {percent}%'
 
 
-def run(title, command, log_dir, interval=2):
+def run(title, command, log_dir, interval=2, log_pointer=None):
     log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     log = log_dir / f'{time.time_ns()}.log'
     fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    if log_pointer is not None:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, 'O_NOFOLLOW', 0)
+        with os.fdopen(os.open(log_pointer, flags, 0o600), 'w', encoding='utf-8') as pointer:
+            pointer.write(str(log.resolve()) + '\n')
     started = time.monotonic()
     print(title, flush=True)
     try:
@@ -91,12 +97,17 @@ def run(title, command, log_dir, interval=2):
     if status:
         contents = log.read_text(encoding='utf-8', errors='replace')
         print(message('此步骤失败。详细日志：', 'Step failed. Detailed log: ') + str(log), file=sys.stderr)
-        if re.search(r'Killed|exit code: 137|out of memory|ENOMEM|heap out of memory', contents, re.I):
+        if re.search(r'Could not get lock|Unable to acquire.*lock|Could not lock|系统软件安装锁仍被占用|等待系统软件任务超时', contents, re.I):
+            print(message('系统正在安装或更新其他软件，占用了安装锁。请待系统任务完成后用 bash install.sh --resume 继续；不要删除锁文件。',
+                          'Another system package task holds the install lock. Resume with bash install.sh --resume after it finishes; do not delete lock files.'), file=sys.stderr)
+        elif re.search(r'Killed|exit code: 137|out of memory|ENOMEM|heap out of memory', contents, re.I):
             print(message('编译进程被终止或内存不足。请检查系统内存/交换空间及容器限制，再重试安装。',
                           'Build was killed or ran out of memory. Check RAM, swap and container limits, then retry.'), file=sys.stderr)
         else:
             print(message('请在服务器本地查看日志；下载失败时检查网络，原有数据已保留。',
                           'Inspect the log locally; check network access for download failures. Existing data is preserved.'), file=sys.stderr)
+        print(message('查看详细原因：python3 scripts/install_log.py（无需抄写日志文件名）。',
+                      'View details: python3 scripts/install_log.py (no log filename needed).'), file=sys.stderr)
         return status if 0 < status < 126 else 1
     print(f'  {message("完成，用时", "Done in")} {elapsed}s', flush=True)
     return 0
@@ -110,4 +121,5 @@ if __name__ == '__main__':
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
     if not command:
         parser.error('missing command')
-    raise SystemExit(run(args.title, command, Path(os.environ['INSTALL_LOG_DIR'])))
+    raise SystemExit(run(args.title, command, Path(os.environ['INSTALL_LOG_DIR']),
+                         log_pointer=Path(__file__).resolve().parent.parent / '.install-last-log'))

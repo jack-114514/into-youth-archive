@@ -1,5 +1,6 @@
 .git
 .install-complete
+.install-last-log
 node_modules
 .env
 .env.*

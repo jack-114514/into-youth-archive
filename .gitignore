@@ -36,3 +36,4 @@ yarn-debug.log*
 key.properties
 local.properties
 .install-complete
+.install-last-log
