@@ -118,6 +118,8 @@ sudo bash scripts/reconfigure.sh
 
 选择 `2 高级设置`，再对需要配置的项目输入 `y`。真人验证的公开/私密密钥分别对应 Cloudflare 的 Site Key / Secret Key；邮件服务器地址类似 `smtp.example.com`，不能填自己的邮箱。授权码通常需要在邮箱服务商处单独获取。
 
+高级设置还提供独立后台邮箱、示例内容/空白站点、网站访问端口；初始内容只在首次建库时生效，不会删除已有内容。邮件加密通过数字选择，465默认选择直接加密连接，587默认选择连接后加密，以邮件服务商要求为准。自定义端口需要配置相应反向代理，保证公网80/443能到达本站以完成证书验证。
+
 脚本先备份，再保存配置、重建容器、检查健康；失败恢复原配置。换域名前先改 DNS 与 Turnstile 允许域名。基础模式、跳过可选项目和回车均保留已有高级配置；需清空时，先备份后手工编辑 `.env` 并按运维说明重建。英文重配可用 `sudo env INSTALL_LANG=en bash scripts/reconfigure.sh`。
 
 桌宠 AI 在网页后台填写自己的 DeepSeek Key，默认关闭；模型与动画无需 AI。
@@ -158,6 +160,7 @@ sudo bash install.sh
 | `sudo: command not found` | root 下用 `bash /tmp/memory-archive-install.sh`；普通用户需管理员配置 sudo |
 | 提示目录存在 / 已配置 | 安装器停止以避免覆盖；已有站点用 update.sh 或 reconfigure.sh |
 | 编译时 `Killed` / `exit code: 137` | 表示进程被强制终止，常见原因是内存不足；核查系统日志确认，准备辅助内存或升级内存后用 `install.sh --resume` 继续 |
+| 后端提示 `app.py: Permission denied` | 更新源码中的Dockerfile后运行 `bash install.sh --resume`；镜像构建会设置程序源码读取权限，不需要放宽真实.env的权限 |
 | 一段时间没有百分比变化 | 查看中文状态与已用时间；编译没有可靠百分比，日志路径在安装提示中。网络慢需检查服务器到 GitHub/依赖源/镜像源的连接 |
 | 没有 Compose v2 | 按 [Docker 官方说明](https://docs.docker.com/compose/install/linux/)补装插件，确认 `docker compose version` 可用 |
 | 安装通过但域名打不开 | 核对 DNS、80/443、安全组；容器健康不等于公共 DNS 生效 |

@@ -40,6 +40,8 @@ jobs:
         run: |
           printf "services:\n  web:\n    environment:\n      DOMAIN: http://localhost\n    ports: !override\n      - '127.0.0.1:18080:80'\n" > compose.override.yaml
       - run: docker compose config --quiet
+      - name: Reproduce private root installer checkout permissions
+        run: chmod -R go-rwx server
       - run: INSTALL_LANG=en INSTALL_LOG_DIR=/tmp/archive-install-ci python3 scripts/install_ui.py --title 'Build backend' -- docker compose --progress plain build backend
       - run: INSTALL_LANG=zh INSTALL_LOG_DIR=/tmp/archive-install-ci python3 scripts/install_ui.py --title '编译网页' -- docker compose --progress plain build web
       - run: docker compose up -d --wait --wait-timeout 180

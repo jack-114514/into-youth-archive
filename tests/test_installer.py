@@ -58,15 +58,15 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(values['DOMAIN'], 'photos.example.org')
 
     def test_advanced_skips_services_on_enter(self):
-        values, prompts, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '', ''])
+        values, prompts, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '', '', '', ''])
         self.assertEqual(values['ADMIN_USERNAME'], 'owner@example.org')
         self.assertEqual(values['SMTP_HOST'], '')
-        self.assertEqual(len(prompts), 7)
+        self.assertEqual(len(prompts), 9)
 
     def test_advanced_rejects_email_as_mail_hostname(self):
         values, _, _, _ = self.configure([
-            'photos.example.org', 'owner@example.org', '2', '',
-            'y', 'public-test-key', 'y', 'owner@example.org', 'smtp.example.org', '', '', 'owner@example.org', '',
+            'photos.example.org', 'owner@example.org', '2', '', '',
+            'y', 'public-test-key', 'y', 'owner@example.org', 'smtp.example.org', '', '', 'owner@example.org', '', '',
         ], ['', 'private-test-key', 'mail-test-authorization'])
         self.assertEqual(values['SMTP_HOST'], 'smtp.example.org')
         self.assertEqual(values['SMTP_PORT'], '465')
@@ -74,12 +74,25 @@ class InstallerConfigurationTests(unittest.TestCase):
         self.assertEqual(values['TURNSTILE_SECRET_KEY'], 'private-test-key')
 
     def test_basic_reconfigure_preserves_secrets_and_backs_up(self):
-        old, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '',
-                                      'y', 'public-test-key', 'y', 'smtp.example.org', '', '', 'owner@example.org', ''],
+        old, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '',
+                                      'y', 'public-test-key', 'y', 'smtp.example.org', '', '', 'owner@example.org', '', ''],
                                      ['', 'private-test-key', 'mail-test-authorization'])
         new, _, _, backups = self.configure(['', '', ''], old=old)
         self.assertEqual(new, old)
         self.assertEqual(backups, [old])
+
+    def test_advanced_offers_empty_site_and_custom_ports_with_validation(self):
+        values, _, _, _ = self.configure(['photos.example.org', 'owner@example.org', '2', '', '2', '', '', 'y', '18080', '18080', '18443'])
+        self.assertEqual(values['SEED_DEMO_CONTENT'], '0')
+        self.assertEqual(values['HTTP_PORT'], '18080')
+        self.assertEqual(values['HTTPS_PORT'], '18443')
+
+    def test_english_advanced_options_and_numeric_mail_encryption(self):
+        values, prompts, output, _ = self.configure([
+            'photos.example.org', 'owner@example.org', '2', '', '', '', 'y', 'smtp.example.org', '587', '', 'owner@example.org', '', '',
+        ], ['', 'mail-test-authorization'], lang='en')
+        self.assertEqual(values['SMTP_SECURITY'], 'starttls')
+        self.assertNotRegex(''.join(prompts) + output, r'[\u4e00-\u9fff]')
 
     def test_english_prompts_and_noninteractive_compatibility(self):
         values, prompts, output, _ = self.configure(['photos.example.org', 'owner@example.org', ''], lang='en')
@@ -96,6 +109,11 @@ class InstallerConfigurationTests(unittest.TestCase):
 
 
 class ProgressAndMemoryTests(unittest.TestCase):
+    def test_engine_install_is_not_reported_as_image_download(self):
+        with patch.dict(os.environ, {'INSTALL_LANG': 'zh'}):
+            state = install_ui.describe('curl https://download.docker.com/linux/ubuntu', '[5/8] 安装容器工具（Docker）')
+            self.assertIn('容器工具', state)
+            self.assertNotIn('镜像', state)
     def test_progress_is_operation_specific_and_bilingual(self):
         with patch.dict(os.environ, {'INSTALL_LANG': 'zh'}):
             text = install_ui.describe('Receiving objects:  45% (45/100)')

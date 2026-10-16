@@ -14,6 +14,8 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 **Enter your domain and email; press Enter for the other defaults.** Select `2` for English at the first prompt (Enter defaults to Simplified Chinese). Basic setup is the default. Leave the password empty to generate one; initial credentials appear in the terminal after installation. Only Advanced setup asks for Turnstile and mail settings. Dashboard: `https://your-domain/admin`.
 
+Advanced setup also offers a separate login email, demo or empty initial content and custom website ports. Mail encryption uses numbered choices.
+
 The installer shows stages, elapsed time and real download progress when available. Steps without measurable totals show ongoing status. Low-memory servers are offered swap before compilation; Enter accepts the disclosed disk allocation. Swap is not enabled automatically after reboot. Run `bash install.sh --resume` in the installation directory after resolving an interrupted build; configuration and caches are retained. Tool logs keep their original language in private local files.
 
 **[📖 Step-by-step installation guide (Chinese)](docs/QUICK_START.md)** · **[View/download the installation script](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**

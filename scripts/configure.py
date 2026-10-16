@@ -40,6 +40,10 @@ def validate(values):
     if len(values.get('PASSWORD_CODE_PEPPER', '')) < 32: raise ValueError(message('内部验证码密钥至少 32 位', 'Internal recovery key must have at least 32 characters'))
     for key in ('HTTP_PORT', 'HTTPS_PORT', 'SMTP_PORT'):
         if not values.get(key, '').isdigit() or not 1 <= int(values[key]) <= 65535: raise ValueError(message('端口应为1至65535之间的整数', 'Port must be an integer between 1 and 65535'))
+    if values.get('HTTP_PORT') == values.get('HTTPS_PORT'):
+        raise ValueError(message('普通访问端口和加密访问端口不能相同', 'HTTP and HTTPS ports must be different'))
+    if values.get('SEED_DEMO_CONTENT', '1') not in ('0', '1'):
+        raise ValueError(message('初始内容选项无效', 'Invalid initial content option'))
     if values.get('SMTP_SECURITY') not in ('ssl', 'starttls'): raise ValueError(message('邮件加密方式只支持 ssl 或 starttls', 'Mail encryption must be ssl or starttls'))
     if values.get('SMTP_HOST'):
         host = values['SMTP_HOST']
@@ -94,6 +98,15 @@ def main():
             if answer in ('', 'n', 'no'): return False
             if answer in ('y', 'yes'): return True
             print(message('请输入 y 或 n；回车使用默认值。', 'Enter y or n; Enter accepts the default.'))
+    def choose(key, label, choices, default):
+        current = values.get(key, default)
+        selected = next((number for number, value in choices.items() if value == current), '1')
+        while True:
+            answer = input(label + f' [{selected}]: ').strip() or selected
+            if answer in choices:
+                values[key] = choices[answer]
+                return
+            print(message('请输入上面的选项编号；回车使用默认值。', 'Enter one of the option numbers above, or Enter for the default.'))
     print(message('只需填写域名、邮箱；其余选项可直接回车。', 'Enter your domain and email. Press Enter for the other defaults.'))
     ask('DOMAIN', message('网站域名（例如 photos.example.com，不加 https://）', 'Website domain (e.g. photos.example.com, without https://)'), check=domain)
     values['DOMAIN'] = values['DOMAIN'].lower()
@@ -115,7 +128,14 @@ def main():
             if mode in ('1', '2'): break
             print(message('请输入 1 或 2。', 'Enter 1 or 2.'))
     if mode == '2':
+        print(message('高级设置：独立登录邮箱、初始内容、真人验证、邮件发送、访问端口。可跳过不需要的项目。',
+                      'Advanced settings: separate login email, initial content, human verification, mail and website ports. Skip anything you do not need.'))
         ask('ADMIN_USERNAME', message('后台登录邮箱（回车使用上面的邮箱）', 'Admin login email (Enter to keep default)'), check=email)
+        print(message('新站初始内容：1 带示例内容（推荐，可在后台替换）  2 空白站点（自己从头添加）',
+                      'Initial content: 1 Demo examples (recommended, replace in dashboard)  2 Empty site (start from scratch)'))
+        print(message('此选项只在首次创建数据库时生效；已有站点请在后台管理内容。',
+                      'This only applies when the database is first created. Manage existing content in the dashboard.'))
+        choose('SEED_DEMO_CONTENT', message('初始内容选择', 'Initial content choice'), {'1': '1', '2': '0'}, '1')
         print(message('真人验证：通过 Cloudflare 判断是否由真人操作；邮箱找回密码需要它。已有配置回车保留。',
                       'Human verification: Cloudflare Turnstile is needed for email password recovery. Existing values are preserved.'))
         if yes('配置真人验证？', 'Configure human verification?'):
@@ -127,10 +147,22 @@ def main():
             ask('SMTP_HOST', message('邮件服务器地址（例如 smtp.example.com，不能填邮箱）', 'Mail server hostname (e.g. smtp.example.com, not your email)'),
                 check=lambda value: re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?', value))
             ask('SMTP_PORT', message('邮件端口（服务商未指定时回车用465）', 'Mail port (Enter for 465)'), check=lambda value: value.isdigit() and 1 <= int(value) <= 65535)
-            ask('SMTP_SECURITY', message('邮件加密（465通常填ssl；587通常填starttls）', 'Mail encryption (usually ssl for 465, starttls for 587)'), check=lambda value: value in ('ssl', 'starttls'))
+            print(message('邮件加密：1 直接加密连接（SSL/TLS，通常配465端口）  2 连接后加密（STARTTLS，通常配587端口）',
+                          'Mail encryption: 1 Encrypted connection (SSL/TLS, usually port 465)  2 Upgrade connection (STARTTLS, usually port 587)'))
+            values['SMTP_SECURITY'] = old.get('SMTP_SECURITY') or ('starttls' if values['SMTP_PORT'] == '587' else 'ssl')
+            choose('SMTP_SECURITY', message('加密方式选择', 'Encryption choice'), {'1': 'ssl', '2': 'starttls'}, 'ssl')
             ask('SMTP_USERNAME', message('发信账号（通常是完整邮箱）', 'Mail username (usually full email)'), check=bool)
             ask('SMTP_PASSWORD', message('邮箱授权码（在邮箱服务商处获取，通常不是登录密码）', 'Mail authorization code / SMTP password'), private=True, check=bool)
             ask('SMTP_FROM', message('发信邮箱', 'Sender email'), values.get('SMTP_USERNAME', ''), check=email)
+        print(message('网站访问端口：默认普通访问80、加密访问443。只有端口被占用或有反向代理时才需要调整。',
+                      'Website ports default to HTTP 80 and HTTPS 443. Adjust for occupied ports or a reverse proxy.'))
+        print(message('更改后请确保公网80/443仍能通过反向代理转发到本站，否则自动申请证书可能失败。',
+                      'Ensure public ports 80/443 still reach this site through your proxy, or automatic certificates may fail.'))
+        if yes('修改网站访问端口？', 'Change website ports?'):
+            port = lambda value: value.isdigit() and 1 <= int(value) <= 65535
+            ask('HTTP_PORT', message('普通访问端口（默认80）', 'HTTP port (default 80)'), check=port)
+            ask('HTTPS_PORT', message('加密访问端口（默认443，不能与上面的端口相同）', 'HTTPS port (default 443; must differ from HTTP)'),
+                check=lambda value: port(value) and value != values['HTTP_PORT'])
     if args.non_interactive:
         values.update({key: os.environ[key] for key in FIELDS if key in os.environ})
     validate(values)

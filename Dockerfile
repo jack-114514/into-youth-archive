@@ -18,7 +18,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 COPY server ./server
 COPY requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN chmod -R a+rX /app/server && chmod a+r /app/requirements.txt && pip install --no-cache-dir -r requirements.txt
 RUN useradd --uid 10001 --create-home archive && mkdir -p /data /uploads && chown archive:archive /data /uploads
 USER archive
 EXPOSE 8765

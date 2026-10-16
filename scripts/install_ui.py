@@ -13,9 +13,14 @@ def message(zh, en):
     return en if os.environ.get('INSTALL_LANG') == 'en' else zh
 
 
-def describe(log):
+def describe(log, title=''):
     # A tool's percentage describes that operation only, never the entire install.
     lines = log.replace('\r', '\n').splitlines()
+    # Installing the engine downloads OS packages, not application image layers.
+    if '安装容器工具（Docker）' in title or 'Installing Docker' in title:
+        if any(re.search(r'Setting up |Unpacking ', line) for line in lines[-5:]):
+            return message('正在安装容器工具的软件包', 'Installing Docker system packages')
+        return message('正在下载和准备容器工具（Docker）', 'Downloading and preparing Docker')
     for line in reversed(lines[-30:]):
         percent = re.search(r'(Receiving objects|Resolving deltas|Updating files):\s*(\d+)%', line)
         if percent:
@@ -36,8 +41,10 @@ def describe(log):
             ('npm ci', '正在下载和安装前端依赖', 'Downloading and installing frontend dependencies'),
             ('npm run build|rendering chunks|transforming', '正在编译网页（此阶段可能较久）', 'Compiling website (this may take a while)'),
             ('pip install|Collecting |Downloading ', '正在下载后端依赖', 'Downloading backend dependencies'),
+            (r'Get:\d|apt-get.*install', '正在下载系统软件包', 'Downloading system packages'),
+            ('Setting up |Unpacking ', '正在安装系统软件包', 'Installing system packages'),
             ('extracting|unpacking', '正在解压镜像', 'Extracting image'),
-            ('load metadata|pulling|Pulling|Downloading|download', '正在获取容器镜像', 'Downloading container image'),
+            ('load metadata|pulling|Pulling|Downloading', '正在获取容器镜像', 'Downloading container image'),
             ('Healthy|healthy', '正在检查服务健康状态', 'Checking service health'),
         ):
             if re.search(pattern, line):
@@ -67,7 +74,7 @@ def run(title, command, log_dir, interval=2):
                 except subprocess.TimeoutExpired:
                     with log.open('rb') as reader:
                         reader.seek(max(0, log.stat().st_size - 16000))
-                        state = describe(reader.read().decode('utf-8', errors='replace'))
+                        state = describe(reader.read().decode('utf-8', errors='replace'), title)
                     elapsed = int(time.monotonic() - started)
                     print(f'  {message("已用", "Elapsed")} {elapsed}s | {state}', flush=True)
     except KeyboardInterrupt:

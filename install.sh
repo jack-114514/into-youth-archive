@@ -44,13 +44,18 @@ bootstrap() {
     say "此步骤失败，详细日志：$log" "Step failed. Detailed log: $log" >&2
     return "$status"
   fi
+  if [[ $title == '[2/8]'* ]]; then
+    say '  接收源码 [####################] 100%（源码已完整下载）' '  Receiving source [####################] 100% (source download complete)'
+  fi
   say "  完成，用时 $((SECONDS-started)) 秒" "  Done in $((SECONDS-started))s"
 }
 repo=${REPOSITORY_URL:-https://github.com/jack-114514/into-youth-archive.git}
 destination=${INSTALL_DIR:-/opt/memory-archive}
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-say '安装包含8个阶段；阶段编号不是下载百分比。网络速度取决于服务器线路，完整工具日志将保存在本机。' 'Installation has 8 stages; stage numbers are not download percentages. Speed depends on your network. Tool logs stay on this server.'
-say "日志目录：$INSTALL_LOG_DIR" "Log directory: $INSTALL_LOG_DIR"
+if [[ ${INSTALL_SOURCE_READY:-} != 1 ]]; then
+  say '安装包含8个阶段；阶段编号不是下载百分比。网络速度取决于服务器线路，完整工具日志将保存在本机。' 'Installation has 8 stages; stage numbers are not download percentages. Speed depends on your network. Tool logs stay on this server.'
+  say "日志目录：$INSTALL_LOG_DIR" "Log directory: $INSTALL_LOG_DIR"
+fi
 if ! command -v git >/dev/null || ! command -v curl >/dev/null || ! command -v python3 >/dev/null; then
   export DEBIAN_FRONTEND=noninteractive
   bootstrap "$(say '[1/8] 准备系统工具' '[1/8] Preparing system tools')" apt-get update
@@ -64,6 +69,7 @@ if [[ ! -f "$script_dir/compose.yaml" ]]; then
   fi
   [[ "$repo" =~ ^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(\.git)?$ ]] || { say '仓库地址须为 GitHub HTTPS 地址。' 'Repository must use a GitHub HTTPS URL.' >&2; exit 1; }
   bootstrap "$(say '[2/8] 下载网站源码（只下载当前版本，显示真实接收进度）' '[2/8] Downloading source (current version only, real receive progress)')" git clone --depth 1 --single-branch --progress -- "$repo" "$destination"
+  export INSTALL_SOURCE_READY=1
   exec bash "$destination/install.sh" "$@"
 fi
 cd -- "$script_dir"

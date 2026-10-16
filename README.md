@@ -14,6 +14,8 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 **只需填写域名和邮箱，其他提示均可直接回车。** 默认简体中文、基础设置，后台密码留空自动生成，安装成功后显示在当前终端。选择 English 可切换英文，主动选择高级设置后才会询问验证码和邮件发送参数。后台：`https://你的域名/admin`。
 
+高级设置还可选择独立登录邮箱、示例内容或空白站点、自定义访问端口。邮件加密用数字选项选择，无需记住英文参数。
+
 安装时显示阶段、已用时间和可获得的真实下载进度；无法计算百分比时显示持续状态。小内存服务器会先提示增加辅助内存，回车同意后才创建交换文件（占用磁盘，重启后不自动启用）。构建中断后在安装目录运行 `bash install.sh --resume` 继续，不必重新填写配置。
 
 **[📖 第一次建站？点这里看逐步安装指南](docs/QUICK_START.md)** · **[查看/下载网站安装脚本](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**
