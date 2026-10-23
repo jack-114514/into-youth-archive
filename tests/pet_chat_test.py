@@ -4,7 +4,7 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 from urllib.request import build_opener, HTTPCookieProcessor, Request
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from http.cookiejar import CookieJar
 from tests.desktop_pet_test import PetSecurityTests
 from server import app, desktop_pet as pet
@@ -15,6 +15,37 @@ def reply(text='正常', finish='stop'):
 
 
 class PetChatLogicTests(unittest.TestCase):
+    def test_transient_transport_retry_preserves_json_contract(self):
+        calls = []
+        def upstream(request, timeout):
+            calls.append(json.loads(request.data))
+            if len(calls) == 1:
+                raise URLError(TimeoutError())
+            return io.BytesIO(json.dumps(reply()).encode())
+        with patch.object(pet, 'urlopen', upstream), patch.object(pet.time, 'sleep'):
+            self.assertEqual(pet.deepseek(pet.normalize({}), 'test-secret', [], {})['text'], '正常')
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0], calls[1])
+
+    def test_retryable_service_errors_recover_but_auth_and_quota_do_not_retry(self):
+        for status in (500, 502, 503, 504, 401, 402, 429):
+            with self.subTest(status=status):
+                error = HTTPError('https://example.test', status, 'fixture', {}, io.BytesIO())
+                with patch.object(pet, 'urlopen', side_effect=[error, io.BytesIO(json.dumps(reply()).encode())]) as upstream, patch.object(pet.time, 'sleep'):
+                    if status >= 500:
+                        self.assertEqual(pet.deepseek(pet.normalize({}), 'test-secret', [], {})['text'], '正常')
+                        self.assertEqual(upstream.call_count, 2)
+                    else:
+                        with self.assertRaises(pet.PetUpstreamError):
+                            pet.deepseek(pet.normalize({}), 'test-secret', [], {})
+                        self.assertEqual(upstream.call_count, 1)
+
+    def test_no_retry_when_deadline_exhausted_and_logs_do_not_include_secret(self):
+        with patch.object(pet, 'urlopen', side_effect=URLError('test-secret')), patch.object(pet.time, 'monotonic', side_effect=[0, 0, 54, 54]), self.assertLogs(pet._logger, level='WARNING') as logs:
+            with self.assertRaises(pet.PetUpstreamError):
+                pet.deepseek(pet.normalize({}), 'test-secret', [], {})
+        self.assertNotIn('test-secret', str(logs.output))
+
     def test_expanded_facial_emotions_survive_api_parsing(self):
         self.assertEqual(len(pet.EMOTIONS), 14)
         for emotion in pet.EMOTIONS:

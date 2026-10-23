@@ -1,5 +1,5 @@
 网站前台、网页后台与安卓管理端功能详情
-版本：网站 v3.6.0；安卓 1.8.0+20
+版本：网站 v3.7.0；安卓 1.8.0+20
 记录日期：2026-10-05
 适用对象：本仓库独立 VPS 自建版
 编码：UTF-8；纯文本，无需 Markdown 编辑器即可阅读
@@ -11,7 +11,7 @@ https://github.com/jack-114514/into-youth-archive
 curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 
 安卓稳定签名正式通用 APK 直接下载（文件名包含版本）：
-https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk
+https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk
 
 新手完整步骤：docs/QUICK_START.md
 技术与数据说明：docs/TECHNICAL.md
@@ -289,3 +289,5 @@ JDK 17、Android SDK 36、minSdk 24。
 更新地址未配置时明确提示，不误报最新；已查询时显示本机版本、远端版本和清单来源，绕过旧缓存。下载文件名 memory-archive-admin-v1.8.0.apk，稳定签名覆盖之前相同安全通用版。
 
 新增同步功能：安卓随手记内容页与网页共用 notes 表，支持草稿、发布、编辑和归档恢复。安卓图片列表使用 thumbnail_url；更换原图时清除旧配对，自动生成新预览。新装Docker后端包含Pillow依赖；非Docker部署请安装python3-pil或requirements.txt。
+
+本版新增：网页后台 CPU 使用率、核心数、负载、网络上下行和累计流量；0.5 秒目标采样，请求不重叠、隐藏暂停。AI 临时连接/服务故障在预算内最多重试一次。安装器中英文引导、APT等待、断点继续及日志入口；新装全部业务内容初始为零，已有内容保留。安卓仍为1.8.0+20。完整公告：docs/RELEASE-v3.7.0.md。

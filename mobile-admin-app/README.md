@@ -4,7 +4,7 @@
 
 ## ⬇ 直接下载安装
 
-### [下载安卓 APK · 1.8.0（versionCode 20）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)
+### [下载安卓 APK · 1.8.0（versionCode 20）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 [发行版与 SHA256SUMS](https://github.com/jack-114514/into-youth-archive/releases/tag/v3.6.0) · **[隐私政策](PRIVACY.md)** · [网站一键安装](../README.md)
 
@@ -14,7 +14,7 @@
 
 ## 与网站一致的菜单
 
-当前 1.8.0+20 安装包：[下载带版本号的正式 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)。网站与 GitHub 发行附件使用同一份稳定签名安装包。
+当前 1.8.0+20 安装包：[下载带版本号的正式 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)。网站与 GitHub 发行附件使用同一份稳定签名安装包。
 
 主菜单顺序：服务器状态 → 网站内容设置 → 留言与投稿信箱 → 首页开场 → 网站设置 → AI 桌宠设置 → 账号管理。
 

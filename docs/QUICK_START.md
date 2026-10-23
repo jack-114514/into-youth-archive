@@ -1,6 +1,6 @@
 # 新手安装与配置
 
-[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)
+[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 目标：在自己的 VPS 安装同一套页面、动画和管理功能，再换成自己的内容。新站从 0 条内容开始：照片、故事、时间线、随手记、留言和投稿均为空，由管理员自行添加。界面装饰不计作内容，不带原作者的私人照片和数据库。
 
@@ -104,7 +104,7 @@ sudo bash install.sh --resume
 
 ## 6. 手机管理（可选）
 
-[**点这里直接下载安卓 APK**](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)。
+[**点这里直接下载安卓 APK**](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)。
 
 安装正式通用版 → 填 `https://自己的域名` → 验证连接 → 用本站管理员邮箱/密码登录。“站点设置”可更换域名，保存后重新登录。
 
@@ -193,3 +193,7 @@ sudo python3 scripts/health.py
 ### 连续错误后的验证策略（1.4.1）
 
 服务端持久保存本站原生管理员登录计数；前两次密码尝试无需验证，连续两次错误后第三次及后续尝试须通过 Cloudflare。修改用户名、切换网络、重开或重装 App 不能重置服务端计数。正确登录清除计数；连续30分钟无新的密码尝试后计数到期。并发请求原子预留前两次机会，避免并行绕过。网站后台计数独立，原有限流保持有效。验证仍在密码框下完成，每个许可只允许一次密码尝试。自己的后端需升级到 v3.3.1；连接旧后端仍按旧规则要求每次验证。
+
+## 当前正式版公告
+
+网站 v3.7.0 为默认正式发行版，main 一键安装入口同步更新。新站从零内容开始；已有站点请使用更新脚本并保留数据卷。安装与运行变化见[发布公告](RELEASE-v3.7.0.md)，安卓仍使用稳定签名 1.8.0+20。

@@ -2,6 +2,16 @@
 
 **Language / 语言: [简体中文](README.md) · English**
 
+## Current stable release v3.7.0 · 2026-10-23
+
+This release consolidates installation and runtime updates after v3.6.0. The default branch remains `main`. [Release announcement](docs/RELEASE-v3.7.0.md) · [Changelog](CHANGELOG.md).
+
+- Fresh sites start with empty content and retain the full interface and admin tools. Existing site content is preserved.
+- The bilingual installer includes basic/advanced setup, real progress, low-memory guidance, APT lock waiting, resume and log access.
+- The web dashboard adds CPU usage, logical cores, load averages, network rates and cumulative traffic, targeting 0.5-second sampling. Requests do not overlap and pause in hidden windows; actual refresh depends on latency.
+- AI transport failures, timeouts and temporary 500/502/503/504 responses receive at most one retry within the existing 55-second budget. Authentication, balance and upstream rate-limit errors are not retried. Logs use safe error categories and elapsed times.
+- Android remains the stable signed 1.8.0+20 client. The new resource cards are in the web dashboard.
+
 A self-hosted memory website for photos, videos and writing, with a **3D particle tree, floating frames, snow, music and an AI companion**. Includes a web dashboard and a native Android admin app, running independently on your own VPS.
 
 ## 🚀 Install the website on your own VPS
@@ -26,13 +36,13 @@ Run the installation command in the Linux terminal on your VPS. For missing curl
 
 ## 📱 Download the Android admin app
 
-### [⬇ Download Android APK · 1.8.0 (versionCode 20)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)
+### [⬇ Download Android APK · 1.8.0 (versionCode 20)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 **Android 7.0 or later. Enter your own HTTPS domain after installation, then sign in with your website admin account. No source changes or APK rebuild are required.**
 
 [Releases and checksums](https://github.com/jack-114514/into-youth-archive/releases/latest) · [Android features, architecture and build guide (Chinese)](mobile-admin-app/README.md) · **[Android privacy policy (Chinese)](mobile-admin-app/PRIVACY.md)**
 
-The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.8.0.apk`. Website release v3.6.0 and Android version 1.8.0 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
+The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.8.0.apk`. Website release v3.7.0 and Android version 1.8.0 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
 
 ---
 
@@ -54,7 +64,7 @@ The linked detailed guides are currently in Chinese. This English README covers 
 
 | Component | Current version |
 | --- | --- |
-| Self-hosted website | v3.6.0: visitor site, web dashboard, Python API and installation/maintenance scripts |
+| Self-hosted website | v3.7.0: visitor site, web dashboard, Python API and installation/maintenance scripts |
 | Universal Android admin app | 1.8.0, versionCode 20; package ID `org.memoryarchive.admin.secure` |
 | Default deployment | Docker Compose, Caddy HTTPS and SQLite; one site and one administrator |
 

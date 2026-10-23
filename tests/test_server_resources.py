@@ -1,0 +1,2 @@
+from tests.server_status_cpu_test import CpuSamplingTests
+from tests.server_status_network_test import NetworkSamplingTests

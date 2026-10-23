@@ -1,6 +1,6 @@
 # 技术说明
 
-对应网站 v3.6.0、安卓 1.8.0+20。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
+对应网站 v3.7.0、安卓 1.8.0+20。版本来源：[package.json](../package.json)、[安卓依赖](../mobile-admin-app/pubspec.yaml)、[Compose](../compose.yaml)。[新手安装](QUICK_START.md) · [完整功能纯文本](网站功能详情.txt)。
 
 ## 运行结构
 
@@ -159,3 +159,11 @@ npm run build
 ## 随手记与自动预览
 
 notes 表存储标题、正文、日期、draft/published/archived及时间戳。/api/notes 只读公开记录；网页/api/admin/notes 使用网页会话，安卓/api/v1/admin-app/notes 使用原生访问令牌和既有速率限制。两端共享验证和归档逻辑；写入提交后才返回成功。详见[使用说明](随手记与图片预览.md)。Docker安装requirements.txt；非Docker部署安装python3-pil。
+
+## v3.7.0 资源采样与 AI 恢复
+
+管理员状态接口增加 cpu 和 network 字段；未认证访问仍返回 401。CPU 通过 Linux /proc/stat 相邻采样差值计算，逻辑核心与 1/5/15 分钟负载分别展示。网络选择默认 IPv4 路由网卡，读取 /proc/net/dev 的 RX/TX 字节计数并计算速率；前端换算为 bps/Kbps/Mbps/Gbps。首次采样、平台不支持或网卡切换时允许空值，不将其显示为零负载或虚构带宽百分比。容器内显示容器可见的网卡与系统统计，不能代表运营商套餐带宽或账单。
+
+网页状态页以 500 毫秒定时器发起检查，使用 AbortController 和请求占用标记防止重叠；离开页面、令牌变化时取消请求，隐藏窗口暂停，恢复可见时立即检查。每次状态读取也包含数据库和存储统计，大量上传文件或多管理员标签页会增加扫描开销。
+
+DeepSeek 保留两次总尝试及 55 秒预算。连接错误与临时 500/502/503/504 重试保留 JSON 请求格式；仅回复格式错误切换普通正文恢复。401/402/429 不自动重试，重试前再次检查访客限制。日志不记录密钥、提示词或用户正文。

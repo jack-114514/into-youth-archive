@@ -46,6 +46,8 @@ type ServerStatusSnapshot = {
   database: { status: "connected"; size_bytes: number; updated_at: string | null };
   storage: { uploads_bytes: number; disk_total_bytes: number; disk_free_bytes: number; disk_used_percent: number };
   memory: { total_bytes: number; available_bytes: number; used_percent: number | null };
+  cpu?: { used_percent: number | null; logical_cores: number; load_1m: number | null; load_5m: number | null; load_15m: number | null };
+  network?: { interface: string | null; rx_bytes: number | null; tx_bytes: number | null; rx_bytes_per_second: number | null; tx_bytes_per_second: number | null };
   counts: { media: number; comments: number; visible_comments: number; submissions: number; pending_submissions: number; page_views: number };
 };
 type SaveDialogState = {
@@ -317,6 +319,15 @@ function formatServerTime(value?: string | null) {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
+function formatBitRate(bytesPerSecond: number | null | undefined) {
+  if (bytesPerSecond == null) return "采样中";
+  const bits = Math.max(0, bytesPerSecond * 8);
+  if (bits >= 1e9) return `${(bits / 1e9).toFixed(2)} Gbps`;
+  if (bits >= 1e6) return `${(bits / 1e6).toFixed(2)} Mbps`;
+  if (bits >= 1e3) return `${(bits / 1e3).toFixed(1)} Kbps`;
+  return `${bits.toFixed(0)} bps`;
+}
+
 function ServerStatusPanel({
   snapshot,
   loading,
@@ -342,13 +353,14 @@ function ServerStatusPanel({
   const diskUsed = Math.max(0, Math.min(100, Number(snapshot.storage.disk_used_percent) || 0));
   const memoryUsed = snapshot.memory.used_percent == null ? null : Math.max(0, Math.min(100, Number(snapshot.memory.used_percent) || 0));
   const memoryUsedBytes = Math.max(0, snapshot.memory.total_bytes - snapshot.memory.available_bytes);
+  const cpuUsed = snapshot.cpu?.used_percent == null ? null : Math.max(0, Math.min(100, snapshot.cpu.used_percent));
   return (
     <div className="server-dashboard">
       <section className="server-hero" aria-labelledby="server-overview-title">
         <div className="server-hero-copy">
           <span className="server-live-badge"><i /> SYSTEM ONLINE</span>
           <h2 id="server-overview-title">网站服务运行正常</h2>
-          <p>网站接口、数据库与内容存储均已连接。状态页每 30 秒自动更新，也可以立即手动检查。</p>
+          <p>资源每 0.5 秒自动采样，返回此页面时立即检查。更新时间以实际网络响应为准。</p>
           {error && <div className="server-refresh-warning" role="status">最近一次自动刷新失败，当前显示上次成功数据：{error}</div>}
         </div>
         <button type="button" className="server-refresh-button" onClick={onRefresh} disabled={loading}><span className={loading ? "is-spinning" : ""}>↻</span>{loading ? "正在检查" : "立即刷新"}</button>
@@ -368,6 +380,25 @@ function ServerStatusPanel({
 
       <section className="server-health-grid" aria-label="服务器资源状态">
         <article className="server-health-card">
+          <header><div><span>CPU</span><h3>CPU 使用率与负载</h3></div><strong className={cpuUsed != null && cpuUsed >= 85 ? "is-warning" : ""}>{cpuUsed == null ? "采样中" : `${cpuUsed.toFixed(1)}%`}</strong></header>
+          <div className="server-progress" role="progressbar" aria-label="服务器 CPU 使用率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={cpuUsed ?? undefined}><i style={{ width: `${cpuUsed ?? 0}%` }} /></div>
+          <dl>
+            <div><dt>逻辑核心</dt><dd>{snapshot.cpu?.logical_cores ?? "—"} 核</dd></div>
+            <div><dt>1 / 5 / 15 分钟负载</dt><dd>{[snapshot.cpu?.load_1m, snapshot.cpu?.load_5m, snapshot.cpu?.load_15m].map(value => value == null ? "—" : value.toFixed(2)).join(" / ")}</dd></div>
+          </dl>
+          <small>负载接近核心数时，CPU 可能繁忙；也可能存在磁盘等待。</small>
+        </article>
+        <article className="server-health-card">
+          <header><div><span>NETWORK</span><h3>网络上行与下行</h3></div><strong>{snapshot.network?.interface ?? "—"}</strong></header>
+          <dl>
+            <div><dt>↓ 下行速率</dt><dd>{snapshot.network?.interface ? formatBitRate(snapshot.network.rx_bytes_per_second) : "不可用"}</dd></div>
+            <div><dt>↑ 上行速率</dt><dd>{snapshot.network?.interface ? formatBitRate(snapshot.network.tx_bytes_per_second) : "不可用"}</dd></div>
+            <div><dt>累计接收</dt><dd>{snapshot.network?.rx_bytes == null ? "—" : formatBytes(snapshot.network.rx_bytes)}</dd></div>
+            <div><dt>累计发送</dt><dd>{snapshot.network?.tx_bytes == null ? "—" : formatBytes(snapshot.network.tx_bytes)}</dd></div>
+          </dl>
+          <small>服务器网卡流量，包含网站、SSH 等服务；累计值随网卡重置。</small>
+        </article>
+        <article className="server-health-card">
           <header><div><span>STORAGE</span><h3>磁盘与网站文件</h3></div><strong className={diskUsed >= 85 ? "is-warning" : ""}>{diskUsed.toFixed(1)}%</strong></header>
           <div className="server-progress" role="progressbar" aria-label="服务器磁盘使用率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={diskUsed}><i style={{ width: `${diskUsed}%` }} /></div>
           <dl>
@@ -377,12 +408,11 @@ function ServerStatusPanel({
           </dl>
         </article>
         <article className="server-health-card">
-          <header><div><span>RUNTIME</span><h3>内存与运行负载</h3></div><strong className={memoryUsed != null && memoryUsed >= 85 ? "is-warning" : ""}>{memoryUsed == null ? "—" : `${memoryUsed.toFixed(1)}%`}</strong></header>
+          <header><div><span>MEMORY</span><h3>内存使用情况</h3></div><strong className={memoryUsed != null && memoryUsed >= 85 ? "is-warning" : ""}>{memoryUsed == null ? "—" : `${memoryUsed.toFixed(1)}%`}</strong></header>
           <div className="server-progress" role="progressbar" aria-label="服务器内存使用率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={memoryUsed ?? 0}><i style={{ width: `${memoryUsed ?? 0}%` }} /></div>
           <dl>
             <div><dt>已用内存</dt><dd>{memoryUsed == null ? "不可用" : formatBytes(memoryUsedBytes)}</dd></div>
             <div><dt>内存总量</dt><dd>{formatBytes(snapshot.memory.total_bytes)}</dd></div>
-            <div><dt>1 分钟负载</dt><dd>{snapshot.service.load_1m == null ? "不可用" : snapshot.service.load_1m.toFixed(2)}</dd></div>
           </dl>
         </article>
         <article className="server-health-card is-database">
@@ -934,6 +964,7 @@ export default function AdminDashboard() {
   const [serverStatusLoading, setServerStatusLoading] = useState(false);
   const [serverStatusError, setServerStatusError] = useState("");
   const [serverStatusLatency, setServerStatusLatency] = useState<number | null>(null);
+  const serverStatusRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("into-admin-token");
@@ -1004,18 +1035,21 @@ export default function AdminDashboard() {
   }, [avatarCropSource, cardCropField, homePreviewOpen, introCropOpen, introLogoCropOpen, introPreviewOpen, mediaPreview, mediaCrop]);
 
   async function loadServerStatus(silent = false) {
-    if (!token) return;
+    if (!token || serverStatusRequest.current) return;
     if (!silent) setServerStatusLoading(true);
     setServerStatusError("");
     const startedAt = performance.now();
     const controller = new AbortController();
+    serverStatusRequest.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 8000);
     try {
       const data = await api("/api/admin/status", { signal: controller.signal, cache: "no-store" }, token) as ServerStatusSnapshot;
+      if (controller.signal.aborted) return;
       setServerStatus(data);
       setServerStatusLatency(Math.max(1, Math.round(performance.now() - startedAt)));
       setServiceStatus("online");
     } catch (error) {
+      if (serverStatusRequest.current !== controller) return;
       const detail = error instanceof DOMException && error.name === "AbortError"
         ? "检查超时，请稍后重试"
         : error instanceof Error ? error.message : "状态读取失败";
@@ -1027,7 +1061,10 @@ export default function AdminDashboard() {
       }
     } finally {
       window.clearTimeout(timeout);
-      setServerStatusLoading(false);
+      if (serverStatusRequest.current === controller) {
+        serverStatusRequest.current = null;
+        setServerStatusLoading(false);
+      }
     }
   }
 
@@ -1062,7 +1099,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!token) return;
-    if (tab === "status") void loadServerStatus();
+    if (tab === "status") setLoading(false);
     else if (tab === "intro") loadHomepageIntro();
     else if (tab === "inbox") loadTab(inboxView);
     else if (isMediaSectionTab(tab)) loadTab("media");
@@ -1073,8 +1110,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!token || tab !== "status") return;
-    const interval = window.setInterval(() => { void loadServerStatus(true); }, 30_000);
-    return () => window.clearInterval(interval);
+    void loadServerStatus();
+    const refresh = () => { if (document.visibilityState === "visible") void loadServerStatus(true); };
+    const interval = window.setInterval(refresh, 500);
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+      serverStatusRequest.current?.abort();
+      serverStatusRequest.current = null;
+    };
   }, [token, tab]);
 
   const login = async (event: FormEvent) => {

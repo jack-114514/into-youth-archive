@@ -10,6 +10,7 @@ import secrets
 import shutil
 import smtplib
 import sqlite3
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -336,6 +337,83 @@ def db():
     return connection
 
 
+_cpu_lock = threading.Lock()
+_cpu_sample = None
+_network_lock = threading.Lock()
+_network_sample = None
+
+
+def read_server_network():
+    """Measure the default IPv4 uplink once, without counting loopback/bridges twice."""
+    global _network_sample
+    result = {"interface": None, "rx_bytes": None, "tx_bytes": None,
+              "rx_bytes_per_second": None, "tx_bytes_per_second": None}
+    try:
+        routes = []
+        for line in Path("/proc/net/route").read_text().splitlines()[1:]:
+            fields = line.split()
+            if len(fields) >= 8 and fields[1] == "00000000" and fields[7] == "00000000" and int(fields[3], 16) & 1 and fields[0] != "lo":
+                routes.append((int(fields[6]), fields[0]))
+        if not routes:
+            return result
+        interface = min(routes)[1]
+        for line in Path("/proc/net/dev").read_text().splitlines()[2:]:
+            name, _, raw = line.partition(":")
+            if name.strip() != interface:
+                continue
+            fields = raw.split()
+            rx, tx = int(fields[0]), int(fields[8])
+            now = time.monotonic()
+            result.update(interface=interface, rx_bytes=rx, tx_bytes=tx)
+            with _network_lock:
+                previous = _network_sample
+                if previous is None or previous[1] != interface or rx < previous[2] or tx < previous[3]:
+                    _network_sample = (now, interface, rx, tx, None, None)
+                elif now - previous[0] >= .25:
+                    elapsed = now - previous[0]
+                    down, up = round((rx - previous[2]) / elapsed, 1), round((tx - previous[3]) / elapsed, 1)
+                    _network_sample = (now, interface, rx, tx, down, up)
+                    result.update(rx_bytes_per_second=down, tx_bytes_per_second=up)
+                else:
+                    result.update(rx_bytes_per_second=previous[4], tx_bytes_per_second=previous[5])
+            return result
+    except (OSError, ValueError, IndexError):
+        pass
+    return result
+
+
+def read_server_cpu():
+    """Sample aggregate CPU deltas without sleeping in a request thread."""
+    global _cpu_sample
+    result = {"used_percent": None, "logical_cores": os.cpu_count() or 1,
+              "load_1m": None, "load_5m": None, "load_15m": None}
+    try:
+        result.update(zip(("load_1m", "load_5m", "load_15m"),
+                          (round(value, 2) for value in os.getloadavg())))
+    except (AttributeError, OSError):
+        pass
+    try:
+        values = [int(value) for value in Path("/proc/stat").read_text().splitlines()[0].split()[1:9]]
+        if len(values) != 8:
+            return result
+        total, idle = sum(values), values[3] + values[4]
+        with _cpu_lock:
+            previous = _cpu_sample
+            if previous is None:
+                _cpu_sample = (total, idle, None)
+            elif total > previous[0]:
+                used = round(max(0, min(100, (1 - (idle - previous[1]) / (total - previous[0])) * 100)), 1)
+                _cpu_sample = (total, idle, used)
+                result["used_percent"] = used
+            else:
+                result["used_percent"] = previous[2]
+    except (OSError, ValueError, IndexError):
+        pass
+    return result
+
+
+
+
 def read_server_memory():
     """Return Linux memory totals without adding a runtime dependency."""
     try:
@@ -409,6 +487,8 @@ def build_admin_server_status(connection):
             "disk_used_percent": round((disk.used / disk.total * 100), 1) if disk.total else 0,
         },
         "memory": read_server_memory(),
+        "cpu": read_server_cpu(),
+        "network": read_server_network(),
         "counts": {
             "media": connection.execute("SELECT COUNT(*) FROM media").fetchone()[0],
             "comments": connection.execute("SELECT COUNT(*) FROM comments").fetchone()[0],

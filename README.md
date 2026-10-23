@@ -2,6 +2,16 @@
 
 **语言 / Language：简体中文 · [English](README.en.md)**
 
+## 当前正式版 v3.7.0 · 2026-10-23
+
+本版汇总 v3.6.0 之后的安装与运行更新，作为默认正式发行版；默认分支仍为 `main`。[完整发布公告](docs/RELEASE-v3.7.0.md) · [更新记录](CHANGELOG.md)。
+
+- 新装从零内容开始，保留全部界面与管理能力；已有站点内容不会被自动清空。
+- 安装器提供中英文基础/高级引导、真实进度、低内存提示、APT 锁等待、断点继续和日志入口。
+- 网页后台新增 CPU 使用率、逻辑核心、负载和网络上下行/累计流量，目标每 0.5 秒采样；请求不重叠，隐藏窗口暂停。实际刷新受网络延迟影响。
+- AI 连接失败、超时或临时 500/502/503/504 在原有 55 秒预算内最多追加一次请求；认证、余额和上游限频不重试。日志记录安全异常分类和耗时。
+- 安卓保持稳定签名的 1.8.0+20；本次网站更新兼容现有客户端，新增实时资源卡片位于网页后台。
+
 把照片、视频与文字放进带有 **3D 粒子树、漂浮相框、雪花、音乐和桌宠** 的记忆网站。提供网页后台和原生安卓管理 App，可在自己的 VPS 独立运行。
 
 ## 🚀 一键安装网站：复制到自己的 VPS 终端执行
@@ -26,13 +36,13 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 ## 📱 安卓管理 App：点这里直接下载
 
-### [⬇ 下载安卓 APK · 1.8.0（versionCode 20）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.6.0/memory-archive-admin-v1.8.0.apk)
+### [⬇ 下载安卓 APK · 1.8.0（versionCode 20）](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 **Android 7.0 及以上。安装后填写自己的 HTTPS 域名，再用自己的后台账号登录；不用改源码或重编译 APK。**
 
 [发行版与校验文件](https://github.com/jack-114514/into-youth-archive/releases/latest) · [安卓功能 / 技术 / 构建](mobile-admin-app/README.md) · **[安卓隐私政策](mobile-admin-app/PRIVACY.md)**
 
-发行附件是稳定签名的正式通用版，可覆盖之前相同包名/签名的安全通用版。下载文件名明确包含版本：`memory-archive-admin-v1.8.0.apk`；网站发行版本号 v3.6.0 与安卓版本号 1.8.0 分开标识。旧预览版和旧专用版的包名/签名不同，需安装通用版并重新连接站点，服务器内容保持。CI 的 debug APK 仅作测试工件。
+发行附件是稳定签名的正式通用版，可覆盖之前相同包名/签名的安全通用版。下载文件名明确包含版本：`memory-archive-admin-v1.8.0.apk`；网站发行版本号 v3.7.0 与安卓版本号 1.8.0 分开标识。旧预览版和旧专用版的包名/签名不同，需安装通用版并重新连接站点，服务器内容保持。CI 的 debug APK 仅作测试工件。
 
 ---
 
@@ -52,7 +62,7 @@ curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercon
 
 | 项目 | 当前版本 |
 | --- | --- |
-| 网站自建发行版 | v3.6.0，前台 + 网页后台 + Python API + 安装运维脚本 |
+| 网站自建发行版 | v3.7.0，前台 + 网页后台 + Python API + 安装运维脚本 |
 | 安卓通用管理 App | 1.8.0，versionCode 20；应用 ID `org.memoryarchive.admin.secure` |
 | 默认部署 | Docker Compose + Caddy HTTPS + SQLite；单站点、单管理员 |
 
