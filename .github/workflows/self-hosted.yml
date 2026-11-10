@@ -49,7 +49,7 @@ jobs:
       - name: Verify rendered website and API routing
         run: |
           curl --fail http://localhost:18080/ > /tmp/home.html
-          grep -q '我的记忆档案' /tmp/home.html
+          grep -q '青春档案' /tmp/home.html
           curl --fail http://localhost:18080/api/content > /tmp/content.json
           python3 -c "import json; d=json.load(open('/tmp/content.json')); assert d['media']==[]; assert d['settings']['contact_email']==''"
           curl --fail http://localhost:18080/api/stats > /tmp/stats.json

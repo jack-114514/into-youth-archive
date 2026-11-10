@@ -97,8 +97,8 @@ ALLOWED_SETTINGS.update(
 )
 INTRO_SETTING_DEFAULTS = {
     "intro_logo": "",
-    "intro_title": "记忆档案",
-    "intro_subtitle": "MY MEMORY ARCHIVE",
+    "intro_title": "青春档案",
+    "intro_subtitle": "YOUTH ARCHIVE",
     "intro_background_image": "/assets/demo-intro.svg",
     "intro_background_desktop_image": "/assets/demo-intro.svg",
     "intro_background_mobile_image": "",

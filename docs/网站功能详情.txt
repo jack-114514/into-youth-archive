@@ -5,13 +5,13 @@
 编码：UTF-8；纯文本，无需 Markdown 编辑器即可阅读
 
 项目首页：
-https://github.com/jack-114514/into-youth-archive
+https://github.com/jack-114514/youth-archive
 
 网站一键下载、配置和启动命令（以 root 登录自己的 VPS Linux 终端后执行）：
-curl -fsSL https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
+curl -fsSL https://raw.githubusercontent.com/jack-114514/youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 
 安卓稳定签名正式通用 APK 直接下载（文件名包含版本）：
-https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk
+https://github.com/jack-114514/youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk
 
 新手完整步骤：docs/QUICK_START.md
 技术与数据说明：docs/TECHNICAL.md

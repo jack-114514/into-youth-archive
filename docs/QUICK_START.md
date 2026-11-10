@@ -1,6 +1,6 @@
 # 新手安装与配置
 
-[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
+[返回项目首页](../README.md) · [直接下载安卓 APK](https://github.com/jack-114514/youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 目标：在自己的 VPS 安装同一套页面、动画和管理功能，再换成自己的内容。新站从 0 条内容开始：照片、故事、时间线、随手记、留言和投稿均为空，由管理员自行添加。界面装饰不计作内容，不带原作者的私人照片和数据库。
 
@@ -38,14 +38,14 @@ ssh root@你的VPS地址
 **看到 VPS 的 Linux 命令提示符后**，复制整行执行：
 
 ```bash
-curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
+curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 ```
 
 上面的命令供 root 登录后执行。普通账号需把最后的 `bash` 改为 `sudo bash`，并具备 sudo 权限。
 
 脚本下载源码、补齐 Git/Python 等工具，在缺少 Docker 时安装官方 Docker Engine，交互生成配置，再构建并启动网站。已有 Docker 必须支持 Compose v2。默认目录 `/opt/memory-archive`，首次构建需等待依赖和镜像下载。
 
-想先检查可[点击查看安装脚本](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)，或执行前运行 `less /tmp/memory-archive-install.sh`。
+想先检查可[点击查看安装脚本](https://raw.githubusercontent.com/jack-114514/youth-archive/main/install.sh)，或执行前运行 `less /tmp/memory-archive-install.sh`。
 
 ## 4. 只填写域名和邮箱，其余可直接回车
 
@@ -104,7 +104,7 @@ sudo bash install.sh --resume
 
 ## 6. 手机管理（可选）
 
-[**点这里直接下载安卓 APK**](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)。
+[**点这里直接下载安卓 APK**](https://github.com/jack-114514/youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)。
 
 安装正式通用版 → 填 `https://自己的域名` → 验证连接 → 用本站管理员邮箱/密码登录。“站点设置”可更换域名，保存后重新登录。
 

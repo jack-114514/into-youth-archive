@@ -56,8 +56,8 @@ PASSWORD_ITERATIONS = 600_000
 LEGACY_PASSWORD_ITERATIONS = 240_000
 INTRO_SETTING_DEFAULTS = {
     "intro_logo": "",
-    "intro_title": "记忆档案",
-    "intro_subtitle": "MY MEMORY ARCHIVE",
+    "intro_title": "青春档案",
+    "intro_subtitle": "YOUTH ARCHIVE",
     "intro_background_image": "/assets/demo-intro.svg",
     "intro_background_desktop_image": "/assets/demo-intro.svg",
     "intro_background_mobile_image": "",
@@ -524,7 +524,7 @@ def send_verification_code(recipient, code):
     if not username or not password or not sender:
         raise RuntimeError("邮件服务尚未配置")
     message = EmailMessage()
-    message["Subject"] = "我的记忆档案：管理员密码修改验证码"
+    message["Subject"] = "青春档案：管理员密码修改验证码"
     message["From"] = sender
     message["To"] = recipient
     message.set_content(
@@ -721,10 +721,10 @@ def initialize():
         else:
             connection.execute("UPDATE admins SET username=? WHERE id=1", (admin_username,))
         defaults = {
-            "site_title": "我的记忆档案",
-            "footer_title": "我的记忆档案",
+            "site_title": "青春档案",
+            "footer_title": "青春档案",
             "footer_subtitle": "",
-            "browser_title": "我的记忆档案",
+            "browser_title": "青春档案",
             "site_icon_url": "/favicon.svg",
             "nav_logo_url": "",
             "hero_title": "把青春留在风经过的地方",
@@ -1509,5 +1509,5 @@ if __name__ == "__main__":
     initialize()
     host = os.environ.get("SITE_HOST", "127.0.0.1")
     port = int(os.environ.get("SITE_PORT", "8765"))
-    print(f"Memory Archive API listening on {host}:{port}")
+    print(f"youth-archive API listening on {host}:{port}")
     ThreadingHTTPServer((host, port), Handler).serve_forever()
