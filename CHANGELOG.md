@@ -1,5 +1,13 @@
 # 更新记录 / Changelog
 
+## 未发布 / Unreleased
+
+- 网页后台的栏目设置、媒体编辑、首页开场、音乐、桌宠和随手记支持自动保存。随手记新条目先保存为草稿，由管理员主动发布。
+- 状态页显示最近 60 秒的 CPU、内存及网络折线。网络图分别显示下行和上行，磁盘继续使用进度条。
+- 桌宠设置的说明可以独立展开，展开状态在当前浏览器中保留。
+
+English: Web admin editors save changes automatically. New journal entries start as drafts and are published explicitly. The status page shows 60 seconds of CPU, memory, and network history, with separate download and upload lines. Desktop pet settings remember which help sections are expanded in the current browser.
+
 ## v3.7.0 · 安装体验、实时资源状态与 AI 恢复
 
 发布日期：2026-10-23。网站默认正式版：v3.7.0；默认分支：main。安卓通用客户端：1.8.0+20，稳定签名与现有下载继续使用。

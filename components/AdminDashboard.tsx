@@ -1,5 +1,7 @@
 "use client";
 
+import ResourceChart from "./ResourceChart";
+import { useAutosave, AutosaveStatus, flushAdminEdits } from "./useAutosave";
 import { NotesManager } from "./NotesJournal";
 
 import { FormEvent, lazy, Suspense, useEffect, useRef, useState } from "react";
@@ -343,6 +345,13 @@ function ServerStatusPanel({
   onRefresh: () => void;
   onNavigate: (tab: AdminTab) => void;
 }) {
+  const [history, setHistory] = useState<ServerStatusSnapshot[]>([]);
+  useEffect(() => {
+    if (!snapshot) return;
+    const now = new Date(snapshot.server_time).getTime();
+    setHistory(items => [...items.filter(item => new Date(item.server_time).getTime() > now - 60000 && item.server_time !== snapshot.server_time), snapshot].slice(-121));
+  }, [snapshot]);
+  const samples = (metric: (item: ServerStatusSnapshot) => (number | null | undefined)[]) => history.map(item => ({ time: new Date(item.server_time).getTime(), values: metric(item) }));
   if (!snapshot && loading) {
     return <section className="server-status-loading" aria-live="polite"><i /><strong>正在读取服务器状态</strong><span>正在检查服务、数据库与存储空间…</span></section>;
   }
@@ -380,16 +389,25 @@ function ServerStatusPanel({
 
       <section className="server-health-grid" aria-label="服务器资源状态">
         <article className="server-health-card">
-          <header><div><span>CPU</span><h3>CPU 使用率与负载</h3></div><strong className={cpuUsed != null && cpuUsed >= 85 ? "is-warning" : ""}>{cpuUsed == null ? "采样中" : `${cpuUsed.toFixed(1)}%`}</strong></header>
-          <div className="server-progress" role="progressbar" aria-label="服务器 CPU 使用率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={cpuUsed ?? undefined}><i style={{ width: `${cpuUsed ?? 0}%` }} /></div>
+          <header><div><span>CPU</span><h3>CPU 负载率</h3></div><strong className={cpuUsed != null && cpuUsed >= 85 ? "is-warning" : ""}>{cpuUsed == null ? "采样中" : `${cpuUsed.toFixed(1)}%`}</strong></header>
+          <ResourceChart samples={samples(item => [item.cpu?.used_percent])} labels={["CPU 使用率"]} maximum={100} />
           <dl>
             <div><dt>逻辑核心</dt><dd>{snapshot.cpu?.logical_cores ?? "—"} 核</dd></div>
-            <div><dt>1 / 5 / 15 分钟负载</dt><dd>{[snapshot.cpu?.load_1m, snapshot.cpu?.load_5m, snapshot.cpu?.load_15m].map(value => value == null ? "—" : value.toFixed(2)).join(" / ")}</dd></div>
+            {snapshot.cpu?.load_1m != null && <div><dt>1 / 5 / 15 分钟负载</dt><dd>{[snapshot.cpu?.load_1m, snapshot.cpu?.load_5m, snapshot.cpu?.load_15m].map(value => value == null ? "—" : value.toFixed(2)).join(" / ")}</dd></div>}
           </dl>
-          <small>负载接近核心数时，CPU 可能繁忙；也可能存在磁盘等待。</small>
+          <small>显示最近 60 秒的实际 CPU 使用率，每 0.5 秒采样。</small>
+        </article>
+        <article className="server-health-card">
+          <header><div><span>MEMORY</span><h3>内存占用率</h3></div><strong className={memoryUsed != null && memoryUsed >= 85 ? "is-warning" : ""}>{memoryUsed == null ? "—" : `${memoryUsed.toFixed(1)}%`}</strong></header>
+          <ResourceChart samples={samples(item => [item.memory.used_percent])} labels={["内存占用率"]} maximum={100} />
+          <dl>
+            <div><dt>已用内存</dt><dd>{memoryUsed == null ? "不可用" : formatBytes(memoryUsedBytes)}</dd></div>
+            <div><dt>内存总量</dt><dd>{formatBytes(snapshot.memory.total_bytes)}</dd></div>
+          </dl>
         </article>
         <article className="server-health-card">
           <header><div><span>NETWORK</span><h3>网络上行与下行</h3></div><strong>{snapshot.network?.interface ?? "—"}</strong></header>
+          <ResourceChart samples={samples(item => [item.network?.rx_bytes_per_second == null ? null : item.network.rx_bytes_per_second * 8, item.network?.tx_bytes_per_second == null ? null : item.network.tx_bytes_per_second * 8])} labels={["↓ 下行", "↑ 上行"]} rate />
           <dl>
             <div><dt>↓ 下行速率</dt><dd>{snapshot.network?.interface ? formatBitRate(snapshot.network.rx_bytes_per_second) : "不可用"}</dd></div>
             <div><dt>↑ 上行速率</dt><dd>{snapshot.network?.interface ? formatBitRate(snapshot.network.tx_bytes_per_second) : "不可用"}</dd></div>
@@ -405,14 +423,6 @@ function ServerStatusPanel({
             <div><dt>剩余空间</dt><dd>{formatBytes(snapshot.storage.disk_free_bytes)}</dd></div>
             <div><dt>磁盘总量</dt><dd>{formatBytes(snapshot.storage.disk_total_bytes)}</dd></div>
             <div><dt>上传文件</dt><dd>{formatBytes(snapshot.storage.uploads_bytes)}</dd></div>
-          </dl>
-        </article>
-        <article className="server-health-card">
-          <header><div><span>MEMORY</span><h3>内存使用情况</h3></div><strong className={memoryUsed != null && memoryUsed >= 85 ? "is-warning" : ""}>{memoryUsed == null ? "—" : `${memoryUsed.toFixed(1)}%`}</strong></header>
-          <div className="server-progress" role="progressbar" aria-label="服务器内存使用率" aria-valuemin={0} aria-valuemax={100} aria-valuenow={memoryUsed ?? 0}><i style={{ width: `${memoryUsed ?? 0}%` }} /></div>
-          <dl>
-            <div><dt>已用内存</dt><dd>{memoryUsed == null ? "不可用" : formatBytes(memoryUsedBytes)}</dd></div>
-            <div><dt>内存总量</dt><dd>{formatBytes(snapshot.memory.total_bytes)}</dd></div>
           </dl>
         </article>
         <article className="server-health-card is-database">
@@ -936,7 +946,7 @@ export default function AdminDashboard() {
       } else {
         updateMusicTrack(replaceIndex, { url: data, name: musicPlaylist[replaceIndex]?.name || suggestedName });
       }
-      setMessage(replaceIndex == null ? "音乐已加入歌单预览，保存音乐设置后生效" : "音乐文件已更换，保存音乐设置后生效");
+      setMessage(replaceIndex == null ? "音乐已加入歌单预览，将自动保存生效" : "音乐文件已更换，将自动保存生效");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "无法读取音乐文件");
     }
@@ -1100,12 +1110,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!token) return;
     if (tab === "status") setLoading(false);
-    else if (tab === "intro") loadHomepageIntro();
+    else if (tab === "intro") setLoading(false);
     else if (tab === "inbox") loadTab(inboxView);
     else if (isMediaSectionTab(tab)) loadTab("media");
     else if (isAdminDataTab(tab)) loadTab(tab);
     else setLoading(false);
-    api("/api/content").then((data) => setSettings((current) => ({ ...current, ...(data.settings || {}) }))).catch(() => undefined);
+
   }, [token, tab, inboxView]);
 
   useEffect(() => {
@@ -1139,7 +1149,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await flushAdminEdits(); } catch { setMessage("还有修改未保存，请恢复连接后再退出"); return; }
     sessionStorage.removeItem("into-admin-token");
     sessionStorage.removeItem("into-admin-email-mask");
     setToken("");
@@ -1169,8 +1180,9 @@ export default function AdminDashboard() {
     if (!fontSliderDragging.current) changeAdminFontSize(value);
   };
 
-  const selectTab = (nextTab: AdminTab) => {
-    if (nextTab !== tab && isMediaSectionTab(tab) && dirtyMediaIds.length && !window.confirm("有未保存的图片修改。离开后这些修改会丢失，确定离开吗？")) return;
+  const selectTab = async (nextTab: AdminTab) => {
+    try { await flushAdminEdits(); } catch { setMessage("自动保存尚未完成，请检查页面提示后再切换栏目"); return; }
+
     if (nextTab !== tab && isMediaSectionTab(tab)) setDirtyMediaIds([]);
     setTab(nextTab);
     if (adminContentTabs.includes(nextTab)) setContentMenuOpen(true);
@@ -1200,6 +1212,7 @@ export default function AdminDashboard() {
 
   const remove = async (id: number) => {
     try {
+      await mediaSave.flush();
       await api(`/api/admin/${tab === "inbox" ? inboxView : isMediaSectionTab(tab) ? "media" : tab}/${id}`, { method: "DELETE" }, token);
       setRows((items) => items.filter((item) => Number(item.id) !== id));
       setDirtyMediaIds((ids) => ids.filter((value) => value !== id));
@@ -1247,7 +1260,7 @@ export default function AdminDashboard() {
 
   const addMedia = async (event: FormEvent) => {
     event.preventDefault();
-    if (dirtyMediaIds.length) return setMessage("请先点击顶部“保存全部设置”，再添加新图片，以免丢失尚未保存的编辑");
+    try { await flushAdminEdits(); } catch { return setMessage("请等待当前修改保存成功后再添加图片"); }
     if (!uploadData) return setMessage("请先选择图片或短视频");
     if (videoUploadData && isVideoUrl(uploadData)) return setMessage("只有照片可以再关联一个视频；如果只上传视频，请清除右侧关联视频");
     if (!Object.values(mediaDestinations).some(Boolean)) return setMessage("请至少选择一个图片展示栏目");
@@ -1314,6 +1327,7 @@ export default function AdminDashboard() {
 
   async function saveMedia(row: Row) {
     try {
+      await mediaSave.flush();
       setLoading(true);
       setSaveDialog({ phase: "saving", title: "正在删除媒体", detail: "正在从这条内容中永久移除所选图片或视频，请稍候。" });
       const savedRow = await persistMediaRow(row);
@@ -1330,91 +1344,64 @@ export default function AdminDashboard() {
     }
   }
 
-  const saveSettings = async (event: FormEvent) => {
-    event.preventDefault();
-    const saveMediaWithSettings = isMediaSectionTab(tab);
-    const pendingMedia = saveMediaWithSettings ? rows.filter((row) => dirtyMediaIds.includes(Number(row.id))) : [];
-    let savedMediaCount = 0;
-    try {
-      setLoading(true);
-      setSaveDialog({ phase: "saving", title: "正在保存全部设置", detail: saveMediaWithSettings ? "正在保存图片内容和栏目设置，请稍候。" : "正在把当前修改同步到网站，请稍候。" });
-      const nextSettings = { ...settings, hero_secondary_button: visibleHeroSecondaryButton(settings.hero_secondary_button) };
-      const links = readCustomContactLinks(nextSettings.contact_custom_links);
-      if (links.some(({ label, url }) => !label.trim() || label.trim().length > 32 || !safeContactUrl(url))) {
-        throw new Error("请为每个自定义联系方式填写名称和有效的 HTTPS 链接，或删除未完成的项目");
+  const [settingsReady, setSettingsReady] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setSettingsReady(false);
+    if (!token) return;
+    Promise.all([api("/api/content"), api("/api/admin/homepage-intro", {}, token)]).then(([content, intro]) => {
+      if (!active) return;
+      setSettings(current => ({ ...current, ...content.settings, ...normalizeHomepageIntroSettings(intro.settings) }));
+      setIntroNodes(Array.isArray(intro.nodes) ? intro.nodes : defaultHomepageIntroNodes);
+      setSettingsReady(true);
+    }).catch(error => { if (active) setMessage(`设置加载失败：${error.message}`); });
+    return () => { active = false; };
+  }, [token]);
+  const settingsSave = useAutosave({ settings, introNodes }, settingsReady && !!token, async (snapshot, previous) => {
+    const next = { ...snapshot.settings };
+    const changed = Object.keys(next).filter(key => next[key as keyof typeof next] !== previous.settings[key as keyof typeof next]);
+    const patch: Record<string, string> = {};
+    for (const key of changed) {
+      let value = next[key as keyof typeof next];
+      if (value.startsWith("data:image/")) {
+        const result = await api("/api/admin/intro-upload", { method: "POST", body: JSON.stringify({ data: value }) }, token);
+        value = result.url;
       }
-      const invalidMedia = pendingMedia.find((row) => !mediaVisibilityOptions.some(({ key }) => Number(row[key] ?? 0) === 1));
-      if (invalidMedia) throw new Error(`“${String(invalidMedia.title || "未命名照片")}”至少需要保留一个图片展示栏目`);
-      nextSettings.contact_custom_links = JSON.stringify(links.map(({ label, url }) => ({ label: label.trim(), url: url.trim() })));
-      for (const row of pendingMedia) {
-        setSaveDialog({ phase: "saving", title: "正在保存全部设置", detail: `正在保存图片 ${savedMediaCount + 1} / ${pendingMedia.length}，随后保存栏目设置。` });
-        const savedRow = await persistMediaRow(row);
-        setRows((items) => items.map((item) => Number(item.id) === Number(row.id) ? savedRow : item));
-        setDirtyMediaIds((ids) => ids.filter((id) => id !== Number(row.id)));
-        savedMediaCount += 1;
-      }
-      const visualImageFields: HomeVisualImageKey[] = ["home_profile_avatar", "home_background_url", "home_hero_image", "about_page_image", ...homeVisualCardDefinitions.map((item) => item.key)];
-      for (const field of visualImageFields) {
-        if (nextSettings[field].startsWith("data:image/")) {
-          const uploaded = await api("/api/admin/intro-upload", { method: "POST", body: JSON.stringify({ data: nextSettings[field] }) }, token);
-          nextSettings[field] = uploaded.url;
+      if (key === "music_playlist") {
+        const tracks = normalizeMusicPlaylist(value);
+        for (const track of tracks) if (track.url.startsWith("data:")) {
+          const result = await api("/api/admin/music-upload", { method: "POST", body: JSON.stringify({ data: track.url }) }, token);
+          track.url = result.url;
         }
+        value = JSON.stringify(tracks);
       }
-      const uploadedTracks: MusicTrack[] = [];
-      for (const track of normalizeMusicPlaylist(nextSettings.music_playlist)) {
-        if (track.url.startsWith("data:audio/mpeg;base64,")) {
-          const uploaded = await api("/api/admin/music-upload", { method: "POST", body: JSON.stringify({ data: track.url }) }, token);
-          uploadedTracks.push({ ...track, url: uploaded.url });
-        } else {
-          uploadedTracks.push(track);
-        }
-      }
-      nextSettings.music_playlist = JSON.stringify(uploadedTracks);
-      await api("/api/admin/settings", { method: "POST", body: JSON.stringify(nextSettings) }, token);
-      setSettings(nextSettings);
-      setMessage(saveMediaWithSettings ? "图片内容与栏目设置已保存" : "网站设置已经更新");
-      setSaveDialog({ phase: "success", title: "保存完成", detail: saveMediaWithSettings ? `已保存 ${savedMediaCount} 条图片修改及栏目设置，前台刷新后即可看到更新。` : "网站设置已保存，前台刷新后即可看到更新。" });
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "保存失败";
-      const detail = savedMediaCount ? `已有 ${savedMediaCount} 条图片保存成功；其他修改尚未全部保存。${reason}` : reason;
-      setMessage(detail);
-      setSaveDialog({ phase: "error", title: "保存失败", detail });
-    } finally {
-      setLoading(false);
+      if (key === "contact_custom_links" && readCustomContactLinks(value).some(link => !link.label.trim() || !safeContactUrl(link.url))) throw new Error("请填完整联系方式名称和 HTTPS 链接，或移除未完成项目");
+      patch[key] = value; (next as Record<string, string>)[key] = value;
     }
-  };
-
-  const saveMusicSettings = async (event: FormEvent) => {
-    event.preventDefault();
-    try {
-      setLoading(true);
-      setSaveDialog({ phase: "saving", title: "正在保存音乐设置", detail: "正在上传歌单并保存默认播放状态。" });
-      const uploadedTracks: MusicTrack[] = [];
-      for (const track of normalizeMusicPlaylist(settings.music_playlist)) {
-        if (track.url.startsWith("data:audio/mpeg;base64,")) {
-          const uploaded = await api("/api/admin/music-upload", { method: "POST", body: JSON.stringify({ data: track.url }) }, token);
-          uploadedTracks.push({ ...track, url: uploaded.url });
-        } else {
-          uploadedTracks.push(track);
-        }
-      }
-      const musicSettings = {
-        music_default_on: settings.music_default_on === "1" ? "1" : "0",
-        music_default_volume: String(normalizeMusicVolume(settings.music_default_volume)),
-        music_playlist: JSON.stringify(uploadedTracks),
-      };
-      await api("/api/admin/settings", { method: "POST", body: JSON.stringify(musicSettings) }, token);
-      setSettings((current) => ({ ...current, ...musicSettings }));
-      setMessage("音乐设置已保存");
-      setSaveDialog({ phase: "success", title: "保存完成", detail: "歌单和默认播放状态已生效，前台刷新后即可看到更新。" });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "保存失败";
-      setMessage(detail);
-      setSaveDialog({ phase: "error", title: "保存失败", detail });
-    } finally {
-      setLoading(false);
+    const introChanged = changed.some(key => key.startsWith("intro_")) || JSON.stringify(snapshot.introNodes) !== JSON.stringify(previous.introNodes);
+    if (introChanged) {
+      const intro = normalizeHomepageIntroSettings(next);
+      intro.intro_background_image = intro.intro_background_desktop_image;
+      await api("/api/admin/homepage-intro", { method: "POST", body: JSON.stringify({ settings: intro, nodes: normalizeIntroNodeOrder(snapshot.introNodes) }) }, token);
     }
-  };
+    const general = Object.fromEntries(Object.entries(patch).filter(([key]) => !key.startsWith("intro_")));
+    if (Object.keys(general).length) await api("/api/admin/settings", { method: "POST", body: JSON.stringify(general) }, token);
+    setSettings(current => {
+      const merged = { ...current };
+      for (const key of changed) if (current[key as keyof typeof current] === snapshot.settings[key as keyof typeof current]) (merged as Record<string, string>)[key] = next[key as keyof typeof current];
+      return merged;
+    });
+    return { settings: next, introNodes: snapshot.introNodes };
+  });
+  const latestRows = useRef(rows); latestRows.current = rows;
+  const mediaSave = useAutosave(rows.filter(row => dirtyMediaIds.includes(Number(row.id))), !!token, async pending => {
+    for (const row of pending) {
+      const savedRow = await persistMediaRow(row);
+      setRows(items => items.map(item => item === row ? savedRow : item));
+      if (latestRows.current.find(item => Number(item.id) === Number(row.id)) === row) setDirtyMediaIds(ids => ids.filter(id => id !== Number(row.id)));
+    }
+    return [];
+  });
 
   const chooseHomeVisualImage = async (file: File | undefined, field: HomeVisualImageKey) => {
     if (!file) return;
@@ -1427,7 +1414,7 @@ export default function AdminDashboard() {
       const compressed = field === "home_profile_avatar" ? await readFileAsDataUrl(file) : await compressIntroImage(file, field === "home_background_url" || field === "home_hero_image" ? 2600 : 1800);
       if (field === "home_profile_avatar") {
         setAvatarCropSource(compressed);
-        setMessage("请在圆形选框中调整头像取景，确认后再保存全部设置");
+        setMessage("请在圆形选框中调整头像取景，确认取景后自动保存");
         return;
       }
       if (Math.ceil(compressed.length * 0.75) > 5 * 1024 * 1024) return setMessage("压缩后的图片仍超过 5MB，请换一张图片");
@@ -1441,7 +1428,7 @@ export default function AdminDashboard() {
         return next;
       });
       if (field !== "home_background_url" && field !== "about_page_image") setCardCropField(field);
-      setMessage(field === "home_background_url" ? "首页背景已加入预览；保存后会始终从图片中心自适应裁切" : field === "about_page_image" ? "关于我们图片已加入预览；保存全部设置后生效" : field === "home_hero_image" ? "主视觉已加入预览，请完成裁切后保存全部设置" : "原比例图片已加入预览，请选择希望展示的区域后保存全部设置");
+      setMessage(field === "home_background_url" ? "首页背景已加入预览；保存后会始终从图片中心自适应裁切" : field === "about_page_image" ? "关于我们图片已加入预览；将自动保存生效" : field === "home_hero_image" ? "主视觉已加入预览，请完成裁切，确认后自动保存" : "原比例图片已加入预览，请选择希望展示的区域，确认后自动保存");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "图片处理失败");
     } finally {
@@ -1543,38 +1530,7 @@ export default function AdminDashboard() {
 
   const restoreDefaultIntroNodes = () => {
     setIntroNodes(defaultHomepageIntroNodes.map((node) => ({ ...node })));
-    setMessage("已恢复默认四个路线节点，请点击“保存首页开场”使前台生效");
-  };
-
-  const saveHomepageIntro = async (event: FormEvent) => {
-    event.preventDefault();
-    try {
-      setLoading(true);
-      setSaveDialog({ phase: "saving", title: "正在保存首页开场", detail: "正在上传图片并同步开场设置，请稍候。" });
-      const introSettings = normalizeHomepageIntroSettings(settings);
-      for (const field of ["intro_logo", "intro_background_desktop_image", "intro_background_mobile_image"] as const) {
-        if (introSettings[field].startsWith("data:")) {
-          const uploaded = await api("/api/admin/intro-upload", { method: "POST", body: JSON.stringify({ data: introSettings[field] }) }, token);
-          introSettings[field] = uploaded.url;
-        }
-      }
-      introSettings.intro_background_image = introSettings.intro_background_desktop_image;
-      await api("/api/admin/homepage-intro", {
-        method: "POST",
-        body: JSON.stringify({ settings: introSettings, nodes: normalizeIntroNodeOrder(introNodes) }),
-      }, token);
-      setSettings((current) => ({ ...current, ...introSettings }));
-      setMessage("首页开场设置已保存，前台刷新后立即生效");
-      setSaveDialog({ phase: "success", title: "保存完成", detail: "首页开场设置已保存，前台刷新后立即生效。" });
-      await loadHomepageIntro();
-      setIntroPreviewKey((value) => value + 1);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : "开场设置保存失败";
-      setMessage(detail);
-      setSaveDialog({ phase: "error", title: "保存失败", detail });
-    } finally {
-      setLoading(false);
-    }
+    setMessage("已恢复默认四个路线节点，将自动应用到网站");
   };
 
   const timelineItems = parseTimelineItems(settings.timeline_items);
@@ -1591,7 +1547,7 @@ export default function AdminDashboard() {
   };
   const resetHomeCopySection = (id: HomeCopySectionId) => {
     setSettings((current) => ({ ...current, ...getHomeCopySectionDefaults(id) }));
-    setMessage("这一组标题已恢复默认；点击页面顶部的“保存全部设置”后前台生效");
+    setMessage("这一组标题已恢复默认；将自动应用到网站");
   };
   const updateTimelineItem = (index: number, key: keyof TimelineItem, value: string) => {
     const next = timelineItems.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item);
@@ -1707,7 +1663,7 @@ export default function AdminDashboard() {
   if (!token) {
     return (
       <main className="admin-shell login-shell" data-admin-theme={adminTheme}>
-        <a className="admin-brand" href="/">MEMORY <span>/</span> 记忆档案</a>
+        <a className="admin-brand" href="/">INTO <span>/</span> 青春纪事</a>
         <button className="admin-theme-toggle admin-login-theme-toggle" type="button" aria-pressed={adminTheme === "dark"} onClick={() => { const nextTheme = adminTheme === "dark" ? "light" : "dark"; setAdminTheme(nextTheme); localStorage.setItem("into-admin-theme", nextTheme); }}>{adminTheme === "dark" ? "☀ 浅色模式" : "☾ 深色模式"}</button>
         <form className="admin-login" onSubmit={recoveryOpen ? changePassword : login}>
           <div className="admin-symbol">✦</div>
@@ -1746,7 +1702,7 @@ export default function AdminDashboard() {
   return (
     <main className={"admin-shell" + (sidebarCollapsed ? " sidebar-collapsed" : "")} style={{ "--admin-font-scale": adminFontSize / 100, "--admin-small-font-scale": adminFontSize * 1.5 / 100 } as CSSProperties} data-admin-theme={adminTheme} data-admin-large={adminFontSize >= 140 ? "true" : undefined}>
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-head"><a className="admin-brand" href="/"><b>MEMORY</b> <span>/</span> <em>记忆档案</em></a><button className="admin-sidebar-toggle" type="button" onClick={toggleSidebar} aria-label={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"} title={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"}><span className="micro-arrow">{sidebarCollapsed ? "→" : "←"}</span></button></div>
+        <div className="admin-sidebar-head"><a className="admin-brand" href="/"><b>INTO</b> <span>/</span> <em>青春纪事</em></a><button className="admin-sidebar-toggle" type="button" onClick={toggleSidebar} aria-label={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"} title={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"}><span className="micro-arrow">{sidebarCollapsed ? "→" : "←"}</span></button></div>
         <nav>
           {adminNavigationItems.map(({ key, label, icon }) => key === "images" ? (
             <div className="admin-nav-group" key="website-content">
@@ -1766,6 +1722,7 @@ export default function AdminDashboard() {
       </aside>
       <section className="admin-main">
         <header><div><p>CREATOR CONSOLE / 2026</p><h1>{tab === "inbox" ? inboxView === "comments" ? "留言管理" : "投稿信箱" : adminTabTitles[tab]}</h1></div><div className="admin-header-tools"><button className="admin-theme-toggle" type="button" aria-pressed={adminTheme === "dark"} onClick={() => { const nextTheme = adminTheme === "dark" ? "light" : "dark"; setAdminTheme(nextTheme); localStorage.setItem("into-admin-theme", nextTheme); }}>{adminTheme === "dark" ? "☀ 浅色模式" : "☾ 深色模式"}</button><label className="admin-font-size-control"><span>界面字号</span><input id="admin-font-size-range" type="range" min="50" max="160" step="5" value={adminFontSizeDraft} aria-label="后台界面字号" aria-valuetext={`${adminFontSizeDraft}%`} onPointerDown={() => { fontSliderDragging.current = true; }} onPointerUp={(event) => { fontSliderDragging.current = false; changeAdminFontSize(Number(event.currentTarget.value)); }} onPointerCancel={() => { fontSliderDragging.current = false; setAdminFontSizeDraft(adminFontSize); }} onBlur={(event) => { fontSliderDragging.current = false; changeAdminFontSize(Number(event.currentTarget.value)); }} onChange={(event) => previewAdminFontSize(Number(event.target.value))} /><output htmlFor="admin-font-size-range">{adminFontSizeDraft}%</output></label><span className={`admin-status is-${serviceStatus}`} role="status" aria-live="polite" title="每 30 秒检查一次后台服务"><i /> {serviceStatus === "online" ? "服务在线" : serviceStatus === "offline" ? "服务连接失败" : "正在检查服务"}</span></div></header>
+        {tab !== "status" && tab !== "account" && tab !== "pet" && <div className="admin-autosave-bar"><AutosaveStatus {...(mediaSave.error || dirtyMediaIds.length ? mediaSave : settingsSave)} /></div>}
         {message && <div className="admin-message">{message}<button onClick={() => setMessage("")}>×</button></div>}
         <AnimatePresence initial={false} mode="wait">
           <motion.div
@@ -1787,8 +1744,8 @@ export default function AdminDashboard() {
           />
         )}
         {isMediaSectionTab(tab) && <div className="settings-save-bar media-section-save-bar">
-          <div><strong>{adminTabTitles[tab]}</strong><span>统一保存本栏目图片内容、标题与展示设置。</span></div>
-          <div className="settings-save-actions"><label className="admin-card-visibility"><input type="checkbox" checked={cardVisibility[cardForTab[tab]]} disabled={cardVisibility[cardForTab[tab]] && visibleCardCount <= 4} onChange={(event) => setCardVisible(cardForTab[tab], event.target.checked)} /><span>首页显示此卡片{visibleCardCount <= 4 ? " · 至少保留4张" : ""}</span></label><button type="submit" form="admin-site-settings-form" disabled={loading}>{loading && saveDialog?.phase === "saving" ? "正在保存" : "保存全部设置"}</button></div>
+          <div><strong>{adminTabTitles[tab]}</strong><span>图片内容、标题与展示设置调整后自动保存。</span></div>
+          <div className="settings-save-actions"><label className="admin-card-visibility"><input type="checkbox" checked={cardVisibility[cardForTab[tab]]} disabled={cardVisibility[cardForTab[tab]] && visibleCardCount <= 4} onChange={(event) => setCardVisible(cardForTab[tab], event.target.checked)} /><span>首页显示此卡片{visibleCardCount <= 4 ? " · 至少保留4张" : ""}</span></label></div>
         </div>}
         {isMediaSectionTab(tab) && <div className="admin-story-intro"><div><strong>{adminTabTitles[tab]}图片</strong><span>在这里添加和编辑本栏目的照片、短视频与文字。已有图片会按所属栏目显示，内容不会被移动或删除。</span></div></div>}
         {isMediaSectionTab(tab) && (
@@ -1826,10 +1783,10 @@ export default function AdminDashboard() {
         {isMediaSectionTab(tab) && <details key={`media-list-${tab}`} className="admin-settings-accordion media-list-accordion"><summary onClick={(event) => animateSettingsDrawer(event.nativeEvent)}>图片内容<span>已收录 {managedRows.length} 条 · 点击展开预览和编辑</span></summary>{renderDataList()}</details>}
         {tab === "status" ? null : tab === "intro" ? (
           <div className="intro-admin-grid">
-            <form ref={introSettingsFormRef} className="settings-form intro-settings-form" onSubmit={saveHomepageIntro}>
+            <form ref={introSettingsFormRef} className="settings-form intro-settings-form" onSubmit={event => event.preventDefault()}>
               <div className="intro-quick-save">
-                <div><strong>首页开场</strong><span>修改后随时保存，无需滑到页面底部</span></div>
-                <button type="submit" disabled={loading}>{loading && saveDialog?.phase === "saving" ? "正在保存" : "保存首页开场"}</button>
+                <div><strong>首页开场</strong><span>调整后自动保存并应用到网站</span></div>
+
               </div>
               <div className="intro-settings-heading"><div><p>LANDING INTRO</p><h2>首页开场设置</h2></div><label className="intro-master-switch"><input type="checkbox" checked={introSettings.intro_enabled === "1"} onChange={(event) => setIntroSetting("intro_enabled", event.target.checked ? "1" : "0")} /><span>启用开场</span></label></div>
               <details className="admin-settings-accordion intro-settings-accordion"><summary><span className="intro-accordion-copy"><strong>基础内容</strong><small>Logo、开屏背景与标题</small></span></summary>
@@ -1839,13 +1796,13 @@ export default function AdminDashboard() {
                   <div className="intro-asset-card">
                     <span>网站 Logo</span>
                     <div className="intro-logo-preview">{introSettings.intro_logo ? <img src={introSettings.intro_logo} alt="当前开场 Logo" /> : <b>MA</b>}</div>
-                    <div className="intro-asset-actions"><label>上传或更换<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseIntroImage(event.target.files?.[0], "intro_logo")} /></label><button type="button" onClick={() => { setIntroLogoCropSource(introSettings.intro_logo); setIntroLogoCropOpen(true); }} disabled={!introSettings.intro_logo}>重新裁切</button><button type="button" onClick={() => requestDeletion("删除网站 Logo？", "确认后会清除当前自定义 Logo；保存首页开场后将无法恢复，只能重新上传。", () => setIntroSetting("intro_logo", ""))}>删除</button><button type="button" onClick={() => setIntroSetting("intro_logo", "")}>恢复默认</button></div>
+                    <div className="intro-asset-actions"><label>上传或更换<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseIntroImage(event.target.files?.[0], "intro_logo")} /></label><button type="button" onClick={() => { setIntroLogoCropSource(introSettings.intro_logo); setIntroLogoCropOpen(true); }} disabled={!introSettings.intro_logo}>重新裁切</button><button type="button" onClick={() => requestDeletion("删除网站 Logo？", "确认后会清除当前自定义 Logo；删除后将无法恢复，只能重新上传。", () => setIntroSetting("intro_logo", ""))}>删除</button><button type="button" onClick={() => setIntroSetting("intro_logo", "")}>恢复默认</button></div>
                     <small>支持 JPG、PNG、WebP。上传后使用强制圆形取景框裁切；SVG 上传为安全原因保持关闭。</small>
                   </div>
                   <div className="intro-asset-card is-background" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) void chooseIntroImage(file, "intro_background_desktop_image"); }}>
                     <span>电脑端开屏背景 · 建议 16:9</span>
                     <div className="intro-background-preview">{introSettings.intro_background_desktop_image ? <img src={introSettings.intro_background_desktop_image} alt="电脑端开场背景" /> : <b>使用明亮渐变背景</b>}</div>
-                    <div className="intro-asset-actions"><label>上传或更换<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseIntroImage(event.target.files?.[0], "intro_background_desktop_image")} /></label><button type="button" onClick={() => setIntroCropOpen(true)} disabled={!introSettings.intro_background_desktop_image}>裁切画面</button><button type="button" onClick={() => requestDeletion("删除电脑端开屏背景？", "确认后会清除当前电脑端背景；保存首页开场后将无法恢复，只能重新上传。", () => setSettings((current) => ({ ...current, intro_background_desktop_image: "", intro_background_image: "" })))}>删除</button><button type="button" onClick={() => setSettings((current) => ({ ...current, intro_background_desktop_image: "/assets/demo-intro.svg", intro_background_image: "/assets/demo-intro.svg" }))}>恢复默认</button></div>
+                    <div className="intro-asset-actions"><label>上传或更换<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => chooseIntroImage(event.target.files?.[0], "intro_background_desktop_image")} /></label><button type="button" onClick={() => setIntroCropOpen(true)} disabled={!introSettings.intro_background_desktop_image}>裁切画面</button><button type="button" onClick={() => requestDeletion("删除电脑端开屏背景？", "确认后会清除当前电脑端背景；删除后将无法恢复，只能重新上传。", () => setSettings((current) => ({ ...current, intro_background_desktop_image: "", intro_background_image: "" })))}>删除</button><button type="button" onClick={() => setSettings((current) => ({ ...current, intro_background_desktop_image: "/assets/demo-intro.svg", intro_background_image: "/assets/demo-intro.svg" }))}>恢复默认</button></div>
                     <small>电脑访问时优先使用。上传后默认按 16:9 裁切，也可在裁切窗口解除比例锁定。</small>
                   </div>
                   <div className="intro-asset-card is-background is-mobile-background" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) void chooseIntroImage(file, "intro_background_mobile_image"); }}>
@@ -1889,7 +1846,7 @@ export default function AdminDashboard() {
                       <label>中文名称<input maxLength={24} value={node.title} onChange={(event) => updateIntroNode(node.id, "title", event.target.value)} /></label>
                       <label>英文 / 拼音<input maxLength={40} value={node.subtitle} onChange={(event) => updateIntroNode(node.id, "subtitle", event.target.value.toUpperCase())} /></label>
                       <label className="intro-node-enabled"><input type="checkbox" checked={Number(node.enabled) === 1} onChange={(event) => updateIntroNode(node.id, "enabled", event.target.checked ? 1 : 0)} /><span>启用</span></label>
-                      <div className="intro-node-actions"><button type="button" disabled={index === 0} onClick={() => moveIntroNode(index, -1)}>上移</button><button type="button" disabled={index === introNodes.length - 1} onClick={() => moveIntroNode(index, 1)}>下移</button><button type="button" onClick={() => requestDeletion(`删除“${node.title || `第 ${index + 1} 站`}”节点？`, "确认后会从当前路线中移除；保存首页开场后将无法恢复。", () => setIntroNodes((items) => normalizeIntroNodeOrder(items.filter((_, itemIndex) => itemIndex !== index))))}>删除</button></div>
+                      <div className="intro-node-actions"><button type="button" disabled={index === 0} onClick={() => moveIntroNode(index, -1)}>上移</button><button type="button" disabled={index === introNodes.length - 1} onClick={() => moveIntroNode(index, 1)}>下移</button><button type="button" onClick={() => requestDeletion(`删除“${node.title || `第 ${index + 1} 站`}”节点？`, "确认后会从当前路线中移除；删除后将无法恢复。", () => setIntroNodes((items) => normalizeIntroNodeOrder(items.filter((_, itemIndex) => itemIndex !== index))))}>删除</button></div>
                     </fieldset>
                   ))}
                   {introNodes.length === 0 && <div className="intro-node-empty">当前没有路线节点。可以保留空路线，也可以新增一个节点。</div>}
@@ -1916,10 +1873,10 @@ export default function AdminDashboard() {
           <Suspense fallback={<div className="admin-empty">正在加载桌宠设置…</div>}><PetSettingsPanel token={token} /></Suspense>
         ) : ["settings", "music", "images", "media", "river", "campus", "timeline", "notes", "about", "messages"].includes(tab) ? (
           <div className={`settings-grid settings-grid-single${tab === "images" ? " images-admin-grid" : ""}`}>
-            <form id="admin-site-settings-form" ref={siteSettingsFormRef} className="settings-form" onSubmit={tab === "music" ? saveMusicSettings : saveSettings}>
+            <form id="admin-site-settings-form" ref={siteSettingsFormRef} className="settings-form" onSubmit={event => event.preventDefault()}>
               {!isMediaSectionTab(tab) && <div className="settings-save-bar">
                 <div><strong>{adminTabTitles[tab]}</strong><span>{tab === "music" ? "独立保存歌单、音量和默认播放状态" : currentCard ? `当前展示 ${visibleCardCount} / 7 张卡片，至少保留 4 张` : "只显示本栏目相关的编辑项；保存后立即应用到网站"}</span></div>
-                <div className="settings-save-actions">{currentCard && <label className="admin-card-visibility"><input type="checkbox" checked={cardVisibility[currentCard]} disabled={cardVisibility[currentCard] && visibleCardCount <= 4} onChange={(event) => setCardVisible(currentCard, event.target.checked)} /><span>首页显示此卡片{visibleCardCount <= 4 ? " · 至少保留4张" : ""}</span></label>}{tab === "images" && <button type="button" className="images-preview-open" onClick={() => setHomePreviewOpen(true)} aria-haspopup="dialog">实时预览</button>}<button type="submit" disabled={loading}>{loading && saveDialog?.phase === "saving" ? "正在保存" : tab === "music" ? "保存音乐设置" : "保存全部设置"}</button></div>
+                <div className="settings-save-actions">{currentCard && <label className="admin-card-visibility"><input type="checkbox" checked={cardVisibility[currentCard]} disabled={cardVisibility[currentCard] && visibleCardCount <= 4} onChange={(event) => setCardVisible(currentCard, event.target.checked)} /><span>首页显示此卡片{visibleCardCount <= 4 ? " · 至少保留4张" : ""}</span></label>}{tab === "images" && <button type="button" className="images-preview-open" onClick={() => setHomePreviewOpen(true)} aria-haspopup="dialog">实时预览</button>}</div>
               </div>}
               {tab === "images" && <section className="content-overview-order" aria-labelledby="content-overview-order-title">
                 <div className="content-overview-order-heading"><div><p>HOMEPAGE CARDS</p><h2 id="content-overview-order-title">首页卡片排放顺序</h2><span>只为展示中的卡片分配位置；隐藏后其余卡片依次前移，重新展示时加入末尾。</span></div><small>当前展示 {visibleCardCount} / 7 张</small></div>
@@ -1935,7 +1892,7 @@ export default function AdminDashboard() {
                     <div className="content-overview-order-actions"><button type="button" aria-label={`将${definition?.label || key}上移`} disabled={!cardVisibility[key] || index === 0} onClick={() => moveCardTo(key, index - 1)}>↑</button><button type="button" aria-label={`将${definition?.label || key}下移`} disabled={!cardVisibility[key] || index === visibleCardCount - 1} onClick={() => moveCardTo(key, index + 1)}>↓</button></div>
                   </li>;
                 })}</ol>
-                <p>顺序修改会立即显示在右侧预览中；点击顶部“保存全部设置”后应用到前台。</p>
+                <p>顺序修改会立即显示在右侧预览中；将自动应用到前台。</p>
               </section>}
               {tab === "images" && <div className="admin-story-intro"><div><strong>开场画面的图片</strong><span>首页背景、头像和七个栏目图片在下方管理；开场 Logo 与开场背景在独立的首页开场编辑器中。</span></div><button type="button" onClick={() => selectTab("intro")}>编辑开场图片 →</button></div>}
               {tab === "river" && <div className="admin-story-intro"><div><strong>3D 粒子树场景</strong><span>本栏目的照片在上方管理；场景参数在下方调整。</span></div></div>}
@@ -1966,7 +1923,7 @@ export default function AdminDashboard() {
                     {/* These files are music-only previews without spoken caption content. */}
                     {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
                     <audio src={track.url} controls preload="metadata" />
-                    <div className="music-track-actions"><button type="button" disabled={index === 0} onClick={() => moveMusicTrack(index, -1)}>上移</button><button type="button" disabled={index === musicPlaylist.length - 1} onClick={() => moveMusicTrack(index, 1)}>下移</button><label>更换 MP3<input type="file" accept="audio/mpeg,.mp3" onChange={(event) => { void chooseMusicTrack(event.target.files?.[0], index); event.currentTarget.value = ""; }} /></label><button type="button" className="danger" onClick={() => requestDeletion(`移除“${track.name || `歌曲 ${index + 1}`}”？`, "保存全部设置后，这首歌曲将不再出现在前台歌单中。服务器中的原文件不会立即删除。", () => setMusicPlaylist(musicPlaylist.filter((_, trackIndex) => trackIndex !== index)), "确认移除")}>移除</button></div>
+                    <div className="music-track-actions"><button type="button" disabled={index === 0} onClick={() => moveMusicTrack(index, -1)}>上移</button><button type="button" disabled={index === musicPlaylist.length - 1} onClick={() => moveMusicTrack(index, 1)}>下移</button><label>更换 MP3<input type="file" accept="audio/mpeg,.mp3" onChange={(event) => { void chooseMusicTrack(event.target.files?.[0], index); event.currentTarget.value = ""; }} /></label><button type="button" className="danger" onClick={() => requestDeletion(`移除“${track.name || `歌曲 ${index + 1}`}”？`, "自动保存后，这首歌曲将不再出现在前台歌单中。服务器中的原文件不会立即删除。", () => setMusicPlaylist(musicPlaylist.filter((_, trackIndex) => trackIndex !== index)), "确认移除")}>移除</button></div>
                   </article>) : <div className="music-playlist-empty"><strong>还没有歌曲</strong><span>点击“添加歌曲”上传第一首 MP3；未添加歌曲时，前台播放器会显示为不可用。</span></div>}
                 </div>
                 <p className="music-settings-note">当前 {musicPlaylist.length} / 20 首；单首最大 12MB。歌曲数量由这里的歌单条目自动决定。</p>
@@ -1979,7 +1936,7 @@ export default function AdminDashboard() {
                 </div>
                 <article className="home-visual-asset is-profile-avatar">
                   <div className="home-visual-preview"><img src={normalizeHomeVisualAsset(settings.home_profile_avatar, "/assets/demo-intro.svg") || "/assets/demo-intro.svg"} alt="侧栏圆形头像预览" /></div>
-                  <div><strong>侧栏圆形头像</strong><p>上传后用圆形选框选择人物或画面重点，确认取景后再保存网站设置。</p><div className="home-visual-actions"><label>上传并裁切<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { void chooseHomeVisualImage(event.target.files?.[0], "home_profile_avatar"); event.currentTarget.value = ""; }} /></label><button type="button" onClick={() => setSettings((current) => ({ ...current, home_profile_avatar: "" }))}>恢复默认头像</button></div></div>
+                  <div><strong>侧栏圆形头像</strong><p>上传后用圆形选框选择人物或画面重点，确认取景后自动保存。</p><div className="home-visual-actions"><label>上传并裁切<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { void chooseHomeVisualImage(event.target.files?.[0], "home_profile_avatar"); event.currentTarget.value = ""; }} /></label><button type="button" onClick={() => setSettings((current) => ({ ...current, home_profile_avatar: "" }))}>恢复默认头像</button></div></div>
                 </article>
                 <fieldset className="home-tone-fieldset">
                   <legend>首页边框主题</legend>
@@ -2148,7 +2105,7 @@ export default function AdminDashboard() {
                     <label>时间<input value={item.date} maxLength={20} onChange={(event) => updateTimelineItem(index, "date", event.target.value)} /></label>
                     <label>标题<input value={item.title} maxLength={80} onChange={(event) => updateTimelineItem(index, "title", event.target.value)} /></label>
                     <label className="timeline-body-field">正文<textarea value={item.text} maxLength={500} onChange={(event) => updateTimelineItem(index, "text", event.target.value)} /></label>
-                    <div className="timeline-row-actions"><button type="button" disabled={index === 0} onClick={() => moveTimelineItem(index, -1)}>上移</button><button type="button" disabled={index === timelineItems.length - 1} onClick={() => moveTimelineItem(index, 1)}>下移</button><button type="button" onClick={() => requestDeletion(`删除“${item.title || `第 ${index + 1} 段`}”时间线？`, "确认后会从当前网站设置中移除；保存全部设置后将无法恢复。", () => setTimelineItems(timelineItems.filter((_, itemIndex) => itemIndex !== index)))}>删除</button></div>
+                    <div className="timeline-row-actions"><button type="button" disabled={index === 0} onClick={() => moveTimelineItem(index, -1)}>上移</button><button type="button" disabled={index === timelineItems.length - 1} onClick={() => moveTimelineItem(index, 1)}>下移</button><button type="button" onClick={() => requestDeletion(`删除“${item.title || `第 ${index + 1} 段`}”时间线？`, "确认后会从当前网站设置中移除；自动保存后将无法恢复。", () => setTimelineItems(timelineItems.filter((_, itemIndex) => itemIndex !== index)))}>删除</button></div>
                   </fieldset>
                 ))}
                 <button className="timeline-add" type="button" disabled={timelineItems.length >= 8} onClick={() => setTimelineItems([...timelineItems, { date: "", title: "新的青春片段", text: "" }])}>＋ 新增节点</button>
@@ -2225,7 +2182,7 @@ export default function AdminDashboard() {
               onConfirm={(image) => {
                 setIntroSetting("intro_logo", image);
                 setIntroLogoCropOpen(false);
-                setMessage("Logo 圆形裁切已完成，请点击“保存首页开场”使前台生效");
+                setMessage("Logo 圆形裁切已完成，将自动应用到网站");
               }}
             />
           </motion.section>
@@ -2243,7 +2200,7 @@ export default function AdminDashboard() {
               onConfirm={(image) => {
                 setSettings((current) => ({ ...current, home_profile_avatar: image }));
                 setAvatarCropSource("");
-                setMessage("头像圆形裁切已加入预览，请点击“保存全部设置”使前台生效");
+                setMessage("头像圆形裁切已加入预览，将自动应用到网站");
               }}
             />
           </motion.section>
@@ -2253,7 +2210,7 @@ export default function AdminDashboard() {
         <motion.div key="card-crop" className="intro-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="card-crop-title" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.24 }}>
           <motion.section className="intro-crop-dialog" initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.99 }} transition={{ duration: reduceMotion ? 0 : 0.32, ease: [0.22, 0.7, 0.18, 1] }}>
             <header><div><p>{cardCropField === "home_hero_image" ? "HERO IMAGE CROP" : "CARD COMPOSITION"}</p><h2 id="card-crop-title">调整{cardCropField === "home_hero_image" ? "首页主视觉" : "栏目卡片"}图片</h2><span>{cardCropField === "home_hero_image" ? "拖动图片与白框调整范围；主视觉仍会生成裁切图。" : "拖动图片与白框标记希望优先展示的区域；原图不会被裁掉，前台根据实际卡片尺寸自适应显示。"}</span></div><button type="button" onClick={() => setCardCropField(null)} aria-label="关闭图片裁切窗口">×</button></header>
-            {cardCropField === "home_hero_image" ? <CardCropEditor source={normalizeHomeVisualAsset(settings.home_hero_image, "/assets/demo-5.svg")} label="首页主视觉" isHero onCancel={() => setCardCropField(null)} onError={setMessage} onConfirm={(image) => { setSettings((current) => ({ ...current, home_hero_image: image })); setCardCropField(null); setMessage("主视觉裁切已加入预览；保存全部设置后生效"); }} /> : <CardFocusEditor key={`${cardCropField}:${settings[cardCropField]}`} source={normalizeHomeVisualAsset(settings[cardCropField], homeVisualCardDefinitions.find((item) => item.key === cardCropField)?.fallback || "")} label={homeVisualCardDefinitions.find((item) => item.key === cardCropField)?.label || "栏目"} aspect={cardAspectFor(cardCropField as HomeCardImageKey)} savedCrop={cardCrops[cardCropField]} onCancel={() => setCardCropField(null)} onError={setMessage} onConfirm={(crop) => { updateCardCrop(cardCropField as HomeCardImageKey, crop); setCardCropField(null); setMessage("取景参考已加入预览；保存全部设置后生效"); }} />}
+            {cardCropField === "home_hero_image" ? <CardCropEditor source={normalizeHomeVisualAsset(settings.home_hero_image, "/assets/demo-5.svg")} label="首页主视觉" isHero onCancel={() => setCardCropField(null)} onError={setMessage} onConfirm={(image) => { setSettings((current) => ({ ...current, home_hero_image: image })); setCardCropField(null); setMessage("主视觉裁切已加入预览；将自动保存生效"); }} /> : <CardFocusEditor key={`${cardCropField}:${settings[cardCropField]}`} source={normalizeHomeVisualAsset(settings[cardCropField], homeVisualCardDefinitions.find((item) => item.key === cardCropField)?.fallback || "")} label={homeVisualCardDefinitions.find((item) => item.key === cardCropField)?.label || "栏目"} aspect={cardAspectFor(cardCropField as HomeCardImageKey)} savedCrop={cardCrops[cardCropField]} onCancel={() => setCardCropField(null)} onError={setMessage} onConfirm={(crop) => { updateCardCrop(cardCropField as HomeCardImageKey, crop); setCardCropField(null); setMessage("取景参考已加入预览；将自动保存生效"); }} />}
           </motion.section>
         </motion.div>
       )}
@@ -2281,7 +2238,7 @@ export default function AdminDashboard() {
         <motion.div key="admin-media-crop" className="intro-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="admin-media-crop-title" initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.section className="intro-crop-dialog media-square-crop-dialog" initial={reduceMotion ? false : { opacity: 0, y: 18, scale: .985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}>
             <header><div><p>PHOTO COMPOSITION</p><h2 id="admin-media-crop-title">选择展示区域</h2><span>框内拖动选框，框外拖动照片；拖动边缘或四角时始终保持正方形。碰到预览边缘时，图片会继续平滑移动。</span></div><button type="button" onClick={() => setMediaCrop(null)} aria-label="关闭方形取景">×</button></header>
-            <MediaSquareCropEditor key={mediaCrop.source} source={mediaCrop.source} onCancel={() => setMediaCrop(null)} onError={setMessage} onConfirm={(thumbnail) => { if (typeof mediaCrop.target === "object") { if (mediaCrop.replaceOriginal) updateMediaRow(mediaCrop.target.id, "url", mediaCrop.source); updateMediaRow(mediaCrop.target.id, "thumbnail_url", thumbnail); } else { if (mediaCrop.replaceOriginal) setUploadData(mediaCrop.source); setUploadThumbnailData(thumbnail); } setMediaCrop(null); setMessage("方形预览已准备好；保存全部设置后生效，原图会保留用于放大查看"); }} />
+            <MediaSquareCropEditor key={mediaCrop.source} source={mediaCrop.source} onCancel={() => setMediaCrop(null)} onError={setMessage} onConfirm={(thumbnail) => { if (typeof mediaCrop.target === "object") { if (mediaCrop.replaceOriginal) updateMediaRow(mediaCrop.target.id, "url", mediaCrop.source); updateMediaRow(mediaCrop.target.id, "thumbnail_url", thumbnail); } else { if (mediaCrop.replaceOriginal) setUploadData(mediaCrop.source); setUploadThumbnailData(thumbnail); } setMediaCrop(null); setMessage("方形预览已准备好；将自动保存生效，原图会保留用于放大查看"); }} />
           </motion.section>
         </motion.div>
       )}
