@@ -29,9 +29,9 @@ export default function HomeVisualPreview({ settings, viewport = "desktop" }: Pr
     <div className="home-visual-live-background" style={{ backgroundImage: background ? `url("${background.replace(/["\\\r\n]/g, "")}")` : "none", filter: `blur(${normalizeHomeBackgroundBlur(settings.home_background_blur)}px)` }} />
     <div className="home-visual-live-overlay" style={{ background: homeVisualOverlay(base, normalizeHomeBackgroundOverlayOpacity(settings.home_background_overlay_opacity) / 100) }} />
     <div className="home-visual-live-layout">
-      <aside><img src={avatar} alt="侧栏头像预览" /><small>MY MEMORY ARCHIVE</small><strong>{settings.site_title || "我的记忆档案"}</strong><p>记录平凡的日子，也收藏闪光的青春。</p></aside>
+      <aside><img src={avatar} alt="侧栏头像预览" /><small>YOUTH ARCHIVE</small><strong>{settings.site_title || "青春档案"}</strong><p>记录平凡的日子，也收藏闪光的青春。</p></aside>
       <main>
-        <div className="home-visual-live-header"><b>{settings.site_title || "我的记忆档案"}</b><span>故事集　3D 粒子树　校园碎片</span></div>
+        <div className="home-visual-live-header"><b>{settings.site_title || "青春档案"}</b><span>故事集　3D 粒子树　校园碎片</span></div>
         <section className="home-visual-live-hero" style={{ backgroundImage: hero ? `url("${hero.replace(/["\\\r\n]/g, "")}")` : "none" }}><div><small>MEMORIES WE SHARE</small><strong>把青春留在<br />风经过的地方</strong><span>开始翻阅　↗</span></div></section>
         <div className="home-visual-live-cards">{visibleCards.map((card) => {
           const source = normalizeHomeVisualAsset(settings[card.key], card.fallback);

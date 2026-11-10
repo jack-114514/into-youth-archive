@@ -849,7 +849,7 @@ export default function AdminDashboard() {
   const [mediaTakenAt, setMediaTakenAt] = useState("");
   const [mediaSortOrder, setMediaSortOrder] = useState("");
   const [mediaDestinations, setMediaDestinations] = useState(mediaDestinationsForTab("media"));
-  const [settings, setSettings] = useState({ site_title: "我的记忆档案", footer_title: "我的记忆档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
+  const [settings, setSettings] = useState({ site_title: "青春档案", footer_title: "青春档案", footer_subtitle: "", hero_title: "把青春留在风经过的地方", profile_text: "", github_url: "", contact_email: "", contact_douyin_url: "", contact_custom_links: "[]", notes_title: "随手记", notes_body: "", timeline_items: JSON.stringify(defaultTimelineItems), ...defaultDisplaySettings, ...defaultGalaxySettings, ...defaultHomepageIntroSettings, ...defaultHomepageCopySettings, ...defaultHeroPresentationSettings, ...defaultHomeVisualSettings, ...defaultMusicSettings });
   const [introNodes, setIntroNodes] = useState<HomepageIntroNode[]>(defaultHomepageIntroNodes);
   const [introPreviewKey, setIntroPreviewKey] = useState(0);
   const [introPreviewOpen, setIntroPreviewOpen] = useState(false);
@@ -1663,7 +1663,7 @@ export default function AdminDashboard() {
   if (!token) {
     return (
       <main className="admin-shell login-shell" data-admin-theme={adminTheme}>
-        <a className="admin-brand" href="/">INTO <span>/</span> 青春纪事</a>
+        <a className="admin-brand" href="/">youth-archive <span>/</span> 青春档案</a>
         <button className="admin-theme-toggle admin-login-theme-toggle" type="button" aria-pressed={adminTheme === "dark"} onClick={() => { const nextTheme = adminTheme === "dark" ? "light" : "dark"; setAdminTheme(nextTheme); localStorage.setItem("into-admin-theme", nextTheme); }}>{adminTheme === "dark" ? "☀ 浅色模式" : "☾ 深色模式"}</button>
         <form className="admin-login" onSubmit={recoveryOpen ? changePassword : login}>
           <div className="admin-symbol">✦</div>
@@ -1702,7 +1702,7 @@ export default function AdminDashboard() {
   return (
     <main className={"admin-shell" + (sidebarCollapsed ? " sidebar-collapsed" : "")} style={{ "--admin-font-scale": adminFontSize / 100, "--admin-small-font-scale": adminFontSize * 1.5 / 100 } as CSSProperties} data-admin-theme={adminTheme} data-admin-large={adminFontSize >= 140 ? "true" : undefined}>
       <aside className="admin-sidebar">
-        <div className="admin-sidebar-head"><a className="admin-brand" href="/"><b>INTO</b> <span>/</span> <em>青春纪事</em></a><button className="admin-sidebar-toggle" type="button" onClick={toggleSidebar} aria-label={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"} title={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"}><span className="micro-arrow">{sidebarCollapsed ? "→" : "←"}</span></button></div>
+        <div className="admin-sidebar-head"><a className="admin-brand" href="/"><b>youth-archive</b> <span>/</span> <em>青春档案</em></a><button className="admin-sidebar-toggle" type="button" onClick={toggleSidebar} aria-label={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"} title={sidebarCollapsed ? "展开菜单栏" : "收起菜单栏"}><span className="micro-arrow">{sidebarCollapsed ? "→" : "←"}</span></button></div>
         <nav>
           {adminNavigationItems.map(({ key, label, icon }) => key === "images" ? (
             <div className="admin-nav-group" key="website-content">
@@ -1900,7 +1900,7 @@ export default function AdminDashboard() {
               {(tab === "settings" || tab === "about") && <details className="admin-settings-accordion" open={tab === "about"}><summary>网站文字与联系方式<span>网站名称、预留联系信息与自定义链接</span></summary>
               <h2>网站文字</h2>
               <label>网站名称<input value={settings.site_title} onChange={(event) => setSettings({ ...settings, site_title: event.target.value })} /></label>
-              {tab === "settings" && <div className="footer-copy-settings"><h3>首页底部文字</h3><label>主文字<input maxLength={64} value={settings.footer_title ?? ""} onChange={(event) => setSettings((current) => ({ ...current, footer_title: event.target.value }))} placeholder="我的记忆档案" /></label><label>补充小字（可选）<textarea maxLength={160} rows={2} value={settings.footer_subtitle ?? ""} onChange={(event) => setSettings((current) => ({ ...current, footer_subtitle: event.target.value }))} placeholder="留空则首页不显示小字" /></label><small>保存后应用到首页底部；其他页面的底部也会使用相同文字。</small></div>}
+              {tab === "settings" && <div className="footer-copy-settings"><h3>首页底部文字</h3><label>主文字<input maxLength={64} value={settings.footer_title ?? ""} onChange={(event) => setSettings((current) => ({ ...current, footer_title: event.target.value }))} placeholder="青春档案" /></label><label>补充小字（可选）<textarea maxLength={160} rows={2} value={settings.footer_subtitle ?? ""} onChange={(event) => setSettings((current) => ({ ...current, footer_subtitle: event.target.value }))} placeholder="留空则首页不显示小字" /></label><small>保存后应用到首页底部；其他页面的底部也会使用相同文字。</small></div>}
               <div className="contact-link-settings"><label>邮箱联系<input type="email" placeholder="留空即不显示" value={settings.contact_email} onChange={(event) => setSettings((current) => ({ ...current, contact_email: event.target.value }))} /></label><label>GitHub 链接<input type="url" placeholder="留空即不显示" value={settings.github_url} onChange={(event) => setSettings((current) => ({ ...current, github_url: event.target.value }))} /></label><label>抖音链接<input type="url" placeholder="留空即不显示" value={settings.contact_douyin_url} onChange={(event) => setSettings((current) => ({ ...current, contact_douyin_url: event.target.value }))} /></label><small>左侧“联系”按钮会弹出所有已填写的联系方式；留空的项目不会显示。</small></div>
               <section className="contact-custom-settings" aria-labelledby="contact-custom-title"><div className="contact-custom-heading"><div><h3 id="contact-custom-title">添加更多联系方式</h3><p>可选择常用平台，也可自定义名称。保存后会显示在左侧“联系”和关于我们页面。</p></div><small>{customContactLinks.length} / 12</small></div>
                 <div className="contact-custom-presets">{["哔哩哔哩", "YouTube", "TikTok"].map((label) => <button key={label} type="button" onClick={() => addCustomContactLink(label)}>＋ {label}</button>)}<button type="button" onClick={() => addCustomContactLink("")}>＋ 自定义链接</button></div>

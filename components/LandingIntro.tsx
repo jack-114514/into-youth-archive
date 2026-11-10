@@ -48,8 +48,8 @@ export type HomepageIntroNode = {
 
 export const defaultHomepageIntroSettings: HomepageIntroSettings = {
   intro_logo: "",
-  intro_title: "记忆档案",
-  intro_subtitle: "MY MEMORY ARCHIVE",
+  intro_title: "青春档案",
+  intro_subtitle: "YOUTH ARCHIVE",
   intro_background_image: "",
   intro_background_desktop_image: "",
   intro_background_mobile_image: "",

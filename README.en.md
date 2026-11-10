@@ -1,4 +1,4 @@
-# Memory Archive / 我的记忆档案
+# youth-archive / 青春档案
 
 **Language / 语言: [简体中文](README.md) · English**
 
@@ -19,7 +19,7 @@ A self-hosted memory website for photos, videos and writing, with a **3D particl
 > **Prepare your own VPS and domain.** Point the domain to the VPS and open ports 80/443. The installer supports Debian / Ubuntu; 2 CPU cores and 2 GB RAM are recommended. Connect over SSH as root and run the complete command below. For a regular account, replace the final `bash` with `sudo bash`.
 
 ```bash
-curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
+curl -fL --progress-bar --retry 3 --connect-timeout 20 https://raw.githubusercontent.com/jack-114514/youth-archive/main/install.sh -o /tmp/memory-archive-install.sh && bash /tmp/memory-archive-install.sh
 ```
 
 **Enter your domain and email; press Enter for the other defaults.** Select `2` for English at the first prompt (Enter defaults to Simplified Chinese). Basic setup is the default. Leave the password empty to generate one; initial credentials appear in the terminal after installation. Only Advanced setup asks for Turnstile and mail settings. Dashboard: `https://your-domain/admin`.
@@ -30,17 +30,17 @@ The installer shows stages, elapsed time and real download progress when availab
 
 If another system package task is running, Docker setup waits for its install lock instead of failing immediately. Run `python3 scripts/install_log.py` to inspect the latest log without copying its filename.
 
-**[📖 Step-by-step installation guide (Chinese)](docs/QUICK_START.md)** · **[View/download the installation script](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/install.sh)**
+**[📖 Step-by-step installation guide (Chinese)](docs/QUICK_START.md)** · **[View/download the installation script](https://raw.githubusercontent.com/jack-114514/youth-archive/main/install.sh)**
 
 Run the installation command in the Linux terminal on your VPS. For missing curl/sudo, see the [FAQ (Chinese)](docs/QUICK_START.md#常见问题). Existing Docker installations must support Compose v2.
 
 ## 📱 Download the Android admin app
 
-### [⬇ Download Android APK · 1.8.0 (versionCode 20)](https://github.com/jack-114514/into-youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
+### [⬇ Download Android APK · 1.8.0 (versionCode 20)](https://github.com/jack-114514/youth-archive/releases/download/v3.7.0/memory-archive-admin-v1.8.0.apk)
 
 **Android 7.0 or later. Enter your own HTTPS domain after installation, then sign in with your website admin account. No source changes or APK rebuild are required.**
 
-[Releases and checksums](https://github.com/jack-114514/into-youth-archive/releases/latest) · [Android features, architecture and build guide (Chinese)](mobile-admin-app/README.md) · **[Android privacy policy (Chinese)](mobile-admin-app/PRIVACY.md)**
+[Releases and checksums](https://github.com/jack-114514/youth-archive/releases/latest) · [Android features, architecture and build guide (Chinese)](mobile-admin-app/README.md) · **[Android privacy policy (Chinese)](mobile-admin-app/PRIVACY.md)**
 
 The release APK uses a stable signing certificate and can upgrade earlier secure universal builds with the same package ID and signature. Its filename includes the version: `memory-archive-admin-v1.8.0.apk`. Website release v3.7.0 and Android version 1.8.0 are identified separately. Older preview/site-specific packages use different IDs or signatures; install the universal app and reconnect to your site. Server content remains available. CI debug APKs are test artifacts.
 
@@ -55,7 +55,7 @@ The linked detailed guides are currently in Chinese. This English README covers 
 | Task | Guide |
 | --- | --- |
 | First installation, domain changes, your own Cloudflare configuration | [Quick start](docs/QUICK_START.md) |
-| Full visitor/admin feature list in plain text | **[Website feature details](docs/网站功能详情.txt)** · [Raw text](https://raw.githubusercontent.com/jack-114514/into-youth-archive/main/docs/网站功能详情.txt) |
+| Full visitor/admin feature list in plain text | **[Website feature details](docs/网站功能详情.txt)** · [Raw text](https://raw.githubusercontent.com/jack-114514/youth-archive/main/docs/网站功能详情.txt) |
 | Architecture, folders, APIs, data and development | [Technical guide](docs/TECHNICAL.md) |
 | Backups, updates, rollback and deployment without Docker | [Self-hosting guide](docs/SELF_HOSTING.md) |
 | Manage your site from your phone | [Android guide](mobile-admin-app/README.md) · [Privacy policy](mobile-admin-app/PRIVACY.md) |

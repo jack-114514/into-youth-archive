@@ -49,7 +49,7 @@ bootstrap() {
   fi
   say "  完成，用时 $((SECONDS-started)) 秒" "  Done in $((SECONDS-started))s"
 }
-repo=${REPOSITORY_URL:-https://github.com/jack-114514/into-youth-archive.git}
+repo=${REPOSITORY_URL:-https://github.com/jack-114514/youth-archive.git}
 destination=${INSTALL_DIR:-/opt/memory-archive}
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 if [[ ${INSTALL_SOURCE_READY:-} != 1 ]]; then
